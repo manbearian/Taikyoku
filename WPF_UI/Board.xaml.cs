@@ -33,7 +33,9 @@ namespace WPF_UI
 
         public double SpaceHeight { get => ActualHeight / BoardHeight; }
 
-        public (int X, int Y)? Selected { get; set; }
+        public (int X, int Y)? SelectedForMove { get; set; }
+
+        public (int X, int Y)? SelectedForInfo { get; set; }
 
         public Board()
         {
@@ -42,16 +44,25 @@ namespace WPF_UI
 
         public void SetGame(TaiyokuShogi game) => Game = game;
 
-        public (int X, int Y) GetBoardLoc(Point p) => ((int)(p.X / SpaceWidth), (int)(p.Y / SpaceHeight));
+        public (int X, int Y) GetBoardLoc(Point p) => 
+            Game.CurrentTurn == Player.White 
+            ? ((int)(p.X / SpaceWidth), (int)(p.Y / SpaceHeight))
+            : (BoardWidth - 1 - (int)(p.X / SpaceWidth), BoardHeight - 1 - (int)(p.Y / SpaceHeight));
 
         public Rect BoardLocToRect((int X, int Y) loc) => new Rect(loc.X * SpaceWidth, loc.Y * SpaceHeight, SpaceWidth, SpaceHeight);
 
         protected override void OnMouseMove(MouseEventArgs e)
         {
             var (x, y) = GetBoardLoc(e.GetPosition(this));
-            var piece = Game.GetPiece(x, y);
 
+            // short-circuit if already processed
+            if (SelectedForInfo == (x, y))
+                return;
+
+            SelectedForInfo = (x, y);
             ToolTip = null;
+
+            var piece = Game.GetPiece(x, y);
             if (piece != null)
             {
                 var moves = Movement.GetMovement(piece.Value.Id);
@@ -89,11 +100,11 @@ namespace WPF_UI
                 layoutGrid.Children.Add(grid);
 
                 // render moves in a grid
-                //     | o |  
+                //     | ○ |  
                 //  ---+---+---
-                //   - | ☖| -
+                //   ─ | ☖| ─
                 //  ---+---+---
-                //   o |   | o
+                //   ○ |   | ○
                 var pieceIcon = new TextBlock();
                 pieceIcon.Text = "☖";
                 pieceIcon.FontSize = 14;
@@ -105,10 +116,10 @@ namespace WPF_UI
 
                 for (int direction = 0; direction < moves.StepRange.Length; ++direction)
                 {
-                    for (int i = 1; i <= maxMoves; ++i)
+                    for (int i = 1; i <= Math.Min(moves.StepRange[direction], maxMoves); ++i)
                     {
                         var moveIcon = new TextBlock();
-                        moveIcon.Text = moves.StepRange[direction] == 0 ? "" : moves.StepRange[direction] < Movement.FullRange ? "o" : GetFullRangeChar(direction);
+                        moveIcon.Text = moves.StepRange[direction] == 0 ? "" : moves.StepRange[direction] < Movement.FullRange ? "○" : GetFullRangeChar(direction);
                         moveIcon.FontSize = 12;
                         moveIcon.HorizontalAlignment = HorizontalAlignment.Center;
                         moveIcon.VerticalAlignment = VerticalAlignment.Center;
@@ -162,7 +173,7 @@ namespace WPF_UI
 
             if (piece != null)
             {
-                Selected = (x,y);
+                SelectedForMove = (x,y);
             }
 
             InvalidateVisual();
@@ -173,9 +184,11 @@ namespace WPF_UI
         {
             if (Game != null)
             {
+                dc.PushTransform(new RotateTransform((Game.CurrentTurn == Player.Black) ? 180 : 0, ActualWidth / 2, ActualHeight / 2));
                 DrawBoard(dc);
                 DrawPieces(dc);
                 DrawMoves(dc);
+                dc.Pop();
             }
 
             base.OnRender(dc);
@@ -234,7 +247,7 @@ namespace WPF_UI
                 var lowerLeft = new Point((spaceWidth - pieceWidth) / 2, spaceHeight - border);
                 var lowerRight = new Point(spaceWidth - lowerLeft.X, spaceHeight - border);
 
-                var pen = new Pen((loc == Selected) ? Brushes.Red : Brushes.Black, 1.0);
+                var pen = new Pen((loc == SelectedForMove) ? Brushes.Red : Brushes.Black, 1.0);
                 dc.DrawLine(pen, upperLeft, upperMid);     //  /
                 dc.DrawLine(pen, upperMid, upperRight);    //    \
                 dc.DrawLine(pen, upperRight, lowerRight);  //    |
@@ -272,10 +285,10 @@ namespace WPF_UI
 
             void DrawMoves(DrawingContext dc)
             {
-                if (Selected == null)
+                if (SelectedForMove == null)
                     return;
 
-                var loc = Selected.Value;
+                var loc = SelectedForMove.Value;
                 var piece = Game.GetPiece(loc).Value;
 
                 var moves = Game.GetLegalMoves(piece.Player, piece.Id, loc);

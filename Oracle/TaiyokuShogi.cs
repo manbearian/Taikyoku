@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Collections.Immutable;
+using System.Linq;
 
 
 namespace Oracle
@@ -11,20 +11,25 @@ namespace Oracle
         Black
     }
 
+    public class IllegalMoveException : Exception { }
+
     public class TaiyokuShogi
     {
         public const int BoardHeight = 36;
         public const int BoardWidth = 36;
 
-        private readonly (Player, PieceIdentity)?[,] _state = new (Player, PieceIdentity)?[BoardHeight, BoardHeight];
+        private readonly (Player, PieceIdentity)?[,] _boardState = new (Player, PieceIdentity)?[BoardHeight, BoardHeight];
+
+        public Player CurrentTurn { get; private set; } = Player.White;
 
         public TaiyokuShogi()
         {
             SetInitialBoard();
         }
 
-        public (Player Player, PieceIdentity Id)? GetPiece(int x, int y) => _state[x, y];
-        public (Player Player, PieceIdentity Id)? GetPiece((int X, int Y) loc) => _state[loc.X, loc.Y];
+        public (Player Player, PieceIdentity Id)? GetPiece(int x, int y) => _boardState[x, y];
+
+        public (Player Player, PieceIdentity Id)? GetPiece((int X, int Y) loc) => _boardState[loc.X, loc.Y];
 
         // 24 	 	 	 	 	D	 	 	 	 	GB	 	 	 	D	 	 	 	 	 	 	D	 	 	 	GB	 	 	 	 	D	 	 	 	 	       11
         // 25  P	P	P	P	P	P	P	P	P	P	P	P	P	P	P	P	P	P	P	P	P	P	P	P	P	P	P	P	P	P	P	P	P	P	P	P  10
@@ -42,43 +47,43 @@ namespace Oracle
         {
             // todo: don't list pieces twices, find a way to do it once!
 
-            _state[0, 0] = (Player.Black, PieceIdentity.Lance);
-            _state[1, 0] = (Player.Black, PieceIdentity.WhiteTiger);
-            _state[2, 0] = (Player.Black, PieceIdentity.RunningRabbit);
-            _state[3, 0] = (Player.Black, PieceIdentity.Whale);
-            _state[4, 0] = (Player.Black, PieceIdentity.FireDemon);
-            _state[5, 0] = (Player.Black, PieceIdentity.RightMountainEagle);
-            _state[6, 0] = (Player.Black, PieceIdentity.LongNosedGoblin);
-            _state[0, 1] = (Player.Black, PieceIdentity.ReverseChariot);
+            _boardState[0, 0] = (Player.Black, PieceIdentity.Lance);
+            _boardState[1, 0] = (Player.Black, PieceIdentity.WhiteTiger);
+            _boardState[2, 0] = (Player.Black, PieceIdentity.RunningRabbit);
+            _boardState[3, 0] = (Player.Black, PieceIdentity.Whale);
+            _boardState[4, 0] = (Player.Black, PieceIdentity.FireDemon);
+            _boardState[5, 0] = (Player.Black, PieceIdentity.RightMountainEagle);
+            _boardState[6, 0] = (Player.Black, PieceIdentity.LongNosedGoblin);
+            _boardState[0, 1] = (Player.Black, PieceIdentity.ReverseChariot);
 
             // place all the pawns
             for (int i = 0; i < BoardWidth; ++i)
             {
-                _state[i, 10] = (Player.Black, PieceIdentity.Pawn);
-                _state[i, 25] = (Player.White, PieceIdentity.Pawn);
+                _boardState[i, 10] = (Player.Black, PieceIdentity.Pawn);
+                _boardState[i, 25] = (Player.White, PieceIdentity.Pawn);
             }
 
             // test pieces
-            _state[17, 16] = (Player.White, PieceIdentity.FreeBear);
-            _state[17, 17] = (Player.Black, PieceIdentity.MountainStag);
+            // _state[17, 16] = (Player.White, PieceIdentity.FreeBear);
+            _boardState[17, 17] = (Player.Black, PieceIdentity.MountainStag);
 
-            _state[0, 34] = (Player.White, PieceIdentity.ReverseChariot);
+            _boardState[0, 34] = (Player.White, PieceIdentity.ReverseChariot);
 
-            _state[0, 35] = (Player.White, PieceIdentity.Lance);
-            _state[1, 35] = (Player.White, PieceIdentity.TurtleSnake);
-            _state[2, 35] = (Player.White, PieceIdentity.RunningRabbit);
-            _state[3, 35] = (Player.White, PieceIdentity.Whale);
-            _state[4, 35] = (Player.White, PieceIdentity.FireDemon);
-            _state[5, 35] = (Player.White, PieceIdentity.LeftMountainEagle);
-            _state[6, 35] = (Player.White, PieceIdentity.LongNosedGoblin);
+            _boardState[0, 35] = (Player.White, PieceIdentity.Lance);
+            _boardState[1, 35] = (Player.White, PieceIdentity.TurtleSnake);
+            _boardState[2, 35] = (Player.White, PieceIdentity.RunningRabbit);
+            _boardState[3, 35] = (Player.White, PieceIdentity.Whale);
+            _boardState[4, 35] = (Player.White, PieceIdentity.FireDemon);
+            _boardState[5, 35] = (Player.White, PieceIdentity.LeftMountainEagle);
+            _boardState[6, 35] = (Player.White, PieceIdentity.LongNosedGoblin);
             // ..
-            _state[29, 35] = (Player.White, PieceIdentity.LongNosedGoblin);
-            _state[30, 35] = (Player.White, PieceIdentity.RightMountainEagle);
-            _state[31, 35] = (Player.White, PieceIdentity.FireDemon);
-            _state[32, 35] = (Player.White, PieceIdentity.Whale);
-            _state[33, 35] = (Player.White, PieceIdentity.RunningRabbit);
-            _state[34, 35] = (Player.White, PieceIdentity.WhiteTiger);
-            _state[35, 35] = (Player.White, PieceIdentity.Lance);
+            _boardState[29, 35] = (Player.White, PieceIdentity.LongNosedGoblin);
+            _boardState[30, 35] = (Player.White, PieceIdentity.RightMountainEagle);
+            _boardState[31, 35] = (Player.White, PieceIdentity.FireDemon);
+            _boardState[32, 35] = (Player.White, PieceIdentity.Whale);
+            _boardState[33, 35] = (Player.White, PieceIdentity.RunningRabbit);
+            _boardState[34, 35] = (Player.White, PieceIdentity.WhiteTiger);
+            _boardState[35, 35] = (Player.White, PieceIdentity.Lance);
         }
 
         public IEnumerable<(int X, int Y)> GetLegalMoves(Player player, PieceIdentity id, (int X, int Y) loc)
@@ -90,46 +95,26 @@ namespace Oracle
             {
                 for (int i = 1; i <= movement.StepRange[direction]; ++i)
                 {
-                    var (x, y) = loc;
-
-                    switch (direction)
+                    var moveAmount = player == Player.White ? i : -i;
+                    var (x, y) = direction switch
                     {
-                        case Movement.Up:
-                            y += player == Player.White ? -i : i;
-                            break;
-                        case Movement.Down:
-                            y += player == Player.White ? i : -i;
-                            break;
-                        case Movement.Left:
-                            x += player == Player.White ? -i : i;
-                            break;
-                        case Movement.Right:
-                            x += player == Player.White ? i : -i;
-                            break;
-                        case Movement.UpLeft:
-                            y += player == Player.White ? -i : i;
-                            x += player == Player.White ? -i : i;
-                            break;
-                        case Movement.UpRight:
-                            y += player == Player.White ? -i : i;
-                            x += player == Player.White ? i : -i;
-                            break;
-                        case Movement.DownLeft:
-                            y += player == Player.White ? i : -i;
-                            x += player == Player.White ? -i : i;
-                            break;
-                        case Movement.DownRight:
-                            y += player == Player.White ? i : -i;
-                            x += player == Player.White ? i : -i;
-                            break;
-                    }
+                        Movement.Up => (loc.X, loc.Y - moveAmount),
+                        Movement.Down => (loc.X, loc.Y + moveAmount),
+                        Movement.Left => (loc.X - moveAmount, loc.Y),
+                        Movement.Right => (loc.X + moveAmount, loc.Y),
+                        Movement.UpLeft => (loc.X - moveAmount, loc.Y - moveAmount),
+                        Movement.UpRight => (loc.X + moveAmount, loc.Y - moveAmount),
+                        Movement.DownLeft => (loc.X - moveAmount, loc.Y + moveAmount),
+                        Movement.DownRight => (loc.X + moveAmount, loc.Y + moveAmount),
+                        _ => throw new NotSupportedException()
+                    };
 
                     if (y < 0 || y >= BoardHeight)
                         break;
                     if (x < 0 || x >= BoardWidth)
                         break;
 
-                    var existingPiece = _state[x, y];
+                    var existingPiece = _boardState[x, y];
                     if (existingPiece.HasValue)
                     {
                         if (existingPiece.Value.Item1 != player)
@@ -143,5 +128,37 @@ namespace Oracle
 
             return legalMoves;
         }
+
+        // move the piece at startLoc to endLoc
+        //   midLoc is for area-moves
+        public void MakeMove(Player player, (int X, int Y) startLoc, (int X, int Y) endLoc, (int X, int Y)? midLoc = null)
+        {
+            if (CurrentTurn != player)
+                throw new IllegalMoveException();
+
+            var piece = GetPiece(startLoc);
+
+            if (piece == null || piece.Value.Player != player)
+                throw new IllegalMoveException();
+
+            if (!GetLegalMoves(player, piece.Value.Id, startLoc).Contains(endLoc))
+                throw new IllegalMoveException();
+
+            if (midLoc != null)
+            {
+                // capture any piece that got run over by the area-move
+                // todo: test if this is an area mover
+                _boardState[midLoc.Value.X, midLoc.Value.Y] = null;
+            }
+
+            // todo: multi-capture for ranged-capture pieces
+
+            // set new location, this has the effect of removing any piece that was there from the board
+            _boardState[endLoc.X, endLoc.Y] = piece;
+
+            UpdateTurn();
+        }
+
+        public void UpdateTurn() => CurrentTurn = CurrentTurn == Player.White ? Player.Black : Player.White;
     }
 }
