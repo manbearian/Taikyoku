@@ -463,8 +463,8 @@ namespace Oracle
             { PieceIdentity.WindSnappingTurtle,     ("Wind Snapping Turtle",    "風鼈",     "fūbetsu",  null) },
             { PieceIdentity.WhiteHorse,             ("White Horse",             "白駒",     "hakku",    PieceIdentity.GreatHorse) },
             { PieceIdentity.GreatHorse,             ("Great Horse",             "大駒",     "daiku",    null) },
-            { PieceIdentity.LeftHowlingDog,         ("Howling Dog",             "𠵇犬",     "kiken",     PieceIdentity.LeftDog) },
-            { PieceIdentity.RightHowlingDog,        ("Howling Dog",             "𠵇犬",     "kiken",     PieceIdentity.LeftDog) },
+            { PieceIdentity.LeftHowlingDog,         ("Howling Dog",             "𠵇犬",     "kiken",    PieceIdentity.LeftDog) },
+            { PieceIdentity.RightHowlingDog,        ("Howling Dog",             "𠵇犬",     "kiken",    PieceIdentity.LeftDog) },
             { PieceIdentity.RightDog,               ("Right Dog",               "右犬",     "uken",     null) },
             { PieceIdentity.LeftDog,                ("Left Dog",                "左犬",     "saken",    null) },
             { PieceIdentity.SideMover,              ("Side Mover",              "横行",     "ōgyō",     PieceIdentity.FreeBoar) },
@@ -625,4 +625,8 @@ namespace Oracle
 
         public static PieceIdentity? PromotesTo(PieceIdentity id) => _PieceInfo[id].promotesTo;
     }
+
+
+
+
 }
