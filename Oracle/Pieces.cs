@@ -625,8 +625,4 @@ namespace Oracle
 
         public static PieceIdentity? PromotesTo(PieceIdentity id) => _PieceInfo[id].promotesTo;
     }
-
-
-
-
 }

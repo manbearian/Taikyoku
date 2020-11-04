@@ -58,6 +58,10 @@ namespace Oracle
                 _state[i, 25] = (Player.White, PieceIdentity.Pawn);
             }
 
+            // test pieces
+            _state[17, 16] = (Player.White, PieceIdentity.FreeBear);
+            _state[17, 17] = (Player.Black, PieceIdentity.MountainStag);
+
             _state[0, 34] = (Player.White, PieceIdentity.ReverseChariot);
 
             _state[0, 35] = (Player.White, PieceIdentity.Lance);
@@ -82,76 +86,59 @@ namespace Oracle
             var legalMoves = new List<(int X, int Y)>();
             var movement = Movement.GetMovement(id);
 
-            for (int i = 1; i <= movement.StepRange[Movement.Up]; ++i)
+            for (int direction = 0; direction < movement.StepRange.Length; ++direction)
             {
-                var (x, y) = (loc.X, player == Player.White ? loc.Y - i : loc.Y + i);
-
-                if (y < 0 || y >= BoardHeight)
-                    break;
-
-                var existingPiece = _state[x, y];
-                if (existingPiece.HasValue)
+                for (int i = 1; i <= movement.StepRange[direction]; ++i)
                 {
-                    if (existingPiece.Value.Item1 != player)
-                        legalMoves.Add((x, y));
-                    break;
+                    var (x, y) = loc;
+
+                    switch (direction)
+                    {
+                        case Movement.Up:
+                            y += player == Player.White ? -i : i;
+                            break;
+                        case Movement.Down:
+                            y += player == Player.White ? i : -i;
+                            break;
+                        case Movement.Left:
+                            x += player == Player.White ? -i : i;
+                            break;
+                        case Movement.Right:
+                            x += player == Player.White ? i : -i;
+                            break;
+                        case Movement.UpLeft:
+                            y += player == Player.White ? -i : i;
+                            x += player == Player.White ? -i : i;
+                            break;
+                        case Movement.UpRight:
+                            y += player == Player.White ? -i : i;
+                            x += player == Player.White ? i : -i;
+                            break;
+                        case Movement.DownLeft:
+                            y += player == Player.White ? i : -i;
+                            x += player == Player.White ? -i : i;
+                            break;
+                        case Movement.DownRight:
+                            y += player == Player.White ? i : -i;
+                            x += player == Player.White ? i : -i;
+                            break;
+                    }
+
+                    if (y < 0 || y >= BoardHeight)
+                        break;
+                    if (x < 0 || x >= BoardWidth)
+                        break;
+
+                    var existingPiece = _state[x, y];
+                    if (existingPiece.HasValue)
+                    {
+                        if (existingPiece.Value.Item1 != player)
+                            legalMoves.Add((x, y));
+                        break;
+                    }
+
+                    legalMoves.Add((x, y));
                 }
-
-                legalMoves.Add((x, y));
-            }
-
-            for (int i = 1; i <= movement.StepRange[Movement.Down]; ++i)
-            {
-                var (x, y) = (loc.X, player == Player.White ? loc.Y + i : loc.Y - i);
-
-                if (y < 0 || y >= BoardHeight)
-                    break;
-
-                var existingPiece = _state[x, y];
-                if (existingPiece.HasValue)
-                {
-                    if (existingPiece.Value.Item1 != player)
-                        legalMoves.Add((x, y));
-                    break;
-                }
-
-                legalMoves.Add((x, y));
-            }
-
-            for (int i = 1; i <= movement.StepRange[Movement.Left]; ++i)
-            {
-                var (x, y) = (player == Player.White ? loc.X - i : loc.X + i, loc.Y);
-
-                if (x < 0 || x >= BoardWidth)
-                    break;
-
-                var existingPiece = _state[x, y];
-                if (existingPiece.HasValue)
-                {
-                    if (existingPiece.Value.Item1 != player)
-                        legalMoves.Add((x, y));
-                    break;
-                }
-
-                legalMoves.Add((x, y));
-            }
-
-            for (int i = 1; i <= movement.StepRange[Movement.Right]; ++i)
-            {
-                var (x, y) = (player == Player.White ? loc.X + i : loc.X - i, loc.Y);
-
-                if (x < 0 || x >= BoardWidth)
-                    break;
-
-                var existingPiece = _state[x, y];
-                if (existingPiece.HasValue)
-                {
-                    if (existingPiece.Value.Item1 != player)
-                        legalMoves.Add((x, y));
-                    break;
-                }
-
-                legalMoves.Add((x, y));
             }
 
             return legalMoves;
