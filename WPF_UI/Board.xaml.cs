@@ -37,6 +37,8 @@ namespace WPF_UI
 
         public (int X, int Y)? SelectedForInfo { get; set; }
 
+        public bool DisplayFlipped { get => false; } //  get => Game.CurrentPlayer == Player.Black;  <-- this was disorienting, disabled
+
         public Board()
         {
             InitializeComponent();
@@ -44,10 +46,9 @@ namespace WPF_UI
 
         public void SetGame(TaiyokuShogi game) => Game = game;
 
-        public (int X, int Y) GetBoardLoc(Point p) => 
-            Game.CurrentPlayer == Player.White 
-            ? ((int)(p.X / SpaceWidth), (int)(p.Y / SpaceHeight))
-            : (BoardWidth - 1 - (int)(p.X / SpaceWidth), BoardHeight - 1 - (int)(p.Y / SpaceHeight));
+        public (int X, int Y) GetBoardLoc(Point p) =>
+            DisplayFlipped ? (BoardWidth - 1 - (int)(p.X / SpaceWidth), BoardHeight - 1 - (int)(p.Y / SpaceHeight))
+                : ((int)(p.X / SpaceWidth), (int)(p.Y / SpaceHeight));
 
         public Rect BoardLocToRect((int X, int Y) loc) => new Rect(loc.X * SpaceWidth, loc.Y * SpaceHeight, SpaceWidth, SpaceHeight);
 
@@ -175,7 +176,7 @@ namespace WPF_UI
             }
             else if (SelectedForMove == null)
             {
-                SelectedForMove = (x, y);
+                SelectedForMove = piece != null ? (x, y) : null as (int, int)?;
             }
             else
             {
@@ -202,7 +203,8 @@ namespace WPF_UI
         {
             if (Game != null)
             {
-                dc.PushTransform(new RotateTransform((Game.CurrentPlayer == Player.Black) ? 180 : 0, ActualWidth / 2, ActualHeight / 2));
+                // flipping the board on turn exchange is disorienting
+                dc.PushTransform(new RotateTransform(DisplayFlipped ? 180 : 0, ActualWidth / 2, ActualHeight / 2));
                 DrawBoard(dc);
                 DrawPieces(dc);
                 DrawMoves(dc);
