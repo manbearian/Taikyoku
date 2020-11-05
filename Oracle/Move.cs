@@ -42,7 +42,7 @@ namespace Oracle
         //    N > 35 means move unlimited
         public int[] StepRange { get; } = new int[8];
 
-        // 16 states values of 1-N, boolean (true: exact, false: up to), Boolean (slide after)
+        // 16 states values of 1-N, bool (true: exact, false: up to), bool (slide after)
         //    0 means cannot jump that direction (jump matrix)
         //    states 8-15 => 1 can jump there
         //    states 0-7 => 1->N can jump N squares and stop
@@ -64,189 +64,192 @@ namespace Oracle
         public bool[] RangeCapture { get; } = new bool[8];
 
         public int Rank { get; } = 5;
+    }
 
-        public static Movement GetMovement(PieceIdentity id)
+    public static class TaiyokuShogiMoves
+    {
+        public static Movement GetMovement(this TaiyokuShogi game, PieceIdentity id)
         {
             Movement m = new Movement();
             switch (id)
             {
                 case PieceIdentity.Pawn:
-                    m.StepRange[Up] = 1;
+                    m.StepRange[Movement.Up] = 1;
                     break;
 
                 case PieceIdentity.EarthGeneral:
                 case PieceIdentity.GoBetween:
-                    m.StepRange[Up] = 1;
-                    m.StepRange[Down] = 1;
+                    m.StepRange[Movement.Up] = 1;
+                    m.StepRange[Movement.Down] = 1;
                     break;
 
                 case PieceIdentity.StoneGeneral:
-                    m.StepRange[UpLeft] = 1;
-                    m.StepRange[UpRight] = 1;
+                    m.StepRange[Movement.UpLeft] = 1;
+                    m.StepRange[Movement.UpRight] = 1;
                     break;
 
                 case PieceIdentity.IronGeneral:
                 case PieceIdentity.Dog:
-                    m.StepRange[Up] = 1;
-                    m.StepRange[UpLeft] = 1;
-                    m.StepRange[UpRight] = 1;
+                    m.StepRange[Movement.Up] = 1;
+                    m.StepRange[Movement.UpLeft] = 1;
+                    m.StepRange[Movement.UpRight] = 1;
                     break;
 
                 case PieceIdentity.SwoopingOwl:
                 case PieceIdentity.OldRat:
                 case PieceIdentity.StruttingCrow:
-                    m.StepRange[Up] = 1;
-                    m.StepRange[DownLeft] = 1;
-                    m.StepRange[DownRight] = 1;
+                    m.StepRange[Movement.Up] = 1;
+                    m.StepRange[Movement.DownLeft] = 1;
+                    m.StepRange[Movement.DownRight] = 1;
                     break;
 
                 case PieceIdentity.TileGeneral:
                 case PieceIdentity.SwordSoldier:
-                    m.StepRange[UpLeft] = 1;
-                    m.StepRange[UpRight] = 1;
-                    m.StepRange[Down] = 1;
+                    m.StepRange[Movement.UpLeft] = 1;
+                    m.StepRange[Movement.UpRight] = 1;
+                    m.StepRange[Movement.Down] = 1;
                     break;
 
                 case PieceIdentity.CopperGeneral:
                 case PieceIdentity.FlyingGoose:
                 case PieceIdentity.ClimbingMonkey:
-                    m.StepRange[Up] = 1;
-                    m.StepRange[UpLeft] = 1;
-                    m.StepRange[UpRight] = 1;
-                    m.StepRange[Down] = 1;
+                    m.StepRange[Movement.Up] = 1;
+                    m.StepRange[Movement.UpLeft] = 1;
+                    m.StepRange[Movement.UpRight] = 1;
+                    m.StepRange[Movement.Down] = 1;
                     break;
 
                 case PieceIdentity.RecliningDragon:
-                    m.StepRange[Up] = 1;
-                    m.StepRange[Left] = 1;
-                    m.StepRange[Right] = 1;
-                    m.StepRange[Down] = 1;
+                    m.StepRange[Movement.Up] = 1;
+                    m.StepRange[Movement.Left] = 1;
+                    m.StepRange[Movement.Right] = 1;
+                    m.StepRange[Movement.Down] = 1;
                     break;
 
                 case PieceIdentity.CoiledSerpent:
-                    m.StepRange[Up] = 1;
-                    m.StepRange[Down] = 1;
-                    m.StepRange[DownLeft] = 1;
-                    m.StepRange[DownRight] = 1;
+                    m.StepRange[Movement.Up] = 1;
+                    m.StepRange[Movement.Down] = 1;
+                    m.StepRange[Movement.DownLeft] = 1;
+                    m.StepRange[Movement.DownRight] = 1;
                     break;
 
                 case PieceIdentity.FlyingCock:
-                    m.StepRange[Left] = 1;
-                    m.StepRange[Right] = 1;
-                    m.StepRange[UpLeft] = 1;
-                    m.StepRange[UpRight] = 1;
+                    m.StepRange[Movement.Left] = 1;
+                    m.StepRange[Movement.Right] = 1;
+                    m.StepRange[Movement.UpLeft] = 1;
+                    m.StepRange[Movement.UpRight] = 1;
                     break;
 
                 case PieceIdentity.CatSword:
-                    m.StepRange[UpLeft] = 1;
-                    m.StepRange[UpRight] = 1;
-                    m.StepRange[DownLeft] = 1;
-                    m.StepRange[DownRight] = 1;
+                    m.StepRange[Movement.UpLeft] = 1;
+                    m.StepRange[Movement.UpRight] = 1;
+                    m.StepRange[Movement.DownLeft] = 1;
+                    m.StepRange[Movement.DownRight] = 1;
                     break;
 
                 case PieceIdentity.EvilWolf:
-                    m.StepRange[Left] = 1;
-                    m.StepRange[Right] = 1;
-                    m.StepRange[Up] = 1;
-                    m.StepRange[UpLeft] = 1;
-                    m.StepRange[UpRight] = 1;
+                    m.StepRange[Movement.Left] = 1;
+                    m.StepRange[Movement.Right] = 1;
+                    m.StepRange[Movement.Up] = 1;
+                    m.StepRange[Movement.UpLeft] = 1;
+                    m.StepRange[Movement.UpRight] = 1;
                     break;
 
                 case PieceIdentity.SilverGeneral:
                 case PieceIdentity.ViolentStag:
-                    m.StepRange[Up] = 1;
-                    m.StepRange[UpLeft] = 1;
-                    m.StepRange[UpRight] = 1;
-                    m.StepRange[DownLeft] = 1;
-                    m.StepRange[DownRight] = 1;
+                    m.StepRange[Movement.Up] = 1;
+                    m.StepRange[Movement.UpLeft] = 1;
+                    m.StepRange[Movement.UpRight] = 1;
+                    m.StepRange[Movement.DownLeft] = 1;
+                    m.StepRange[Movement.DownRight] = 1;
                     break;
 
                 case PieceIdentity.BlindDog:
                 case PieceIdentity.ChineseCock:
-                    m.StepRange[Left] = 1;
-                    m.StepRange[Right] = 1;
-                    m.StepRange[UpLeft] = 1;
-                    m.StepRange[UpRight] = 1;
-                    m.StepRange[Down] = 1;
+                    m.StepRange[Movement.Left] = 1;
+                    m.StepRange[Movement.Right] = 1;
+                    m.StepRange[Movement.UpLeft] = 1;
+                    m.StepRange[Movement.UpRight] = 1;
+                    m.StepRange[Movement.Down] = 1;
                     break;
 
                 case PieceIdentity.OldMonkey:
-                    m.StepRange[UpLeft] = 1;
-                    m.StepRange[UpRight] = 1;
-                    m.StepRange[Down] = 1;
-                    m.StepRange[DownLeft] = 1;
-                    m.StepRange[DownRight] = 1;
+                    m.StepRange[Movement.UpLeft] = 1;
+                    m.StepRange[Movement.UpRight] = 1;
+                    m.StepRange[Movement.Down] = 1;
+                    m.StepRange[Movement.DownLeft] = 1;
+                    m.StepRange[Movement.DownRight] = 1;
                     break;
 
                 case PieceIdentity.GoldGeneral:
                 case PieceIdentity.ViolentWolf:
-                    m.StepRange[Up] = 1;
-                    m.StepRange[Down] = 1;
-                    m.StepRange[Left] = 1;
-                    m.StepRange[Right] = 1;
-                    m.StepRange[UpLeft] = 1;
-                    m.StepRange[UpRight] = 1;
+                    m.StepRange[Movement.Up] = 1;
+                    m.StepRange[Movement.Down] = 1;
+                    m.StepRange[Movement.Left] = 1;
+                    m.StepRange[Movement.Right] = 1;
+                    m.StepRange[Movement.UpLeft] = 1;
+                    m.StepRange[Movement.UpRight] = 1;
                     break;
 
                 case PieceIdentity.FerociousLeopard:
-                    m.StepRange[Up] = 1;
-                    m.StepRange[Down] = 1;
-                    m.StepRange[UpLeft] = 1;
-                    m.StepRange[UpRight] = 1;
-                    m.StepRange[DownLeft] = 1;
-                    m.StepRange[DownRight] = 1;
+                    m.StepRange[Movement.Up] = 1;
+                    m.StepRange[Movement.Down] = 1;
+                    m.StepRange[Movement.UpLeft] = 1;
+                    m.StepRange[Movement.UpRight] = 1;
+                    m.StepRange[Movement.DownLeft] = 1;
+                    m.StepRange[Movement.DownRight] = 1;
                     break;
 
                 case PieceIdentity.BlindMonkey:
                 case PieceIdentity.BlindBear:
-                    m.StepRange[Left] = 1;
-                    m.StepRange[Right] = 1;
-                    m.StepRange[UpLeft] = 1;
-                    m.StepRange[UpRight] = 1;
-                    m.StepRange[DownLeft] = 1;
-                    m.StepRange[DownRight] = 1;
+                    m.StepRange[Movement.Left] = 1;
+                    m.StepRange[Movement.Right] = 1;
+                    m.StepRange[Movement.UpLeft] = 1;
+                    m.StepRange[Movement.UpRight] = 1;
+                    m.StepRange[Movement.DownLeft] = 1;
+                    m.StepRange[Movement.DownRight] = 1;
                     break;
 
                 case PieceIdentity.DrunkenElephant:
                 case PieceIdentity.NeighboringKing:
                 case PieceIdentity.RushingBoar:
-                    m.StepRange[Up] = 1;
-                    m.StepRange[Left] = 1;
-                    m.StepRange[Right] = 1;
-                    m.StepRange[UpLeft] = 1;
-                    m.StepRange[UpRight] = 1;
-                    m.StepRange[DownLeft] = 1;
-                    m.StepRange[DownRight] = 1;
+                    m.StepRange[Movement.Up] = 1;
+                    m.StepRange[Movement.Left] = 1;
+                    m.StepRange[Movement.Right] = 1;
+                    m.StepRange[Movement.UpLeft] = 1;
+                    m.StepRange[Movement.UpRight] = 1;
+                    m.StepRange[Movement.DownLeft] = 1;
+                    m.StepRange[Movement.DownRight] = 1;
                     break;
 
                 case PieceIdentity.Deva:
-                    m.StepRange[Up] = 1;
-                    m.StepRange[Down] = 1;
-                    m.StepRange[Left] = 1;
-                    m.StepRange[Right] = 1;
-                    m.StepRange[UpLeft] = 1;
-                    m.StepRange[DownLeft] = 1;
-                    m.StepRange[DownRight] = 1;
+                    m.StepRange[Movement.Up] = 1;
+                    m.StepRange[Movement.Down] = 1;
+                    m.StepRange[Movement.Left] = 1;
+                    m.StepRange[Movement.Right] = 1;
+                    m.StepRange[Movement.UpLeft] = 1;
+                    m.StepRange[Movement.DownLeft] = 1;
+                    m.StepRange[Movement.DownRight] = 1;
                     break;
 
                 case PieceIdentity.DarkSpirit:
-                    m.StepRange[Up] = 1;
-                    m.StepRange[Down] = 1;
-                    m.StepRange[Left] = 1;
-                    m.StepRange[Right] = 1;
-                    m.StepRange[UpRight] = 1;
-                    m.StepRange[DownLeft] = 1;
-                    m.StepRange[DownRight] = 1;
+                    m.StepRange[Movement.Up] = 1;
+                    m.StepRange[Movement.Down] = 1;
+                    m.StepRange[Movement.Left] = 1;
+                    m.StepRange[Movement.Right] = 1;
+                    m.StepRange[Movement.UpRight] = 1;
+                    m.StepRange[Movement.DownLeft] = 1;
+                    m.StepRange[Movement.DownRight] = 1;
                     break;
 
                 case PieceIdentity.BlindTiger:
-                    m.StepRange[Down] = 1;
-                    m.StepRange[Left] = 1;
-                    m.StepRange[Right] = 1;
-                    m.StepRange[UpLeft] = 1;
-                    m.StepRange[UpRight] = 1;
-                    m.StepRange[DownLeft] = 1;
-                    m.StepRange[DownRight] = 1;
+                    m.StepRange[Movement.Down] = 1;
+                    m.StepRange[Movement.Left] = 1;
+                    m.StepRange[Movement.Right] = 1;
+                    m.StepRange[Movement.UpLeft] = 1;
+                    m.StepRange[Movement.UpRight] = 1;
+                    m.StepRange[Movement.DownLeft] = 1;
+                    m.StepRange[Movement.DownRight] = 1;
                     break;
 
                 case PieceIdentity.Prince:
@@ -254,341 +257,343 @@ namespace Oracle
                 case PieceIdentity.RightGeneral:
                 case PieceIdentity.BearsEyes:
                 case PieceIdentity.VenomousWolf:
-                    m.StepRange[Up] = 1;
-                    m.StepRange[Down] = 1;
-                    m.StepRange[Left] = 1;
-                    m.StepRange[Right] = 1;
-                    m.StepRange[UpLeft] = 1;
-                    m.StepRange[UpRight] = 1;
-                    m.StepRange[DownLeft] = 1;
-                    m.StepRange[DownRight] = 1;
+                    m.StepRange[Movement.Up] = 1;
+                    m.StepRange[Movement.Down] = 1;
+                    m.StepRange[Movement.Left] = 1;
+                    m.StepRange[Movement.Right] = 1;
+                    m.StepRange[Movement.UpLeft] = 1;
+                    m.StepRange[Movement.UpRight] = 1;
+                    m.StepRange[Movement.DownLeft] = 1;
+                    m.StepRange[Movement.DownRight] = 1;
                     break;
 
                 case PieceIdentity.WoodGeneral:
-                    m.StepRange[UpLeft] = 2;
-                    m.StepRange[UpRight] = 2;
+                    m.StepRange[Movement.UpLeft] = 2;
+                    m.StepRange[Movement.UpRight] = 2;
                     break;
 
                 case PieceIdentity.Donkey:
                 case PieceIdentity.EnchantedBadger:
-                    m.StepRange[Up] = 2;
-                    m.StepRange[Down] = 2;
-                    m.StepRange[Left] = 2;
-                    m.StepRange[Right] = 2;
+                    m.StepRange[Movement.Up] = 2;
+                    m.StepRange[Movement.Down] = 2;
+                    m.StepRange[Movement.Left] = 2;
+                    m.StepRange[Movement.Right] = 2;
                     break;
 
                 case PieceIdentity.FlyingHorse:
-                    m.StepRange[UpLeft] = 2;
-                    m.StepRange[UpRight] = 2;
-                    m.StepRange[DownLeft] = 2;
-                    m.StepRange[DownRight] = 2;
+                    m.StepRange[Movement.UpLeft] = 2;
+                    m.StepRange[Movement.UpRight] = 2;
+                    m.StepRange[Movement.DownLeft] = 2;
+                    m.StepRange[Movement.DownRight] = 2;
                     break;
 
                 case PieceIdentity.BeastCadet:
-                    m.StepRange[Up] = 2;
-                    m.StepRange[Left] = 2;
-                    m.StepRange[Right] = 2;
-                    m.StepRange[UpLeft] = 2;
-                    m.StepRange[UpRight] = 2;
-                    m.StepRange[DownLeft] = 2;
-                    m.StepRange[DownRight] = 2;
+                    m.StepRange[Movement.Up] = 2;
+                    m.StepRange[Movement.Left] = 2;
+                    m.StepRange[Movement.Right] = 2;
+                    m.StepRange[Movement.UpLeft] = 2;
+                    m.StepRange[Movement.UpRight] = 2;
+                    m.StepRange[Movement.DownLeft] = 2;
+                    m.StepRange[Movement.DownRight] = 2;
                     break;
 
                 case PieceIdentity.King:
                 case PieceIdentity.FragrantElephant:
                 case PieceIdentity.WhiteElephant:
-                    m.StepRange[Up] = 2;
-                    m.StepRange[Down] = 2;
-                    m.StepRange[Left] = 2;
-                    m.StepRange[Right] = 2;
-                    m.StepRange[UpLeft] = 2;
-                    m.StepRange[UpRight] = 2;
-                    m.StepRange[DownLeft] = 2;
-                    m.StepRange[DownRight] = 2;
+                    m.StepRange[Movement.Up] = 2;
+                    m.StepRange[Movement.Down] = 2;
+                    m.StepRange[Movement.Left] = 2;
+                    m.StepRange[Movement.Right] = 2;
+                    m.StepRange[Movement.UpLeft] = 2;
+                    m.StepRange[Movement.UpRight] = 2;
+                    m.StepRange[Movement.DownLeft] = 2;
+                    m.StepRange[Movement.DownRight] = 2;
                     break;
 
                 case PieceIdentity.RushingBird:
-                    m.StepRange[Up] = 2;
-                    m.StepRange[Left] = 1;
-                    m.StepRange[Right] = 1;
-                    m.StepRange[UpLeft] = 1;
-                    m.StepRange[UpRight] = 1;
-                    m.StepRange[DownLeft] = 1;
-                    m.StepRange[DownRight] = 1;
+                    m.StepRange[Movement.Up] = 2;
+                    m.StepRange[Movement.Left] = 1;
+                    m.StepRange[Movement.Right] = 1;
+                    m.StepRange[Movement.UpLeft] = 1;
+                    m.StepRange[Movement.UpRight] = 1;
+                    m.StepRange[Movement.DownLeft] = 1;
+                    m.StepRange[Movement.DownRight] = 1;
                     break;
 
                 case PieceIdentity.AngryBoar:
-                    m.StepRange[Up] = 1;
-                    m.StepRange[Left] = 1;
-                    m.StepRange[Right] = 1;
-                    m.StepRange[UpLeft] = 2;
-                    m.StepRange[UpRight] = 2;
+                    m.StepRange[Movement.Up] = 1;
+                    m.StepRange[Movement.Left] = 1;
+                    m.StepRange[Movement.Right] = 1;
+                    m.StepRange[Movement.UpLeft] = 2;
+                    m.StepRange[Movement.UpRight] = 2;
                     break;
 
                 case PieceIdentity.ViolentBear:
-#if true
-                    m.StepRange[Up] = 1;
-                    m.StepRange[Left] = 1;
-                    m.StepRange[Right] = 1;
-                    m.StepRange[UpLeft] = 2;
-                    m.StepRange[UpRight] = 2;
-#else
-                    // alternatively... 
-                    m.StepRange[Left] = 1;
-                    m.StepRange[Right] = 1;
-                    m.StepRange[UpLeft] = 2;
-                    m.StepRange[UpRight] = 2;
-                    m.StepRange[DownLeft] = 1;
-                    m.StepRange[DownRight] = 1;
-#endif
+                    if ((game.Options & TaiyokuShogiOptions.ViolentBearAlternative) == 0)
+                    {
+                        m.StepRange[Movement.Up] = 1;
+                        m.StepRange[Movement.Left] = 1;
+                        m.StepRange[Movement.Right] = 1;
+                        m.StepRange[Movement.UpLeft] = 2;
+                        m.StepRange[Movement.UpRight] = 2;
+                    }
+                    else
+                    {
+                        m.StepRange[Movement.Left] = 1;
+                        m.StepRange[Movement.Right] = 1;
+                        m.StepRange[Movement.UpLeft] = 2;
+                        m.StepRange[Movement.UpRight] = 2;
+                        m.StepRange[Movement.DownLeft] = 1;
+                        m.StepRange[Movement.DownRight] = 1;
+                    }
                     break;
 
                 case PieceIdentity.EasternBarbarian:
                 case PieceIdentity.WesternBarbarian:
-                    m.StepRange[Up] = 2;
-                    m.StepRange[Down] = 2;
-                    m.StepRange[Left] = 1;
-                    m.StepRange[Right] = 1;
-                    m.StepRange[UpLeft] = 1;
-                    m.StepRange[UpRight] = 1;
+                    m.StepRange[Movement.Up] = 2;
+                    m.StepRange[Movement.Down] = 2;
+                    m.StepRange[Movement.Left] = 1;
+                    m.StepRange[Movement.Right] = 1;
+                    m.StepRange[Movement.UpLeft] = 1;
+                    m.StepRange[Movement.UpRight] = 1;
                     break;
 
                 case PieceIdentity.NorthernBarbarian:
                 case PieceIdentity.SouthernBarbarian:
                 case PieceIdentity.PrancingStag:
-                    m.StepRange[Up] = 1;
-                    m.StepRange[Down] = 1;
-                    m.StepRange[Left] = 2;
-                    m.StepRange[Right] = 2;
-                    m.StepRange[UpLeft] = 1;
-                    m.StepRange[UpRight] = 1;
+                    m.StepRange[Movement.Up] = 1;
+                    m.StepRange[Movement.Down] = 1;
+                    m.StepRange[Movement.Left] = 2;
+                    m.StepRange[Movement.Right] = 2;
+                    m.StepRange[Movement.UpLeft] = 1;
+                    m.StepRange[Movement.UpRight] = 1;
                     break;
 
                 case PieceIdentity.PoisonousSnake:
-                    m.StepRange[Up] = 2;
-                    m.StepRange[Down] = 1;
-                    m.StepRange[Left] = 2;
-                    m.StepRange[Right] = 2;
-                    m.StepRange[UpLeft] = 1;
-                    m.StepRange[UpRight] = 1;
+                    m.StepRange[Movement.Up] = 2;
+                    m.StepRange[Movement.Down] = 1;
+                    m.StepRange[Movement.Left] = 2;
+                    m.StepRange[Movement.Right] = 2;
+                    m.StepRange[Movement.UpLeft] = 1;
+                    m.StepRange[Movement.UpRight] = 1;
                     break;
 
                 case PieceIdentity.OldKite:
-                    m.StepRange[Left] = 1;
-                    m.StepRange[Right] = 1;
-                    m.StepRange[DownLeft] = 2;
-                    m.StepRange[DownRight] = 2;
-                    m.StepRange[UpLeft] = 2;
-                    m.StepRange[UpRight] = 2;
+                    m.StepRange[Movement.Left] = 1;
+                    m.StepRange[Movement.Right] = 1;
+                    m.StepRange[Movement.DownLeft] = 2;
+                    m.StepRange[Movement.DownRight] = 2;
+                    m.StepRange[Movement.UpLeft] = 2;
+                    m.StepRange[Movement.UpRight] = 2;
                     break;
 
                 case PieceIdentity.FierceEagle:
-                    m.StepRange[Up] = 1;
-                    m.StepRange[Left] = 1;
-                    m.StepRange[Right] = 1;
-                    m.StepRange[DownLeft] = 2;
-                    m.StepRange[DownRight] = 2;
-                    m.StepRange[UpLeft] = 2;
-                    m.StepRange[UpRight] = 2;
+                    m.StepRange[Movement.Up] = 1;
+                    m.StepRange[Movement.Left] = 1;
+                    m.StepRange[Movement.Right] = 1;
+                    m.StepRange[Movement.DownLeft] = 2;
+                    m.StepRange[Movement.DownRight] = 2;
+                    m.StepRange[Movement.UpLeft] = 2;
+                    m.StepRange[Movement.UpRight] = 2;
                     break;
 
                 case PieceIdentity.GuardianOfTheGods:
-                    m.StepRange[Up] = 3;
-                    m.StepRange[Down] = 3;
-                    m.StepRange[Left] = 3;
-                    m.StepRange[Right] = 3;
+                    m.StepRange[Movement.Up] = 3;
+                    m.StepRange[Movement.Down] = 3;
+                    m.StepRange[Movement.Left] = 3;
+                    m.StepRange[Movement.Right] = 3;
                     break;
 
                 case PieceIdentity.Wrestler:
-                    m.StepRange[UpLeft] = 3;
-                    m.StepRange[UpRight] = 3;
-                    m.StepRange[DownLeft] = 3;
-                    m.StepRange[DownRight] = 3;
+                    m.StepRange[Movement.UpLeft] = 3;
+                    m.StepRange[Movement.UpRight] = 3;
+                    m.StepRange[Movement.DownLeft] = 3;
+                    m.StepRange[Movement.DownRight] = 3;
                     break;
 
                 case PieceIdentity.CaptiveCadet:
-                    m.StepRange[Up] = 3;
-                    m.StepRange[Left] = 3;
-                    m.StepRange[Right] = 3;
-                    m.StepRange[UpLeft] = 3;
-                    m.StepRange[UpRight] = 3;
-                    m.StepRange[DownLeft] = 3;
-                    m.StepRange[DownRight] = 3;
+                    m.StepRange[Movement.Up] = 3;
+                    m.StepRange[Movement.Left] = 3;
+                    m.StepRange[Movement.Right] = 3;
+                    m.StepRange[Movement.UpLeft] = 3;
+                    m.StepRange[Movement.UpRight] = 3;
+                    m.StepRange[Movement.DownLeft] = 3;
+                    m.StepRange[Movement.DownRight] = 3;
                     break;
 
                 case PieceIdentity.HorseGeneral:
                 case PieceIdentity.OxGeneral:
-                    m.StepRange[Up] = 3;
-                    m.StepRange[Down] = 1;
-                    m.StepRange[UpLeft] = 1;
-                    m.StepRange[UpRight] = 1;
+                    m.StepRange[Movement.Up] = 3;
+                    m.StepRange[Movement.Down] = 1;
+                    m.StepRange[Movement.UpLeft] = 1;
+                    m.StepRange[Movement.UpRight] = 1;
                     break;
 
                 case PieceIdentity.FireGeneral:
-                    m.StepRange[Up] = 3;
-                    m.StepRange[Down] = 3;
-                    m.StepRange[UpLeft] = 1;
-                    m.StepRange[UpRight] = 1;
+                    m.StepRange[Movement.Up] = 3;
+                    m.StepRange[Movement.Down] = 3;
+                    m.StepRange[Movement.UpLeft] = 1;
+                    m.StepRange[Movement.UpRight] = 1;
                     break;
 
                 case PieceIdentity.WaterGeneral:
-                    m.StepRange[Up] = 1;
-                    m.StepRange[Down] = 1;
-                    m.StepRange[UpLeft] = 3;
-                    m.StepRange[UpRight] = 3;
+                    m.StepRange[Movement.Up] = 1;
+                    m.StepRange[Movement.Down] = 1;
+                    m.StepRange[Movement.UpLeft] = 3;
+                    m.StepRange[Movement.UpRight] = 3;
                     break;
 
                 case PieceIdentity.BuddhistDevil:
-                    m.StepRange[Down] = 1;
-                    m.StepRange[Left] = 1;
-                    m.StepRange[Right] = 1;
-                    m.StepRange[UpLeft] = 3;
-                    m.StepRange[UpRight] = 3;
+                    m.StepRange[Movement.Down] = 1;
+                    m.StepRange[Movement.Left] = 1;
+                    m.StepRange[Movement.Right] = 1;
+                    m.StepRange[Movement.UpLeft] = 3;
+                    m.StepRange[Movement.UpRight] = 3;
                     break;
 
                 case PieceIdentity.WindGeneral:
                 case PieceIdentity.RiverGeneral:
-                    m.StepRange[Up] = 3;
-                    m.StepRange[Down] = 1;
-                    m.StepRange[UpLeft] = 1;
-                    m.StepRange[UpRight] = 1;
+                    m.StepRange[Movement.Up] = 3;
+                    m.StepRange[Movement.Down] = 1;
+                    m.StepRange[Movement.UpLeft] = 1;
+                    m.StepRange[Movement.UpRight] = 1;
                     break;
 
                 case PieceIdentity.Yaksha:
-                    m.StepRange[Left] = 3;
-                    m.StepRange[Right] = 3;
-                    m.StepRange[Down] = 1;
-                    m.StepRange[UpLeft] = 1;
-                    m.StepRange[UpRight] = 1;
+                    m.StepRange[Movement.Left] = 3;
+                    m.StepRange[Movement.Right] = 3;
+                    m.StepRange[Movement.Down] = 1;
+                    m.StepRange[Movement.UpLeft] = 1;
+                    m.StepRange[Movement.UpRight] = 1;
                     break;
 
                 case PieceIdentity.SwordGeneral:
-                    m.StepRange[Up] = 3;
-                    m.StepRange[Down] = 1;
-                    m.StepRange[UpLeft] = 3;
-                    m.StepRange[UpRight] = 3;
+                    m.StepRange[Movement.Up] = 3;
+                    m.StepRange[Movement.Down] = 1;
+                    m.StepRange[Movement.UpLeft] = 3;
+                    m.StepRange[Movement.UpRight] = 3;
                     break;
 
                 case PieceIdentity.CaptiveOfficer:
-                    m.StepRange[Up] = 2;
-                    m.StepRange[Left] = 2;
-                    m.StepRange[Right] = 2;
-                    m.StepRange[UpLeft] = 3;
-                    m.StepRange[UpRight] = 3;
-                    m.StepRange[DownLeft] = 3;
-                    m.StepRange[DownRight] = 3;
+                    m.StepRange[Movement.Up] = 2;
+                    m.StepRange[Movement.Left] = 2;
+                    m.StepRange[Movement.Right] = 2;
+                    m.StepRange[Movement.UpLeft] = 3;
+                    m.StepRange[Movement.UpRight] = 3;
+                    m.StepRange[Movement.DownLeft] = 3;
+                    m.StepRange[Movement.DownRight] = 3;
                     break;
 
                 case PieceIdentity.BeastOfficer:
-                    m.StepRange[Up] = 3;
-                    m.StepRange[Left] = 2;
-                    m.StepRange[Right] = 2;
-                    m.StepRange[UpLeft] = 3;
-                    m.StepRange[UpRight] = 3;
-                    m.StepRange[DownLeft] = 3;
-                    m.StepRange[DownRight] = 3;
+                    m.StepRange[Movement.Up] = 3;
+                    m.StepRange[Movement.Left] = 2;
+                    m.StepRange[Movement.Right] = 2;
+                    m.StepRange[Movement.UpLeft] = 3;
+                    m.StepRange[Movement.UpRight] = 3;
+                    m.StepRange[Movement.DownLeft] = 3;
+                    m.StepRange[Movement.DownRight] = 3;
                     break;
 
                 case PieceIdentity.HeavenlyTetrarch:
-                    m.StepRange[Up] = 4;
-                    m.StepRange[Down] = 4;
-                    m.StepRange[Left] = 4;
-                    m.StepRange[Right] = 4;
-                    m.StepRange[UpLeft] = 4;
-                    m.StepRange[UpRight] = 4;
-                    m.StepRange[DownLeft] = 4;
-                    m.StepRange[DownRight] = 4;
+                    m.StepRange[Movement.Up] = 4;
+                    m.StepRange[Movement.Down] = 4;
+                    m.StepRange[Movement.Left] = 4;
+                    m.StepRange[Movement.Right] = 4;
+                    m.StepRange[Movement.UpLeft] = 4;
+                    m.StepRange[Movement.UpRight] = 4;
+                    m.StepRange[Movement.DownLeft] = 4;
+                    m.StepRange[Movement.DownRight] = 4;
                     break;
 
                 case PieceIdentity.ChickenGeneral:
                 case PieceIdentity.PupGeneral:
-                    m.StepRange[Up] = 4;
-                    m.StepRange[DownLeft] = 1;
-                    m.StepRange[DownRight] = 1;
+                    m.StepRange[Movement.Up] = 4;
+                    m.StepRange[Movement.DownLeft] = 1;
+                    m.StepRange[Movement.DownRight] = 1;
                     break;
 
                 case PieceIdentity.PigGeneral:
-                    m.StepRange[Down] = 2;
-                    m.StepRange[UpLeft] = 4;
-                    m.StepRange[UpRight] = 4;
+                    m.StepRange[Movement.Down] = 2;
+                    m.StepRange[Movement.UpLeft] = 4;
+                    m.StepRange[Movement.UpRight] = 4;
                     break;
 
                 case PieceIdentity.MountainStag:
-                    m.StepRange[Up] = 1;
-                    m.StepRange[Left] = 2;
-                    m.StepRange[Right] = 2;
-                    m.StepRange[Down] = 4;
-                    m.StepRange[UpLeft] = 3;
-                    m.StepRange[UpRight] = 3;
+                    m.StepRange[Movement.Up] = 1;
+                    m.StepRange[Movement.Left] = 2;
+                    m.StepRange[Movement.Right] = 2;
+                    m.StepRange[Movement.Down] = 4;
+                    m.StepRange[Movement.UpLeft] = 3;
+                    m.StepRange[Movement.UpRight] = 3;
                     break;
 
                 case PieceIdentity.LeopardKing:
-                    m.StepRange[Up] = 5;
-                    m.StepRange[Down] = 5;
-                    m.StepRange[Left] = 5;
-                    m.StepRange[Right] = 5;
-                    m.StepRange[UpLeft] = 5;
-                    m.StepRange[UpRight] = 5;
-                    m.StepRange[DownLeft] = 5;
-                    m.StepRange[DownRight] = 5;
+                    m.StepRange[Movement.Up] = 5;
+                    m.StepRange[Movement.Down] = 5;
+                    m.StepRange[Movement.Left] = 5;
+                    m.StepRange[Movement.Right] = 5;
+                    m.StepRange[Movement.UpLeft] = 5;
+                    m.StepRange[Movement.UpRight] = 5;
+                    m.StepRange[Movement.DownLeft] = 5;
+                    m.StepRange[Movement.DownRight] = 5;
                     break;
 
                 case PieceIdentity.TurtleDove:
-                    m.StepRange[Down] = 1;
-                    m.StepRange[Left] = 1;
-                    m.StepRange[Right] = 1;
-                    m.StepRange[UpLeft] = 5;
-                    m.StepRange[UpRight] = 5;
+                    m.StepRange[Movement.Down] = 1;
+                    m.StepRange[Movement.Left] = 1;
+                    m.StepRange[Movement.Right] = 1;
+                    m.StepRange[Movement.UpLeft] = 5;
+                    m.StepRange[Movement.UpRight] = 5;
                     break;
 
                 case PieceIdentity.CrossbowSoldier:
-                    m.StepRange[Up] = 5;
-                    m.StepRange[Down] = 1;
-                    m.StepRange[Left] = 3;
-                    m.StepRange[Right] = 3;
-                    m.StepRange[UpLeft] = 3;
-                    m.StepRange[UpRight] = 3;
+                    m.StepRange[Movement.Up] = 5;
+                    m.StepRange[Movement.Down] = 1;
+                    m.StepRange[Movement.Left] = 3;
+                    m.StepRange[Movement.Right] = 3;
+                    m.StepRange[Movement.UpLeft] = 3;
+                    m.StepRange[Movement.UpRight] = 3;
                     break;
 
                 case PieceIdentity.BurningSoldier:
-                    m.StepRange[Up] = 7;
-                    m.StepRange[Down] = 1;
-                    m.StepRange[Left] = 3;
-                    m.StepRange[Right] = 3;
-                    m.StepRange[UpLeft] = 5;
-                    m.StepRange[UpRight] = 5;
+                    m.StepRange[Movement.Up] = 7;
+                    m.StepRange[Movement.Down] = 1;
+                    m.StepRange[Movement.Left] = 3;
+                    m.StepRange[Movement.Right] = 3;
+                    m.StepRange[Movement.UpLeft] = 5;
+                    m.StepRange[Movement.UpRight] = 5;
                     break;
 
                 case PieceIdentity.Lance:
                 case PieceIdentity.OxCart:
                 case PieceIdentity.SavageTiger:
-                    m.StepRange[Up] = FullRange;
+                    m.StepRange[Movement.Up] = Movement.FullRange;
                     break;
 
                 case PieceIdentity.ReverseChariot:
-                    m.StepRange[Up] = FullRange;
-                    m.StepRange[Down] = FullRange;
+                    m.StepRange[Movement.Up] = Movement.FullRange;
+                    m.StepRange[Movement.Down] = Movement.FullRange;
                     break;
 
                 case PieceIdentity.SideDragon:
-                    m.StepRange[Up] = FullRange;
-                    m.StepRange[Left] = FullRange;
-                    m.StepRange[Right] = FullRange;
+                    m.StepRange[Movement.Up] = Movement.FullRange;
+                    m.StepRange[Movement.Left] = Movement.FullRange;
+                    m.StepRange[Movement.Right] = Movement.FullRange;
                     break;
 
                 case PieceIdentity.MountainWitch:
-                    m.StepRange[Down] = FullRange;
-                    m.StepRange[DownLeft] = FullRange;
-                    m.StepRange[DownRight] = FullRange;
+                    m.StepRange[Movement.Down] = Movement.FullRange;
+                    m.StepRange[Movement.DownLeft] = Movement.FullRange;
+                    m.StepRange[Movement.DownRight] = Movement.FullRange;
                     break;
 
                 case PieceIdentity.WhiteHorse:
                 case PieceIdentity.BirdOfParadise:
                 case PieceIdentity.MultiGeneral:
-                    m.StepRange[Up] = FullRange;
-                    m.StepRange[Down] = FullRange;
-                    m.StepRange[UpLeft] = FullRange;
-                    m.StepRange[UpRight] = FullRange;
+                    m.StepRange[Movement.Up] = Movement.FullRange;
+                    m.StepRange[Movement.Down] = Movement.FullRange;
+                    m.StepRange[Movement.UpLeft] = Movement.FullRange;
+                    m.StepRange[Movement.UpRight] = Movement.FullRange;
                     break;
 
                 case PieceIdentity.Rook:
@@ -596,55 +601,55 @@ namespace Oracle
                 case PieceIdentity.RunningChariot:
                 case PieceIdentity.SquareMover:
                 case PieceIdentity.GlidingSwallow:
-                    m.StepRange[Up] = FullRange;
-                    m.StepRange[Down] = FullRange;
-                    m.StepRange[Left] = FullRange;
-                    m.StepRange[Right] = FullRange;
+                    m.StepRange[Movement.Up] = Movement.FullRange;
+                    m.StepRange[Movement.Down] = Movement.FullRange;
+                    m.StepRange[Movement.Left] = Movement.FullRange;
+                    m.StepRange[Movement.Right] = Movement.FullRange;
                     break;
 
                 case PieceIdentity.FreeSerpent:
                 case PieceIdentity.CoiledDragon:
                 case PieceIdentity.Whale:
-                    m.StepRange[Up] = FullRange;
-                    m.StepRange[Down] = FullRange;
-                    m.StepRange[DownLeft] = FullRange;
-                    m.StepRange[DownRight] = FullRange;
+                    m.StepRange[Movement.Up] = Movement.FullRange;
+                    m.StepRange[Movement.Down] = Movement.FullRange;
+                    m.StepRange[Movement.DownLeft] = Movement.FullRange;
+                    m.StepRange[Movement.DownRight] = Movement.FullRange;
                     break;
 
                 case PieceIdentity.Bishop:
-                    m.StepRange[UpLeft] = FullRange;
-                    m.StepRange[UpRight] = FullRange;
-                    m.StepRange[DownLeft] = FullRange;
-                    m.StepRange[DownRight] = FullRange;
+                    m.StepRange[Movement.UpLeft] = Movement.FullRange;
+                    m.StepRange[Movement.UpRight] = Movement.FullRange;
+                    m.StepRange[Movement.DownLeft] = Movement.FullRange;
+                    m.StepRange[Movement.DownRight] = Movement.FullRange;
                     break;
 
                 case PieceIdentity.FreeWolf:
                 case PieceIdentity.RunningLeopard:
-                    m.StepRange[Up] = FullRange;
-                    m.StepRange[Left] = FullRange;
-                    m.StepRange[Right] = FullRange;
-                    m.StepRange[UpLeft] = FullRange;
-                    m.StepRange[UpRight] = FullRange;
+                    m.StepRange[Movement.Up] = Movement.FullRange;
+                    m.StepRange[Movement.Left] = Movement.FullRange;
+                    m.StepRange[Movement.Right] = Movement.FullRange;
+                    m.StepRange[Movement.UpLeft] = Movement.FullRange;
+                    m.StepRange[Movement.UpRight] = Movement.FullRange;
                     break;
 
                 case PieceIdentity.WizardStork:
-                    m.StepRange[Left] = FullRange;
-                    m.StepRange[Right] = FullRange;
-                    m.StepRange[Down] = FullRange;
-                    m.StepRange[UpLeft] = FullRange;
-                    m.StepRange[UpRight] = FullRange;
+                    m.StepRange[Movement.Left] = Movement.FullRange;
+                    m.StepRange[Movement.Right] = Movement.FullRange;
+                    m.StepRange[Movement.Down] = Movement.FullRange;
+                    m.StepRange[Movement.UpLeft] = Movement.FullRange;
+                    m.StepRange[Movement.UpRight] = Movement.FullRange;
                     break;
 
                 case PieceIdentity.FlyingOx:
                 case PieceIdentity.FreeBear:
                 case PieceIdentity.FreeLeopard:
                 case PieceIdentity.GreatWhale:
-                    m.StepRange[Up] = FullRange;
-                    m.StepRange[Down] = FullRange;
-                    m.StepRange[UpLeft] = FullRange;
-                    m.StepRange[UpRight] = FullRange;
-                    m.StepRange[DownLeft] = FullRange;
-                    m.StepRange[DownRight] = FullRange;
+                    m.StepRange[Movement.Up] = Movement.FullRange;
+                    m.StepRange[Movement.Down] = Movement.FullRange;
+                    m.StepRange[Movement.UpLeft] = Movement.FullRange;
+                    m.StepRange[Movement.UpRight] = Movement.FullRange;
+                    m.StepRange[Movement.DownLeft] = Movement.FullRange;
+                    m.StepRange[Movement.DownRight] = Movement.FullRange;
                     break;
             }
 

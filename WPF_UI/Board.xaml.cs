@@ -46,27 +46,35 @@ namespace WPF_UI
 
         public void SetGame(TaiyokuShogi game) => Game = game;
 
-        public (int X, int Y) GetBoardLoc(Point p) =>
-            DisplayFlipped ? (BoardWidth - 1 - (int)(p.X / SpaceWidth), BoardHeight - 1 - (int)(p.Y / SpaceHeight))
-                : ((int)(p.X / SpaceWidth), (int)(p.Y / SpaceHeight));
+        public (int X, int Y)? GetBoardLoc(Point p)
+        {
+            var (x, y) =  DisplayFlipped ?
+                (BoardWidth - 1 - (int)(p.X / SpaceWidth), BoardHeight - 1 - (int)(p.Y / SpaceHeight))
+                    : ((int)(p.X / SpaceWidth), (int)(p.Y / SpaceHeight));
+
+            return (x < 0 || x >= BoardWidth || y < 0 || y >= BoardHeight) ? null as (int,int)? : (x, y);
+        }
 
         public Rect BoardLocToRect((int X, int Y) loc) => new Rect(loc.X * SpaceWidth, loc.Y * SpaceHeight, SpaceWidth, SpaceHeight);
 
         protected override void OnMouseMove(MouseEventArgs e)
         {
-            var (x, y) = GetBoardLoc(e.GetPosition(this));
+            var loc = GetBoardLoc(e.GetPosition(this));
 
             // short-circuit if already processed
-            if (SelectedForInfo == (x, y))
+            if (SelectedForInfo == loc)
                 return;
 
-            SelectedForInfo = (x, y);
             ToolTip = null;
+            SelectedForInfo = loc;
 
-            var piece = Game.GetPiece(x, y);
+            if (loc == null)
+                return;
+
+            var piece = Game.GetPiece(loc.Value);
             if (piece != null)
             {
-                var moves = Movement.GetMovement(piece.Value.Id);
+                var moves = Game.GetMovement(piece.Value.Id);
 
                 var layoutGrid = new Grid();
                 layoutGrid.MinWidth = 50.0;
@@ -167,30 +175,34 @@ namespace WPF_UI
 
         protected override void OnMouseLeftButtonUp(MouseButtonEventArgs e)
         {
-            var (x, y) = GetBoardLoc(e.GetPosition(this));
-            var piece = Game.GetPiece(x, y);
+            var loc = GetBoardLoc(e.GetPosition(this));
 
-            if (SelectedForMove == (x, y))
+            if (loc == null)
+                return;
+
+            var piece = Game.GetPiece(loc.Value);
+
+            if (SelectedForMove == loc)
             {
                 SelectedForMove = null;
             }
             else if (SelectedForMove == null)
             {
-                SelectedForMove = piece != null ? (x, y) : null as (int, int)?;
+                SelectedForMove = piece != null ? loc : null;
             }
             else
             {
                 var selectedPiece = Game.GetPiece(SelectedForMove.Value).Value;
 
                 if (selectedPiece.Owner == Game.CurrentPlayer
-                    && Game.GetLegalMoves(selectedPiece.Owner, selectedPiece.Id, SelectedForMove.Value).Contains((x, y)))
+                    && Game.GetLegalMoves(selectedPiece.Owner, selectedPiece.Id, SelectedForMove.Value).Contains(loc.Value))
                 {
-                    Game.MakeMove(SelectedForMove.Value, (x, y));
+                    Game.MakeMove(SelectedForMove.Value, loc.Value);
                     SelectedForMove = null;
                 }
                 else
                 {
-                    SelectedForMove = piece != null ? (x, y) : null as (int, int)?;
+                    SelectedForMove = piece != null ? loc : null;
                 }
             }
 
@@ -233,7 +245,7 @@ namespace WPF_UI
                 {
                     for (int j = 0; j < BoardHeight; ++j)
                     {
-                        var piece = Game.GetPiece(i, j);
+                        var piece = Game.GetPiece((i, j));
 
                         if (piece != null)
                         {
@@ -247,6 +259,10 @@ namespace WPF_UI
             {
                 var spaceWidth = ActualWidth / BoardWidth;
                 var spaceHeight = ActualHeight / BoardHeight;
+
+                // we need at least 1 px to draw anything
+                if (spaceWidth == 0 || spaceHeight == 0)
+                    return;
 
                 dc.PushTransform(new TranslateTransform(spaceWidth * loc.X, spaceHeight * loc.Y));
                 dc.PushTransform(new RotateTransform(rotate ? 180 : 0, spaceWidth / 2, spaceHeight / 2));

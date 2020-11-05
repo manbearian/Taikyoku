@@ -13,6 +13,12 @@ namespace Oracle
 
     public class IllegalMoveException : Exception { }
 
+    [Flags]
+    public enum TaiyokuShogiOptions
+    {
+        ViolentBearAlternative,
+    }
+
     public class TaiyokuShogi
     {
         public const int BoardHeight = 36;
@@ -27,9 +33,9 @@ namespace Oracle
             SetInitialBoard();
         }
 
-        public (Player Owner, PieceIdentity Id)? GetPiece(int x, int y) => _boardState[x, y];
+        public (Player Owner, PieceIdentity Id)? GetPiece((int X, int Y) loc) => _boardState[loc.X, loc.Y];
 
-        public (Player Owner, PieceIdentity Id)? GetPiece((int X, int Y) loc) => GetPiece(loc.X, loc.Y);
+        public TaiyokuShogiOptions Options { get; }
 
         // 24 	 	 	 	 	D	 	 	 	 	GB	 	 	 	D	 	 	 	 	 	 	D	 	 	 	GB	 	 	 	 	D	 	 	 	 	       11
         // 25  P	P	P	P	P	P	P	P	P	P	P	P	P	P	P	P	P	P	P	P	P	P	P	P	P	P	P	P	P	P	P	P	P	P	P	P  10
@@ -89,7 +95,7 @@ namespace Oracle
         public IEnumerable<(int X, int Y)> GetLegalMoves(Player player, PieceIdentity id, (int X, int Y) loc)
         {
             var legalMoves = new List<(int X, int Y)>();
-            var movement = Movement.GetMovement(id);
+            var movement = this.GetMovement(id);
 
             for (int direction = 0; direction < movement.StepRange.Length; ++direction)
             {

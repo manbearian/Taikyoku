@@ -5,8 +5,17 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:WPF_UI"
         mc:Ignorable="d"
-        Title="MainWindow" Height="450" Width="800">
-    <Grid>
-        <local:Board x:Name="gameBoard" />
+        Title="Taiyoku Shogi" Height="450" Width="800">
+    <Grid x:Name="grid">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition/>
+        </Grid.RowDefinitions>
+        <local:Board x:Name="gameBoard" Grid.Row="1" />
+        <Menu>
+            <MenuItem Header="Game">
+                <MenuItem Header="New Game"/>
+            </MenuItem>
+        </Menu>
     </Grid>
 </Window>
