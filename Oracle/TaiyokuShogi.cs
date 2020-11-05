@@ -20,16 +20,16 @@ namespace Oracle
 
         private readonly (Player, PieceIdentity)?[,] _boardState = new (Player, PieceIdentity)?[BoardHeight, BoardHeight];
 
-        public Player CurrentTurn { get; private set; } = Player.White;
+        public Player CurrentPlayer { get; private set; } = Player.White;
 
         public TaiyokuShogi()
         {
             SetInitialBoard();
         }
 
-        public (Player Player, PieceIdentity Id)? GetPiece(int x, int y) => _boardState[x, y];
+        public (Player Owner, PieceIdentity Id)? GetPiece(int x, int y) => _boardState[x, y];
 
-        public (Player Player, PieceIdentity Id)? GetPiece((int X, int Y) loc) => _boardState[loc.X, loc.Y];
+        public (Player Owner, PieceIdentity Id)? GetPiece((int X, int Y) loc) => GetPiece(loc.X, loc.Y);
 
         // 24 	 	 	 	 	D	 	 	 	 	GB	 	 	 	D	 	 	 	 	 	 	D	 	 	 	GB	 	 	 	 	D	 	 	 	 	       11
         // 25  P	P	P	P	P	P	P	P	P	P	P	P	P	P	P	P	P	P	P	P	P	P	P	P	P	P	P	P	P	P	P	P	P	P	P	P  10
@@ -131,17 +131,14 @@ namespace Oracle
 
         // move the piece at startLoc to endLoc
         //   midLoc is for area-moves
-        public void MakeMove(Player player, (int X, int Y) startLoc, (int X, int Y) endLoc, (int X, int Y)? midLoc = null)
+        public void MakeMove((int X, int Y) startLoc, (int X, int Y) endLoc, (int X, int Y)? midLoc = null)
         {
-            if (CurrentTurn != player)
-                throw new IllegalMoveException();
-
             var piece = GetPiece(startLoc);
 
-            if (piece == null || piece.Value.Player != player)
+            if (piece == null || piece.Value.Owner != CurrentPlayer)
                 throw new IllegalMoveException();
 
-            if (!GetLegalMoves(player, piece.Value.Id, startLoc).Contains(endLoc))
+            if (!GetLegalMoves(CurrentPlayer, piece.Value.Id, startLoc).Contains(endLoc))
                 throw new IllegalMoveException();
 
             if (midLoc != null)
@@ -154,11 +151,12 @@ namespace Oracle
             // todo: multi-capture for ranged-capture pieces
 
             // set new location, this has the effect of removing any piece that was there from the board
+            _boardState[startLoc.X, startLoc.Y] = null;
             _boardState[endLoc.X, endLoc.Y] = piece;
 
             UpdateTurn();
         }
 
-        public void UpdateTurn() => CurrentTurn = CurrentTurn == Player.White ? Player.Black : Player.White;
+        public void UpdateTurn() => CurrentPlayer = CurrentPlayer == Player.White ? Player.Black : Player.White;
     }
 }

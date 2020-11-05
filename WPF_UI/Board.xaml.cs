@@ -45,7 +45,7 @@ namespace WPF_UI
         public void SetGame(TaiyokuShogi game) => Game = game;
 
         public (int X, int Y) GetBoardLoc(Point p) => 
-            Game.CurrentTurn == Player.White 
+            Game.CurrentPlayer == Player.White 
             ? ((int)(p.X / SpaceWidth), (int)(p.Y / SpaceHeight))
             : (BoardWidth - 1 - (int)(p.X / SpaceWidth), BoardHeight - 1 - (int)(p.Y / SpaceHeight));
 
@@ -166,17 +166,35 @@ namespace WPF_UI
 
         protected override void OnMouseLeftButtonUp(MouseButtonEventArgs e)
         {
-            e.Handled = true;
-
             var (x, y) = GetBoardLoc(e.GetPosition(this));
             var piece = Game.GetPiece(x, y);
 
-            if (piece != null)
+            if (SelectedForMove == (x, y))
             {
-                SelectedForMove = (x,y);
+                SelectedForMove = null;
+            }
+            else if (SelectedForMove == null)
+            {
+                SelectedForMove = (x, y);
+            }
+            else
+            {
+                var selectedPiece = Game.GetPiece(SelectedForMove.Value).Value;
+
+                if (selectedPiece.Owner == Game.CurrentPlayer
+                    && Game.GetLegalMoves(selectedPiece.Owner, selectedPiece.Id, SelectedForMove.Value).Contains((x, y)))
+                {
+                    Game.MakeMove(SelectedForMove.Value, (x, y));
+                    SelectedForMove = null;
+                }
+                else
+                {
+                    SelectedForMove = piece != null ? (x, y) : null as (int, int)?;
+                }
             }
 
             InvalidateVisual();
+            e.Handled = true;
             base.OnMouseLeftButtonUp(e);
         }
 
@@ -184,7 +202,7 @@ namespace WPF_UI
         {
             if (Game != null)
             {
-                dc.PushTransform(new RotateTransform((Game.CurrentTurn == Player.Black) ? 180 : 0, ActualWidth / 2, ActualHeight / 2));
+                dc.PushTransform(new RotateTransform((Game.CurrentPlayer == Player.Black) ? 180 : 0, ActualWidth / 2, ActualHeight / 2));
                 DrawBoard(dc);
                 DrawPieces(dc);
                 DrawMoves(dc);
@@ -217,7 +235,7 @@ namespace WPF_UI
 
                         if (piece != null)
                         {
-                            DrawPiece(dc, (i, j), piece.Value.Id, piece?.Player == Player.Black);
+                            DrawPiece(dc, (i, j), piece.Value.Id, piece?.Owner == Player.Black);
                         }
                     }
                 }
@@ -291,7 +309,7 @@ namespace WPF_UI
                 var loc = SelectedForMove.Value;
                 var piece = Game.GetPiece(loc).Value;
 
-                var moves = Game.GetLegalMoves(piece.Player, piece.Id, loc);
+                var moves = Game.GetLegalMoves(piece.Owner, piece.Id, loc);
 
                 foreach (var move in moves)
                 {
