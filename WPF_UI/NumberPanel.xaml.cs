@@ -1,0 +1,83 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Globalization;
+using System.Text;
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Data;
+using System.Windows.Documents;
+using System.Windows.Input;
+using System.Windows.Media;
+using System.Windows.Media.Imaging;
+using System.Windows.Navigation;
+using System.Windows.Shapes;
+
+using Oracle;
+
+namespace WPF_UI
+{
+    /// <summary>
+    /// Interaction logic for NumberPanel.xaml
+    /// </summary>
+    public partial class NumberPanel : UserControl
+    {
+        public Orientation Orientation { get; set; }
+
+        public NumberPanel()
+        {
+            InitializeComponent();
+        }
+
+        protected override void OnRender(DrawingContext dc)
+        {
+            if (Orientation == Orientation.Horizontal)
+            {
+                static string ColumnName(int i) => $"{TaiyokuShogi.BoardWidth - i}";
+
+                var spacing = ActualWidth / TaiyokuShogi.BoardWidth;
+
+                for (int i = 0; i < TaiyokuShogi.BoardWidth; ++i)
+                {
+                    var text = new FormattedText(
+                        ColumnName(i),
+                        CultureInfo.GetCultureInfo("en-us"),
+                        FlowDirection.LeftToRight,
+                        new Typeface("MS Gothic"),
+                        ActualHeight,
+                        Brushes.Black,
+                        1.25);
+                    text.TextAlignment = TextAlignment.Center;
+
+                    dc.DrawText(text, new Point((i * spacing) + (spacing / 2), 0));
+                }
+            }
+            else if (Orientation == Orientation.Vertical)
+            {
+                static string RowName(int i) => new string((char)('A' + (i % 26)), i / 26 + 1);
+
+                var spacing = ActualHeight / TaiyokuShogi.BoardHeight;
+
+                for (int i = 0; i < TaiyokuShogi.BoardHeight; ++i)
+                {
+                    var text = new FormattedText(
+                        RowName(i),
+                        CultureInfo.GetCultureInfo("en-us"),
+                        FlowDirection.LeftToRight,
+                        new Typeface("MS Gothic"),
+                        ActualWidth * .8,
+                        Brushes.Black,
+                        1.25);
+                    text.TextAlignment = TextAlignment.Center;
+
+                    dc.DrawText(text, new Point(spacing / 3, i * spacing));
+                }
+            }
+            else
+            {
+                throw new NotSupportedException();
+            }
+
+            base.OnRender(dc);
+        }
+    }
+}

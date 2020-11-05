@@ -9,13 +9,25 @@
     <Grid x:Name="grid">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
-            <RowDefinition/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="60*"/>
+            <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
-        <local:Board x:Name="gameBoard" Grid.Row="1" />
-        <Menu>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="90*"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+        <local:Board x:Name="gameBoard" Grid.Row="2" Grid.Column="1" />
+        <local:NumberPanel x:Name="borderTop" Grid.Row="1" Grid.Column="1" Orientation="Horizontal"/>
+        <local:NumberPanel x:Name="borderBottom" Grid.Row="3" Grid.Column="1" Orientation="Horizontal"/>
+        <local:NumberPanel x:Name="borderLeft" Grid.Row="2" Grid.Column="0" Orientation="Vertical"/>
+        <local:NumberPanel x:Name="borderRigtht" Grid.Row="2" Grid.Column="3" Orientation="Vertical"/>
+        <Menu Grid.ColumnSpan="99">
             <MenuItem Header="Game">
                 <MenuItem Header="New Game"/>
             </MenuItem>
         </Menu>
     </Grid>
+
 </Window>

@@ -27,6 +27,7 @@ namespace WPF_UI
         private TaiyokuShogi Game;
 
         public int BoardWidth { get => TaiyokuShogi.BoardWidth; }
+
         public int BoardHeight { get => TaiyokuShogi.BoardHeight; }
 
         public double SpaceWidth { get => ActualWidth / BoardWidth; }

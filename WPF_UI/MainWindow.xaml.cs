@@ -20,11 +20,18 @@ namespace WPF_UI
     /// </summary>
     public partial class MainWindow : Window
     {
-        Oracle.TaiyokuShogi Game = new Oracle.TaiyokuShogi();
+        Oracle.TaiyokuShogi Game = null;
 
         public MainWindow()
         {
             InitializeComponent();
+
+            NewGame();
+        }
+
+        private void NewGame()
+        {
+            Game = new Oracle.TaiyokuShogi();
             gameBoard.SetGame(Game);
         }
     }
