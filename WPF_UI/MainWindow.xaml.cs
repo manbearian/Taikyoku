@@ -91,5 +91,11 @@ namespace WPF_UI
                 throw new NotImplementedException();
             }
         }
+
+        protected override void OnClosed(EventArgs e)
+        {
+            gameBoard.CloseAssociatedWindows();
+            base.OnClosed(e);
+        }
     }
 }

@@ -40,9 +40,16 @@ namespace WPF_UI
 
         public bool DisplayFlipped { get => false; } //  get => Game.CurrentPlayer == Player.Black;  <-- this was disorienting, disabled
 
+        private PieceInfoWindow _pieceInfoWindow;
+
         public Board()
         {
             InitializeComponent();
+        }
+
+        public void CloseAssociatedWindows()
+        {
+            _pieceInfoWindow.Close();
         }
 
         public void SetGame(TaiyokuShogi game) => Game = game;
@@ -60,118 +67,64 @@ namespace WPF_UI
 
         protected override void OnMouseMove(MouseEventArgs e)
         {
+            ShowPieceInfo(e);
+            base.OnMouseMove(e);
+        }
+
+        void ShowPieceInfo(MouseEventArgs e)
+        {
             var loc = GetBoardLoc(e.GetPosition(this));
 
-            // short-circuit if already processed
-            if (SelectedForInfo == loc)
-                return;
-
-            ToolTip = null;
-            SelectedForInfo = loc;
-
             if (loc == null)
-                return;
-
-            var piece = Game.GetPiece(loc.Value);
-            if (piece != null)
             {
-                var moves = Game.GetMovement(piece.Value.Id);
-
-                var layoutGrid = new Grid();
-                layoutGrid.MinWidth = 50.0;
-                layoutGrid.MinHeight = 100.0;
-                layoutGrid.RowDefinitions.Add(new RowDefinition());
-                layoutGrid.RowDefinitions.Add(new RowDefinition());
-
-                var headerText = new TextBlock();
-                headerText.Text = $"{Pieces.Name(piece.Value.Id)}\n{Pieces.Kanji(piece.Value.Id)} ({Pieces.Romanji(piece.Value.Id)})";
-                headerText.FontSize = 14;
-                Grid.SetRow(headerText, 0);
-                layoutGrid.Children.Add(headerText);
-
-                // figure out our grid size
-                int maxMoves = 1;
-                for (int i = 0; i < moves.StepRange.Length; ++i)
-                {
-                    maxMoves = Math.Max(maxMoves, moves.StepRange[i] == Movement.FullRange ? 1 : moves.StepRange[i]);
-                }
-
-                var gridSize = maxMoves * 2 + 1;
-                var grid = new Grid();
-                grid.Width = gridSize * 20.0;
-                grid.Height = gridSize * 20.0;
-                grid.ShowGridLines = true;
-                for (int i = 0; i < gridSize; ++i)
-                {
-                    grid.ColumnDefinitions.Add(new ColumnDefinition());
-                    grid.RowDefinitions.Add(new RowDefinition());
-                }
-                Grid.SetRow(grid, 1);
-                layoutGrid.Children.Add(grid);
-
-                // render moves in a grid
-                //     | ○ |  
-                //  ---+---+---
-                //   ─ | ☖| ─
-                //  ---+---+---
-                //   ○ |   | ○
-                var pieceIcon = new TextBlock();
-                pieceIcon.Text = "☖";
-                pieceIcon.FontSize = 14;
-                pieceIcon.HorizontalAlignment = HorizontalAlignment.Center;
-                pieceIcon.VerticalAlignment = VerticalAlignment.Center;
-                Grid.SetColumn(pieceIcon, gridSize / 2);
-                Grid.SetRow(pieceIcon, gridSize / 2);
-                grid.Children.Add(pieceIcon);
-
-                for (int direction = 0; direction < moves.StepRange.Length; ++direction)
-                {
-                    for (int i = 1; i <= Math.Min(moves.StepRange[direction], maxMoves); ++i)
-                    {
-                        var moveIcon = new TextBlock();
-                        moveIcon.Text = moves.StepRange[direction] == 0 ? "" : moves.StepRange[direction] < Movement.FullRange ? "○" : GetFullRangeChar(direction);
-                        moveIcon.FontSize = 12;
-                        moveIcon.HorizontalAlignment = HorizontalAlignment.Center;
-                        moveIcon.VerticalAlignment = VerticalAlignment.Center;
-                        var (gridX, gridY) = GetGridPos(gridSize, direction, i);
-                        Grid.SetColumn(moveIcon, gridX);
-                        Grid.SetRow(moveIcon, gridY);
-                        grid.Children.Add(moveIcon);
-                    }
-                }
-
-                ToolTip = layoutGrid;
+                _pieceInfoWindow?.Hide();
+                return;
             }
 
-            base.OnMouseMove(e);
+            var piece = Game.GetPiece(loc.Value);
 
-            static string GetFullRangeChar(int direction) =>
-                direction switch
-                {
-                    Movement.Up => "|",
-                    Movement.Down => "|",
-                    Movement.Left => "─",
-                    Movement.Right => "─",
-                    Movement.UpLeft => "\\",
-                    Movement.UpRight => "/",
-                    Movement.DownLeft => "/",
-                    Movement.DownRight => "\\",
-                    _ => throw new InvalidOperationException()
-                };
+            if (piece == null)
+            {
+                _pieceInfoWindow?.Hide();
+                return;
+            }
 
-            static (int X, int Y) GetGridPos(int gridSize, int direction, int value) =>
-                direction switch
-                {
-                    Movement.Up => (gridSize / 2, gridSize / 2 - value),
-                    Movement.Down => (gridSize / 2, gridSize / 2 + value),
-                    Movement.Left => (gridSize / 2 - value, gridSize / 2),
-                    Movement.Right => (gridSize / 2 + value, gridSize / 2),
-                    Movement.UpLeft => (gridSize / 2 - value, gridSize / 2 - value),
-                    Movement.UpRight => (gridSize / 2 + value, gridSize / 2 - value),
-                    Movement.DownLeft => (gridSize / 2 - value, gridSize / 2 + value),
-                    Movement.DownRight => (gridSize / 2 + value, gridSize / 2 + value),
-                    _ => throw new NotSupportedException()
-                };
+            var mainWindow = App.Current.MainWindow;
+            var pos = e.GetPosition(mainWindow);
+
+            _pieceInfoWindow ??= new PieceInfoWindow();
+            _pieceInfoWindow.SetPiece(Game, piece.Value.Id);
+
+            if (mainWindow.WindowState == WindowState.Normal)
+            {
+                _pieceInfoWindow.Left = pos.X + mainWindow.Left + 15;
+                _pieceInfoWindow.Top = pos.Y + mainWindow.Top + 30;
+            }
+            else
+            {
+                _pieceInfoWindow.Left = pos.X + 15;
+                _pieceInfoWindow.Top = pos.Y + 30;
+            }
+
+            if (_pieceInfoWindow.Top + _pieceInfoWindow.ActualHeight > mainWindow.Top + mainWindow.ActualHeight)
+            {
+                _pieceInfoWindow.Top = mainWindow.Top + mainWindow.ActualHeight - _pieceInfoWindow.ActualHeight;
+            }
+            else if (_pieceInfoWindow.Top < mainWindow.Top)
+            {
+                _pieceInfoWindow.Top = mainWindow.Top;
+            }
+
+            if (_pieceInfoWindow.Left + _pieceInfoWindow.ActualWidth > mainWindow.Left + mainWindow.ActualWidth)
+            {
+                _pieceInfoWindow.Left = mainWindow.Left + mainWindow.ActualWidth - _pieceInfoWindow.ActualWidth;
+            }
+            else if (_pieceInfoWindow.Left < mainWindow.Left)
+            {
+                _pieceInfoWindow.Left = mainWindow.Left;
+            }
+
+            _pieceInfoWindow.Show();
         }
 
         protected override void OnMouseLeftButtonUp(MouseButtonEventArgs e)
