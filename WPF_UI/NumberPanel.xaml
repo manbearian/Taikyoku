@@ -6,7 +6,4 @@
              xmlns:local="clr-namespace:WPF_UI"
              mc:Ignorable="d" 
              d:DesignHeight="450" d:DesignWidth="800">
-    <Grid>
-            
-    </Grid>
 </UserControl>

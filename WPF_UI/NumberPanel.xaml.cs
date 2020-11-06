@@ -23,6 +23,10 @@ namespace WPF_UI
     {
         public Orientation Orientation { get; set; }
 
+        public Brush TextColor { get; set; }
+
+        public Brush FillColor { get; set; }
+
         public NumberPanel()
         {
             InitializeComponent();
@@ -30,6 +34,8 @@ namespace WPF_UI
 
         protected override void OnRender(DrawingContext dc)
         {
+            dc.DrawRectangle(FillColor, null, new Rect(0, 0, ActualWidth, ActualHeight));
+
             if (Orientation == Orientation.Horizontal)
             {
                 static string ColumnName(int i) => $"{TaiyokuShogi.BoardWidth - i}";
@@ -44,7 +50,7 @@ namespace WPF_UI
                         FlowDirection.LeftToRight,
                         new Typeface("MS Gothic"),
                         ActualHeight,
-                        Brushes.Black,
+                        TextColor,
                         1.25);
                     text.TextAlignment = TextAlignment.Center;
 
@@ -65,7 +71,7 @@ namespace WPF_UI
                         FlowDirection.LeftToRight,
                         new Typeface("MS Gothic"),
                         ActualWidth * .8,
-                        Brushes.Black,
+                        TextColor,
                         1.25);
                     text.TextAlignment = TextAlignment.Center;
 

@@ -22,7 +22,11 @@
         <local:NumberPanel x:Name="borderTop" Grid.Row="1" Grid.Column="1" Orientation="Horizontal"/>
         <local:NumberPanel x:Name="borderBottom" Grid.Row="3" Grid.Column="1" Orientation="Horizontal"/>
         <local:NumberPanel x:Name="borderLeft" Grid.Row="2" Grid.Column="0" Orientation="Vertical"/>
-        <local:NumberPanel x:Name="borderRigtht" Grid.Row="2" Grid.Column="3" Orientation="Vertical"/>
+        <local:NumberPanel x:Name="borderRight" Grid.Row="2" Grid.Column="3" Orientation="Vertical"/>
+        <Rectangle x:Name="borderTopLeft" Grid.Row="1" Grid.Column="0" />
+        <Rectangle x:Name="borderTopRight" Grid.Row="1" Grid.Column="3" />
+        <Rectangle x:Name="borderBottomLeft" Grid.Row="3" Grid.Column="0" />
+        <Rectangle x:Name="borderBottomRight" Grid.Row="3" Grid.Column="3" />
         <Menu Grid.ColumnSpan="99">
             <MenuItem Header="Game">
                 <MenuItem Header="New Game"/>

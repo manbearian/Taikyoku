@@ -214,10 +214,18 @@ namespace WPF_UI
 
         protected override void OnRender(DrawingContext dc)
         {
+            // we need at least 1 px to draw the grid
+            if (ActualWidth == 0 || ActualHeight== 0)
+                return;
+
             if (Game != null)
             {
                 // flipping the board on turn exchange is disorienting
                 dc.PushTransform(new RotateTransform(DisplayFlipped ? 180 : 0, ActualWidth / 2, ActualHeight / 2));
+
+                // draw the background
+                dc.DrawRectangle(Brushes.AntiqueWhite, null, new Rect(0, 0, ActualWidth, ActualHeight));
+
                 DrawBoard(dc);
                 DrawPieces(dc);
                 DrawMoves(dc);
@@ -250,23 +258,19 @@ namespace WPF_UI
 
                         if (piece != null)
                         {
-                            DrawPiece(dc, (i, j), piece.Value.Id, piece?.Owner == Player.Black);
+                            DrawPiece(dc, (i, j), piece.Value.Id, piece.Value.Owner);
                         }
                     }
                 }
             }
 
-            void DrawPiece(DrawingContext dc, (int X, int Y) loc, PieceIdentity id, bool rotate)
+            void DrawPiece(DrawingContext dc, (int X, int Y) loc, PieceIdentity id, Player owner)
             {
                 var spaceWidth = ActualWidth / BoardWidth;
                 var spaceHeight = ActualHeight / BoardHeight;
 
-                // we need at least 1 px to draw anything
-                if (spaceWidth == 0 || spaceHeight == 0)
-                    return;
-
                 dc.PushTransform(new TranslateTransform(spaceWidth * loc.X, spaceHeight * loc.Y));
-                dc.PushTransform(new RotateTransform(rotate ? 180 : 0, spaceWidth / 2, spaceHeight / 2));
+                dc.PushTransform(new RotateTransform(owner == Player.Black ? 180 : 0, spaceWidth / 2, spaceHeight / 2));
 
 #if true
                 var border = spaceWidth * 0.05; // 5% border
@@ -284,12 +288,14 @@ namespace WPF_UI
                 var lowerLeft = new Point((spaceWidth - pieceWidth) / 2, spaceHeight - border);
                 var lowerRight = new Point(spaceWidth - lowerLeft.X, spaceHeight - border);
 
-                var pen = new Pen((loc == SelectedForMove) ? Brushes.Red : Brushes.Black, 1.0);
+                var brush = (loc == SelectedForMove) ? ((owner == Game.CurrentPlayer) ? Brushes.Blue : Brushes.Red) : Brushes.Black;
+                var pen = new Pen(brush, 1.0);
                 dc.DrawLine(pen, upperLeft, upperMid);     //  /
                 dc.DrawLine(pen, upperMid, upperRight);    //    \
                 dc.DrawLine(pen, upperRight, lowerRight);  //    |
                 dc.DrawLine(pen, lowerRight, lowerLeft);   //    _
                 dc.DrawLine(pen, lowerLeft, upperLeft);    // |
+
 #else
 
                 var piece = new FormattedText(
@@ -326,13 +332,14 @@ namespace WPF_UI
                     return;
 
                 var loc = SelectedForMove.Value;
-                var piece = Game.GetPiece(loc).Value;
+                var (owner, id) = Game.GetPiece(loc).Value;
 
-                var moves = Game.GetLegalMoves(piece.Owner, piece.Id, loc);
+                var moves = Game.GetLegalMoves(owner, id, loc);
 
                 foreach (var move in moves)
                 {
-                    dc.DrawRectangle(Brushes.Transparent, new Pen(Brushes.Red, 2.0), BoardLocToRect(move));
+                    var brush = (owner == Game.CurrentPlayer) ? Brushes.Blue : Brushes.Red;
+                    dc.DrawRectangle(Brushes.Transparent, new Pen(brush, 2.0), BoardLocToRect(move));
                 }
             }
         }

@@ -25,13 +25,32 @@ namespace Oracle
         public const int BoardWidth = 36;
 
         private readonly (Player, PieceIdentity)?[,] _boardState = new (Player, PieceIdentity)?[BoardHeight, BoardHeight];
+        private Player _currentPlayer;
 
-        public Player CurrentPlayer { get; private set; } = Player.White;
+        public Player CurrentPlayer
+        {
+            get => _currentPlayer;
+
+            private set
+            {
+                var prevPlayer = _currentPlayer;
+                _currentPlayer = value;
+
+                if (OnPlayerChange != null)
+                {
+                    PlayerChangeEventArgs args = new PlayerChangeEventArgs(prevPlayer, _currentPlayer);
+                    OnPlayerChange(this, args);
+                }
+            }
+        }
+
 
         public TaiyokuShogi()
         {
-            SetInitialBoard();
         }
+
+        public delegate void PlayerChangeHandler(object sender, PlayerChangeEventArgs e);
+        public event PlayerChangeHandler OnPlayerChange;
 
         public (Player Owner, PieceIdentity Id)? GetPiece((int X, int Y) loc) => _boardState[loc.X, loc.Y];
 
@@ -160,9 +179,24 @@ namespace Oracle
             _boardState[startLoc.X, startLoc.Y] = null;
             _boardState[endLoc.X, endLoc.Y] = piece;
 
-            UpdateTurn();
+            NextTurn();
         }
 
-        public void UpdateTurn() => CurrentPlayer = CurrentPlayer == Player.White ? Player.Black : Player.White;
+        public void NextTurn() => CurrentPlayer = (CurrentPlayer == Player.White ? Player.Black : Player.White);
+
+        public void Reset()
+        {
+            SetInitialBoard();
+            CurrentPlayer = Player.White;
+        }
+    }
+
+    public class PlayerChangeEventArgs : EventArgs
+    {
+        public Player OldPlayer { get; }
+
+        public Player NewPlayer { get; }
+
+        public PlayerChangeEventArgs(Player oldPlayer, Player newPlayer) => (OldPlayer, NewPlayer) = (oldPlayer, newPlayer);
     }
 }
