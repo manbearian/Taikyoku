@@ -75,7 +75,7 @@ namespace WPF_UI
                         1.25);
                     text.TextAlignment = TextAlignment.Center;
 
-                    dc.DrawText(text, new Point(spacing / 3, i * spacing));
+                    dc.DrawText(text, new Point(spacing / 3, (i * spacing) + (spacing / 4)));
                 }
             }
             else

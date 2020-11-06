@@ -51,6 +51,7 @@ namespace WPF_UI
             gameBoard.SetGame(Game);
 
             Game.OnPlayerChange += OnPlayerChange;
+            Game.OnBoardChange += OnBoardChange;
 
             Game.Reset();
         }
@@ -74,6 +75,21 @@ namespace WPF_UI
 
             InvalidateVisual();
         }
+        private void OnBoardChange(object sender, BoardChangeEventArgs eventArgs)
+        {
+            gameBoard.InvalidateVisual();
+        }
 
+        private void MenuItem_Click(object sender, RoutedEventArgs e)
+        {
+            if (e.Source == newGameMenuItem)
+            {
+                Game.Reset();
+            }
+            else
+            {
+                throw new NotImplementedException();
+            }
+        }
     }
 }

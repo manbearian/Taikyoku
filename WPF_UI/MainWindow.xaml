@@ -29,7 +29,7 @@
         <Rectangle x:Name="borderBottomRight" Grid.Row="3" Grid.Column="3" />
         <Menu Grid.ColumnSpan="99">
             <MenuItem Header="Game">
-                <MenuItem Header="New Game"/>
+                <MenuItem x:Name="newGameMenuItem" Header="New Game" Click="MenuItem_Click" />
             </MenuItem>
         </Menu>
     </Grid>
