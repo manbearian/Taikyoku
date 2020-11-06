@@ -114,7 +114,7 @@ namespace WPF_UI
                 return;
             }
 
-            var mainWindow = App.Current.MainWindow;
+            var mainWindow = Application.Current.MainWindow;
             var pos = e.GetPosition(mainWindow);
 
             _pieceInfoWindow ??= new PieceInfoWindow();
@@ -127,17 +127,19 @@ namespace WPF_UI
             }
             else
             {
+                // maximized
+
                 _pieceInfoWindow.Left = pos.X + 15;
                 _pieceInfoWindow.Top = pos.Y + 30;
 
-                if (_pieceInfoWindow.Top + _pieceInfoWindow.Height > mainWindow.ActualHeight)
+                if (_pieceInfoWindow.Left > mainWindow.ActualWidth - (_pieceInfoWindow.Width * 2))
                 {
-                    _pieceInfoWindow.Top = mainWindow.ActualHeight - _pieceInfoWindow.Height;
+                    _pieceInfoWindow.Left = pos.X - _pieceInfoWindow.Width;
                 }
 
-                if (_pieceInfoWindow.Left + _pieceInfoWindow.Width > mainWindow.ActualWidth)
+                if (_pieceInfoWindow.Top > mainWindow.ActualHeight - (_pieceInfoWindow.Height * 2))
                 {
-                    _pieceInfoWindow.Left = mainWindow.ActualWidth - _pieceInfoWindow.Width;
+                    _pieceInfoWindow.Top = pos.Y - _pieceInfoWindow.Height;
                 }
             }
 
