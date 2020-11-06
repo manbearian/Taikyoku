@@ -329,7 +329,7 @@ namespace Oracle
             { PieceIdentity.FreeDemon,              ("Free demon",              "奔鬼",     "honki",    PieceIdentity.Queen) },
             { PieceIdentity.RunningHorse,           ("Running Horse",           "走馬",     "sōma",     PieceIdentity.FreeDemon) },       // a.k.a. romaji: Sōba
             { PieceIdentity.BeastCadet,             ("Beast Cadet",             "獣曹",     "jūsō",     PieceIdentity.BeastOfficer) },
-            { PieceIdentity.LongNosedGoblin,        ("Long-nosed Goblin",       "天狗",     "tengu",    null) },
+            { PieceIdentity.LongNosedGoblin,        ("Long-Nosed Goblin",       "天狗",     "tengu",    null) },
             { PieceIdentity.LeftMountainEagle,      ("Mountain Eagle",          "山鷲",     "sanshū",   PieceIdentity.SoaringEagle) },
             { PieceIdentity.RightMountainEagle,     ("Mountain Eagle",          "山鷲",     "sanshū",   PieceIdentity.SoaringEagle) },
             { PieceIdentity.FireDemon,              ("Fire Demon",              "火鬼",     "kaki",     PieceIdentity.FreeFire) },

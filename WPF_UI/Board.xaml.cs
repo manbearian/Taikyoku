@@ -195,18 +195,19 @@ namespace WPF_UI
 
                 dc.DrawText(piece, new Point(spaceWidth * 0.15, -(spaceHeight * 0.05)));
 #endif
-
-                var verticalKanji = string.Join("\n", Pieces.Kanji(id).EnumerateRunes());
+                var chars = Pieces.Kanji(id).EnumerateRunes();
+                var verticalKanji = string.Join("\n", chars);
+                var size = chars.Count() == 1 ? spaceHeight * 0.5 : spaceHeight * 0.33;
                 var pieceText = new FormattedText(
                     verticalKanji,
                     CultureInfo.GetCultureInfo("jp-jp"),
                     FlowDirection.LeftToRight,
                     new Typeface("MS Gothic"),
-                    spaceHeight * 0.33,
+                    size,
                     Brushes.Black,
                     1.25);
 
-                dc.DrawText(pieceText, new Point(spaceWidth / 2 - (spaceWidth * 0.1), spaceHeight * 0.2));
+                dc.DrawText(pieceText, new Point(spaceWidth / 2 - pieceText.Width / 2, spaceHeight * 0.2));
 
                 dc.Pop();
                 dc.Pop();

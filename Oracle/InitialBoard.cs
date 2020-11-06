@@ -8,7 +8,7 @@ namespace Oracle
 
     internal static class InititialBoard
     {
-        private static string[] InitialBoardData =
+        private static readonly string[] InitialBoardData =
          {
            " 	 	 	 	 	D	 	 	 	 	GB	 	 	 	D	 	 	 	 	 	 	D	 	 	 	GB	 	 	 	 	D	 	 	 	 	 	 ",
            "P	P	P	P	P	P	P	P	P	P	P	P	P	P	P	P	P	P	P	P	P	P	P	P	P	P	P	P	P	P	P	P	P	P	P	P",
@@ -24,7 +24,7 @@ namespace Oracle
            "L	TS	RR	W	DM	MEL	LO	BC	HR	FR	ED	CD	FT	Q	RS	LG	G	K	CP	G	RG	RS	Q	FT	WO	ED	FR	HR	BC	LO	MER	DM	W	RR	WT	L"
         };
 
-        private static Dictionary<string, PieceIdentity?> PieceMap = new Dictionary<string, PieceIdentity?> {
+        private static readonly Dictionary<string, PieceIdentity?> PieceMap = new Dictionary<string, PieceIdentity?> {
             { "AB", PieceIdentity.AngryBoar },
             { "B", PieceIdentity.Bishop },
             { "BA", PieceIdentity.RunningBear },
@@ -236,7 +236,6 @@ namespace Oracle
             { "YA", PieceIdentity.Yaksha },
             { " ", null }
         };
-
 
         public static void SetInitialState(this (Player, PieceIdentity)?[,] board)
         {
