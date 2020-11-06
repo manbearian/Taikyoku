@@ -40,22 +40,19 @@ namespace WPF_UI
 
         public bool DisplayFlipped { get => false; } //  get => Game.CurrentPlayer == Player.Black;  <-- this was disorienting, disabled
 
-        private PieceInfoWindow _pieceInfoWindow;
-
         public Board()
         {
             InitializeComponent();
-        }
-
-        public void CloseAssociatedWindows()
-        {
-            _pieceInfoWindow.Close();
         }
 
         public void SetGame(TaiyokuShogi game) => Game = game;
 
         public (int X, int Y)? GetBoardLoc(Point p)
         {
+            // check for negative values before rounding
+            if (p.X < 0 || p.Y < 0)
+                return null;
+
             var (x, y) =  DisplayFlipped ?
                 (BoardWidth - 1 - (int)(p.X / SpaceWidth), BoardHeight - 1 - (int)(p.Y / SpaceHeight))
                     : ((int)(p.X / SpaceWidth), (int)(p.Y / SpaceHeight));
@@ -64,68 +61,6 @@ namespace WPF_UI
         }
 
         public Rect BoardLocToRect((int X, int Y) loc) => new Rect(loc.X * SpaceWidth, loc.Y * SpaceHeight, SpaceWidth, SpaceHeight);
-
-        protected override void OnMouseMove(MouseEventArgs e)
-        {
-            ShowPieceInfo(e);
-            base.OnMouseMove(e);
-        }
-
-        void ShowPieceInfo(MouseEventArgs e)
-        {
-            var loc = GetBoardLoc(e.GetPosition(this));
-
-            if (loc == null)
-            {
-                _pieceInfoWindow?.Hide();
-                return;
-            }
-
-            var piece = Game.GetPiece(loc.Value);
-
-            if (piece == null)
-            {
-                _pieceInfoWindow?.Hide();
-                return;
-            }
-
-            var mainWindow = App.Current.MainWindow;
-            var pos = e.GetPosition(mainWindow);
-
-            _pieceInfoWindow ??= new PieceInfoWindow();
-            _pieceInfoWindow.SetPiece(Game, piece.Value.Id);
-
-            if (mainWindow.WindowState == WindowState.Normal)
-            {
-                _pieceInfoWindow.Left = pos.X + mainWindow.Left + 15;
-                _pieceInfoWindow.Top = pos.Y + mainWindow.Top + 30;
-            }
-            else
-            {
-                _pieceInfoWindow.Left = pos.X + 15;
-                _pieceInfoWindow.Top = pos.Y + 30;
-            }
-
-            if (_pieceInfoWindow.Top + _pieceInfoWindow.ActualHeight > mainWindow.Top + mainWindow.ActualHeight)
-            {
-                _pieceInfoWindow.Top = mainWindow.Top + mainWindow.ActualHeight - _pieceInfoWindow.ActualHeight;
-            }
-            else if (_pieceInfoWindow.Top < mainWindow.Top)
-            {
-                _pieceInfoWindow.Top = mainWindow.Top;
-            }
-
-            if (_pieceInfoWindow.Left + _pieceInfoWindow.ActualWidth > mainWindow.Left + mainWindow.ActualWidth)
-            {
-                _pieceInfoWindow.Left = mainWindow.Left + mainWindow.ActualWidth - _pieceInfoWindow.ActualWidth;
-            }
-            else if (_pieceInfoWindow.Left < mainWindow.Left)
-            {
-                _pieceInfoWindow.Left = mainWindow.Left;
-            }
-
-            _pieceInfoWindow.Show();
-        }
 
         protected override void OnMouseLeftButtonUp(MouseButtonEventArgs e)
         {

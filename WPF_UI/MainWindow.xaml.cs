@@ -23,14 +23,18 @@ namespace WPF_UI
     /// </summary>
     public partial class MainWindow : Window
     {
-        TaiyokuShogi Game = null;
+        readonly List<Shape> corners = new List<Shape>();
+        readonly List<NumberPanel> borders = new List<NumberPanel>();
 
-        List<Shape> corners = new List<Shape>();
-        List<NumberPanel> borders = new List<NumberPanel>();
+        TaiyokuShogi Game = null;
+        PieceInfoWindow _pieceInfoWindow = null;
 
         public MainWindow()
         {
             InitializeComponent();
+
+            MouseMove += ShowPieceInfo;
+            Closed += (object sender, EventArgs e) => _pieceInfoWindow.Close();
 
             corners.Add(borderTopLeft);
             corners.Add(borderTopRight);
@@ -92,10 +96,53 @@ namespace WPF_UI
             }
         }
 
-        protected override void OnClosed(EventArgs e)
+        void ShowPieceInfo(object sender, MouseEventArgs e)
         {
-            gameBoard.CloseAssociatedWindows();
-            base.OnClosed(e);
+            var loc = gameBoard.GetBoardLoc(e.GetPosition(gameBoard));
+
+            if (loc == null)
+            {
+                _pieceInfoWindow?.Hide();
+                return;
+            }
+
+            var piece = Game.GetPiece(loc.Value);
+
+            if (piece == null)
+            {
+                _pieceInfoWindow?.Hide();
+                return;
+            }
+
+            var mainWindow = App.Current.MainWindow;
+            var pos = e.GetPosition(mainWindow);
+
+            _pieceInfoWindow ??= new PieceInfoWindow();
+            _pieceInfoWindow.SetPiece(Game, piece.Value.Id);
+
+            if (mainWindow.WindowState == WindowState.Normal)
+            {
+                _pieceInfoWindow.Left = pos.X + mainWindow.Left + 15;
+                _pieceInfoWindow.Top = pos.Y + mainWindow.Top + 30;
+            }
+            else
+            {
+                _pieceInfoWindow.Left = pos.X + 15;
+                _pieceInfoWindow.Top = pos.Y + 30;
+
+                if (_pieceInfoWindow.Top + _pieceInfoWindow.Height > mainWindow.ActualHeight)
+                {
+                    _pieceInfoWindow.Top = mainWindow.ActualHeight - _pieceInfoWindow.Height;
+                }
+
+                if (_pieceInfoWindow.Left + _pieceInfoWindow.Width > mainWindow.ActualWidth)
+                {
+                    _pieceInfoWindow.Left = mainWindow.ActualWidth - _pieceInfoWindow.Width;
+                }
+            }
+
+            _pieceInfoWindow.Show();
         }
+
     }
 }
