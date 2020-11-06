@@ -17,6 +17,10 @@ namespace Oracle
     public enum TaiyokuShogiOptions
     {
         ViolentBearAlternative,
+        TreacherousFoxAlternative,
+        DivineSparrowAlternative,
+        EarthDragonAlternative,
+        FreeDemonAlternative
     }
 
     public class TaiyokuShogi
