@@ -4,7 +4,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:WPF_UI"
-        mc:Ignorable="d" Height="100" Width="100" WindowStyle="None" Visibility="Visible" SizeToContent="WidthAndHeight" ResizeMode="NoResize" IsEnabled="False" Focusable="False" IsHitTestVisible="False" IsTabStop="False" ShowInTaskbar="False" ShowActivated="False">
+        mc:Ignorable="d" Height="100" Width="100" WindowStyle="None" Visibility="Visible" SizeToContent="WidthAndHeight" ResizeMode="NoResize" IsEnabled="False" Focusable="False" IsHitTestVisible="False" IsTabStop="False" ShowInTaskbar="False" ShowActivated="False" BorderBrush="Black" BorderThickness="1.0">
     <Window.Effect>
         <DropShadowEffect/>
     </Window.Effect>
@@ -16,6 +16,7 @@
             <RowDefinition/>
         </Grid.RowDefinitions>
         <TextBlock x:Name="headerText" FontSize="14" />
+        <Rectangle Grid.Row="1" Fill="Transparent" Stroke="Black" StrokeThickness="0.1"/>
         <Grid x:Name="moveGrid" Grid.Row="1" ShowGridLines="True"></Grid>
     </Grid>
 </Window>
