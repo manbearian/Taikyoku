@@ -34,9 +34,7 @@ namespace WPF_UI
 
         public double SpaceHeight { get => ActualHeight / BoardHeight; }
 
-        public (int X, int Y)? SelectedForMove { get; set; }
-
-        public (int X, int Y)? SelectedForInfo { get; set; }
+        public (int X, int Y)? Selected { get; set; }
 
         public bool DisplayFlipped { get => false; } //  get => Game.CurrentPlayer == Player.Black;  <-- this was disorienting, disabled
 
@@ -71,27 +69,27 @@ namespace WPF_UI
 
             var piece = Game.GetPiece(loc.Value);
 
-            if (SelectedForMove == loc)
+            if (Selected == loc)
             {
-                SelectedForMove = null;
+                Selected = null;
             }
-            else if (SelectedForMove == null)
+            else if (Selected == null)
             {
-                SelectedForMove = piece != null ? loc : null;
+                Selected = piece != null ? loc : null;
             }
             else
             {
-                var selectedPiece = Game.GetPiece(SelectedForMove.Value).Value;
+                var (owner, id) = Game.GetPiece(Selected.Value).Value;
 
-                if (selectedPiece.Owner == Game.CurrentPlayer
-                    && Game.GetLegalMoves(selectedPiece.Owner, selectedPiece.Id, SelectedForMove.Value).Contains(loc.Value))
+                if (owner == Game.CurrentPlayer
+                    && Game.GetLegalMoves(owner, id, Selected.Value).Contains(loc.Value))
                 {
-                    Game.MakeMove(SelectedForMove.Value, loc.Value);
-                    SelectedForMove = null;
+                    Game.MakeMove(Selected.Value, loc.Value);
+                    Selected = null;
                 }
                 else
                 {
-                    SelectedForMove = piece != null ? loc : null;
+                    Selected = piece != null ? loc : null;
                 }
             }
 
@@ -176,7 +174,7 @@ namespace WPF_UI
                 var lowerLeft = new Point((spaceWidth - pieceWidth) / 2, spaceHeight - border);
                 var lowerRight = new Point(spaceWidth - lowerLeft.X, spaceHeight - border);
 
-                var brush = (loc == SelectedForMove) ? ((owner == Game.CurrentPlayer) ? Brushes.Blue : Brushes.Red) : Brushes.Black;
+                var brush = (loc == Selected) ? ((owner == Game.CurrentPlayer) ? Brushes.Blue : Brushes.Red) : Brushes.Black;
                 var pen = new Pen(brush, 1.0);
                 dc.DrawLine(pen, upperLeft, upperMid);     //  /
                 dc.DrawLine(pen, upperMid, upperRight);    //    \
@@ -216,10 +214,10 @@ namespace WPF_UI
 
             void DrawMoves(DrawingContext dc)
             {
-                if (SelectedForMove == null)
+                if (Selected == null)
                     return;
 
-                var loc = SelectedForMove.Value;
+                var loc = Selected.Value;
                 var (owner, id) = Game.GetPiece(loc).Value;
 
                 var moves = Game.GetLegalMoves(owner, id, loc);
