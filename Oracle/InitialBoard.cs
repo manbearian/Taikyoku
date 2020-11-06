@@ -10,7 +10,7 @@ namespace Oracle
     {
         private static string[] InitialBoardData =
          {
-           " 	 	 	 	D	 	 	 	 	GB	 	 	 	D	 	 	 	 	 	 	D	 	 	 	GB	 	 	 	 	D	 	 	 	 	 	 ",
+           " 	 	 	 	 	D	 	 	 	 	GB	 	 	 	D	 	 	 	 	 	 	D	 	 	 	GB	 	 	 	 	D	 	 	 	 	 	 ",
            "P	P	P	P	P	P	P	P	P	P	P	P	P	P	P	P	P	P	P	P	P	P	P	P	P	P	P	P	P	P	P	P	P	P	P	P",
            "LC	MK	VM	OX	LB	VP	VH	BN	DH	DK	SE	HF	EL	SP	VL	TG	SB	LD	DG	SB	TG	VL	SP	EL	HF	SE	DK	DH	BN	VH	VP	LB	OX	VM	MK	RC",
            "CH	SL	VR	WN	RE	M	SD	HS	GN	OS	EA	BS	SG	LP	T	BE	I	GM	GE	I	BE	T	LP	SG	BS	EA	OS	GN	HS	SD	M	RE	WN	VR	SL	CH",
