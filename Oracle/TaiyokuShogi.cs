@@ -20,7 +20,10 @@ namespace Oracle
         TreacherousFoxAlternative,
         DivineSparrowAlternative,
         EarthDragonAlternative,
-        FreeDemonAlternative
+        FreeDemonAlternative,
+        MountainFalconAlternative,
+        LongNosedGoblinAlternative,
+        CapricornAlternative,
     }
 
     public class TaiyokuShogi

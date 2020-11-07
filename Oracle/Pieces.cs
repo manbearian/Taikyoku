@@ -23,8 +23,8 @@ namespace Oracle
         RunningHorse,
         BeastCadet,
         LongNosedGoblin,
-        LeftMountainEagle,
-        RightMountainEagle,
+        MountainEagle_Left,
+        MountainEagle_Right,
         FireDemon,
         FreeFire,
         Whale,
@@ -330,8 +330,8 @@ namespace Oracle
             { PieceIdentity.RunningHorse,           ("Running Horse",           "走馬",     "sōma",     PieceIdentity.FreeDemon) },       // a.k.a. romaji: Sōba
             { PieceIdentity.BeastCadet,             ("Beast Cadet",             "獣曹",     "jūsō",     PieceIdentity.BeastOfficer) },
             { PieceIdentity.LongNosedGoblin,        ("Long-Nosed Goblin",       "天狗",     "tengu",    null) },
-            { PieceIdentity.LeftMountainEagle,      ("Mountain Eagle",          "山鷲",     "sanshū",   PieceIdentity.SoaringEagle) },
-            { PieceIdentity.RightMountainEagle,     ("Mountain Eagle",          "山鷲",     "sanshū",   PieceIdentity.SoaringEagle) },
+            { PieceIdentity.MountainEagle_Left,     ("Mountain Eagle",          "山鷲",     "sanshū",   PieceIdentity.SoaringEagle) },
+            { PieceIdentity.MountainEagle_Right,    ("Mountain Eagle",          "山鷲",     "sanshū",   PieceIdentity.SoaringEagle) },
             { PieceIdentity.FireDemon,              ("Fire Demon",              "火鬼",     "kaki",     PieceIdentity.FreeFire) },
             { PieceIdentity.FreeFire,               ("Free Fire",               "奔火",     "honka",    null) },
             { PieceIdentity.Whale,                  ("Whale",                   "鯨鯢",     "keigei",   PieceIdentity.GreatWhale) },
@@ -624,5 +624,19 @@ namespace Oracle
         public static string Romanji(PieceIdentity id) => _PieceInfo[id].Romanji;
 
         public static PieceIdentity? PromotesTo(PieceIdentity id) => _PieceInfo[id].promotesTo;
+
+        public static int Rank(PieceIdentity id) =>
+            id switch
+            {
+                PieceIdentity.King => 1,
+                PieceIdentity.Prince => 1,
+                PieceIdentity.GreatGeneral => 2,
+                PieceIdentity.ViceGeneral => 3,
+                PieceIdentity.BishopGeneral => 4,
+                PieceIdentity.RookGeneral => 4,
+                PieceIdentity.ViolentDragon => 4,
+                PieceIdentity.FlyingCrocodile => 4,
+                _ => 5
+            };
     }
 }

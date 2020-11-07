@@ -34,7 +34,7 @@ namespace WPF_UI
             int maxMoves = 1;
             for (int i = 0; i < moves.StepRange.Length; ++i)
             {
-                maxMoves = Math.Max(maxMoves, moves.StepRange[i] == Movement.FullRange ? 1 : moves.StepRange[i]);
+                maxMoves = Math.Max(maxMoves, moves.StepRange[i] == Movement.Unlimited ? 1 : moves.StepRange[i]);
             }
 
             moveGrid.ColumnDefinitions.Clear();
@@ -70,7 +70,7 @@ namespace WPF_UI
                 for (int i = 1; i <= Math.Min(moves.StepRange[direction], maxMoves); ++i)
                 {
                     var moveIcon = new TextBlock();
-                    moveIcon.Text = moves.StepRange[direction] == 0 ? "" : moves.StepRange[direction] < Movement.FullRange ? "○" : GetFullRangeChar(direction);
+                    moveIcon.Text = moves.StepRange[direction] == 0 ? "" : moves.StepRange[direction] < Movement.Unlimited ? "○" : GetFullRangeChar(direction);
                     moveIcon.FontSize = 12;
                     moveIcon.HorizontalAlignment = HorizontalAlignment.Center;
                     moveIcon.VerticalAlignment = VerticalAlignment.Center;
