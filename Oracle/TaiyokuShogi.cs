@@ -96,6 +96,14 @@ namespace Oracle
                     Movement.UpRight => (loc.X + moveAmount, loc.Y - moveAmount),
                     Movement.DownLeft => (loc.X - moveAmount, loc.Y + moveAmount),
                     Movement.DownRight => (loc.X + moveAmount, loc.Y + moveAmount),
+                    Movement.UpUpLeft => (loc.X - moveAmount, loc.Y - (2 * moveAmount)),
+                    Movement.UpUpRight => (loc.X + moveAmount, loc.Y - (2 * moveAmount)),
+                    Movement.UpLeftLeft => (loc.X - (2 * moveAmount), loc.Y - moveAmount),
+                    Movement.UpRightRight => (loc.X + (2 * moveAmount), loc.Y - moveAmount),
+                    Movement.DownDownLeft => (loc.X - moveAmount, loc.Y + (2 * moveAmount)),
+                    Movement.DownDownRight => (loc.X + moveAmount, loc.Y + (2 * moveAmount)),
+                    Movement.DownLeftLeft => (loc.X - (2 * moveAmount), loc.Y + moveAmount),
+                    Movement.DownRightRight => (loc.X + (2 * moveAmount), loc.Y + moveAmount),
                     _ => throw new NotSupportedException()
                 };
 
