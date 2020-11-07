@@ -309,7 +309,7 @@ namespace Oracle
         Pawn
     }
 
-    public class Pieces
+    public static class Pieces
     {
         private static Dictionary<PieceIdentity, (string Name, string Kanji, string Romanji, PieceIdentity? promotesTo)> _PieceInfo = new Dictionary<PieceIdentity, (string Name, string Kanji, string Romanji, PieceIdentity? promotesTo)>
         {
@@ -617,15 +617,15 @@ namespace Oracle
         };
 
 
-        public static string Name(PieceIdentity id) => _PieceInfo[id].Name;
+        public static string Name(this PieceIdentity id) => _PieceInfo[id].Name;
 
-        public static string Kanji(PieceIdentity id) => _PieceInfo[id].Kanji;
+        public static string Kanji(this PieceIdentity id) => _PieceInfo[id].Kanji;
 
-        public static string Romanji(PieceIdentity id) => _PieceInfo[id].Romanji;
+        public static string Romanji(this PieceIdentity id) => _PieceInfo[id].Romanji;
 
-        public static PieceIdentity? PromotesTo(PieceIdentity id) => _PieceInfo[id].promotesTo;
+        public static PieceIdentity? PromotesTo(this PieceIdentity id) => _PieceInfo[id].promotesTo;
 
-        public static int Rank(PieceIdentity id) =>
+        public static int Rank(this PieceIdentity id) =>
             id switch
             {
                 PieceIdentity.King => 1,

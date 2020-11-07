@@ -82,7 +82,7 @@ namespace WPF_UI
                 var (owner, id) = Game.GetPiece(Selected.Value).Value;
 
                 if (owner == Game.CurrentPlayer
-                    && Game.GetLegalMoves(owner, id, Selected.Value).Contains(loc.Value))
+                    && Game.GetLegalMoves(owner, id, Selected.Value).Any(move => move.Loc == loc.Value))
                 {
                     Game.MakeMove(Selected.Value, loc.Value);
                     Selected = null;
@@ -226,7 +226,7 @@ namespace WPF_UI
                 foreach (var move in moves)
                 {
                     var brush = (owner == Game.CurrentPlayer) ? Brushes.Blue : Brushes.Red;
-                    dc.DrawRectangle(Brushes.Transparent, new Pen(brush, 2.0), BoardLocToRect(move));
+                    dc.DrawRectangle(Brushes.Transparent, new Pen(brush, 2.0), BoardLocToRect(move.Loc));
                 }
             }
         }

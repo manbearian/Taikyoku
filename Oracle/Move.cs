@@ -2489,9 +2489,100 @@ namespace Oracle
         }
     }
 
+    public enum MovementType
+    {
+        Standard, Jump, RangedCapture, Igui, Hook, Area
+    }
+
     public static class TaiyokuShogiMoves
     {
         public static Movement GetMovement(this TaiyokuShogi game, PieceIdentity id) => Movement.GetMovement(id, game.Options);
+
+        public static IEnumerable<((int X, int Y) Loc, MovementType Type)> GetLegalMoves(this TaiyokuShogi game, Player player, PieceIdentity id, (int X, int Y) loc)
+        {
+            var legalMoves = new List<((int X, int Y) Loc, MovementType Type)> ();
+            var movement = game.GetMovement(id);
+
+            // add a move the list of legal moves
+            // returns the location added if stepping can continue in the assocated direction
+            (int X, int Y)? AddMove((int X, int Y) loc, int direction, int distance, MovementType type)
+            {
+                var moveAmount = player == Player.White ? distance : -distance;
+                var (x, y) = direction switch
+                {
+                    Movement.Up => (loc.X, loc.Y - moveAmount),
+                    Movement.Down => (loc.X, loc.Y + moveAmount),
+                    Movement.Left => (loc.X - moveAmount, loc.Y),
+                    Movement.Right => (loc.X + moveAmount, loc.Y),
+                    Movement.UpLeft => (loc.X - moveAmount, loc.Y - moveAmount),
+                    Movement.UpRight => (loc.X + moveAmount, loc.Y - moveAmount),
+                    Movement.DownLeft => (loc.X - moveAmount, loc.Y + moveAmount),
+                    Movement.DownRight => (loc.X + moveAmount, loc.Y + moveAmount),
+                    Movement.UpUpLeft => (loc.X - (moveAmount / 2), loc.Y - moveAmount),
+                    Movement.UpUpRight => (loc.X + (moveAmount / 2), loc.Y - moveAmount),
+                    Movement.UpLeftLeft => (loc.X - moveAmount, loc.Y - (moveAmount / 2)),
+                    Movement.UpRightRight => (loc.X + moveAmount, loc.Y - (moveAmount / 2)),
+                    Movement.DownDownLeft => (loc.X - (moveAmount / 2), loc.Y + moveAmount),
+                    Movement.DownDownRight => (loc.X + (moveAmount / 2), loc.Y + moveAmount),
+                    Movement.DownLeftLeft => (loc.X - moveAmount, loc.Y + (moveAmount / 2)),
+                    Movement.DownRightRight => (loc.X + moveAmount, loc.Y + (moveAmount / 2)),
+                    _ => throw new NotSupportedException()
+                };
+
+                if (y < 0 || y >= TaiyokuShogi.BoardHeight)
+                    return null;
+                if (x < 0 || x >= TaiyokuShogi.BoardWidth)
+                    return null;
+
+                var existingPiece = game.GetPiece((x, y));
+                if (existingPiece.HasValue)
+                {
+                    if (existingPiece?.Owner != player)
+                    {
+                        legalMoves.Add(((x, y), type));
+
+                        if (type == MovementType.RangedCapture && id.Rank() < existingPiece?.Id.Rank())
+                            return (x, y);
+                    }
+
+                    return null;
+                }
+
+                legalMoves.Add(((x, y), type));
+                return (x, y);
+            }
+
+            void AddSteps((int X, int Y) loc, int direction, int range, MovementType type) =>
+                Enumerable.Range(1, range).FirstOrDefault(i => AddMove(loc, direction, i, type) == null);
+
+            for (int direction = 0; direction < movement.StepRange.Length; ++direction)
+            {
+                AddSteps(loc, direction, movement.StepRange[direction], MovementType.Standard);
+            }
+
+            for (int direction = 0; direction < movement.JumpRange.Length; ++direction)
+            {
+                for (int i = 0; i < movement.JumpRange[direction].JumpDistances?.Length; ++i)
+                {
+                    var jumpLoc = AddMove(loc, direction, movement.JumpRange[direction].JumpDistances[i] + 1, MovementType.Jump);
+                    if (jumpLoc != null)
+                    {
+                        AddSteps(jumpLoc.Value, direction, movement.JumpRange[direction].RangeAfter, MovementType.Standard);
+                    }
+                }
+            }
+
+            for (int direction = 0; direction < movement.StepRange.Length; ++direction)
+            {
+                if (movement.RangeCapture[direction])
+                {
+                    AddSteps(loc, direction, Movement.Unlimited, MovementType.RangedCapture);
+                }
+            }
+
+            return legalMoves;
+        }
+
     }
 }
 

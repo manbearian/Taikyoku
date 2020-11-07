@@ -75,78 +75,6 @@ namespace Oracle
                 OnBoardChange(this, args);
             }
         }
-
-        public IEnumerable<(int X, int Y)> GetLegalMoves(Player player, PieceIdentity id, (int X, int Y) loc)
-        {
-            var legalMoves = new List<(int X, int Y)>();
-            var movement = this.GetMovement(id);
-
-            // add a move the list of legal moves
-            // returns the location added if stepping can continue in the assocated direction
-            (int X, int Y)? AddMove((int X, int Y) loc, int direction, int distance)
-            {
-                var moveAmount = player == Player.White ? distance : -distance;
-                var (x, y) = direction switch
-                {
-                    Movement.Up => (loc.X, loc.Y - moveAmount),
-                    Movement.Down => (loc.X, loc.Y + moveAmount),
-                    Movement.Left => (loc.X - moveAmount, loc.Y),
-                    Movement.Right => (loc.X + moveAmount, loc.Y),
-                    Movement.UpLeft => (loc.X - moveAmount, loc.Y - moveAmount),
-                    Movement.UpRight => (loc.X + moveAmount, loc.Y - moveAmount),
-                    Movement.DownLeft => (loc.X - moveAmount, loc.Y + moveAmount),
-                    Movement.DownRight => (loc.X + moveAmount, loc.Y + moveAmount),
-                    Movement.UpUpLeft => (loc.X - moveAmount, loc.Y - (2 * moveAmount)),
-                    Movement.UpUpRight => (loc.X + moveAmount, loc.Y - (2 * moveAmount)),
-                    Movement.UpLeftLeft => (loc.X - (2 * moveAmount), loc.Y - moveAmount),
-                    Movement.UpRightRight => (loc.X + (2 * moveAmount), loc.Y - moveAmount),
-                    Movement.DownDownLeft => (loc.X - moveAmount, loc.Y + (2 * moveAmount)),
-                    Movement.DownDownRight => (loc.X + moveAmount, loc.Y + (2 * moveAmount)),
-                    Movement.DownLeftLeft => (loc.X - (2 * moveAmount), loc.Y + moveAmount),
-                    Movement.DownRightRight => (loc.X + (2 * moveAmount), loc.Y + moveAmount),
-                    _ => throw new NotSupportedException()
-                };
-
-                if (y < 0 || y >= BoardHeight)
-                    return null;
-                if (x < 0 || x >= BoardWidth)
-                    return null;
-
-                var existingPiece = _boardState[x, y];
-                if (existingPiece.HasValue)
-                {
-                    if (existingPiece.Value.Item1 != player)
-                        legalMoves.Add((x, y));
-                    return null;
-                }
-
-                legalMoves.Add((x, y));
-                return (x, y);
-            }
-
-            void AddSteps((int X, int Y) loc, int direction, int range) =>
-                Enumerable.Range(1, range).FirstOrDefault(i => AddMove(loc, direction, i) == null);
-
-            for (int direction = 0; direction < movement.StepRange.Length; ++direction)
-            {
-                AddSteps(loc, direction, movement.StepRange[direction]);
-            }
-
-            for (int direction = 0; direction < movement.JumpRange.Length; ++direction)
-            {
-                for (int i = 0; i < movement.JumpRange[direction].JumpDistances?.Length; ++i)
-                {
-                    var jumpLoc = AddMove(loc, direction, movement.JumpRange[direction].JumpDistances[i] + 1);
-                    if (jumpLoc != null)
-                    {
-                        AddSteps(jumpLoc.Value, direction, movement.JumpRange[direction].RangeAfter);
-                    }
-                }
-            }
-
-            return legalMoves;
-        }
-
         // move the piece at startLoc to endLoc
         //   midLoc is for area-moves
         public void MakeMove((int X, int Y) startLoc, (int X, int Y) endLoc, (int X, int Y)? midLoc = null)
@@ -156,17 +84,38 @@ namespace Oracle
             if (piece == null || piece.Value.Owner != CurrentPlayer)
                 throw new IllegalMoveException();
 
-            if (!GetLegalMoves(CurrentPlayer, piece.Value.Id, startLoc).Contains(endLoc))
+            var moves = this.GetLegalMoves(CurrentPlayer, piece.Value.Id, startLoc).Where(move => move.Loc == endLoc);
+
+            if (!moves.Any())
                 throw new IllegalMoveException();
 
             if (midLoc != null)
             {
+                if (!moves.Any(move => move.Type == MovementType.Area))
+                    throw new IllegalMoveException();
+
                 // capture any piece that got run over by the area-move
-                // todo: test if this is an area mover
                 _boardState[midLoc.Value.X, midLoc.Value.Y] = null;
             }
 
-            // todo: multi-capture for ranged-capture pieces
+            if (moves.Any(move => move.Type == MovementType.RangedCapture))
+            {
+                int xCount = startLoc.X - endLoc.X;
+                int yCount = startLoc.Y - endLoc.Y;
+
+                // orthoganal or diagonal only
+                if (xCount != 0 && yCount != 0 && Math.Abs(xCount) != Math.Abs(yCount))
+                    throw new IllegalMoveException();
+
+                var xMultiplier = xCount == 0 ? 0 : (xCount > 0 ? -1 : 1);
+                var yMultiplier = yCount == 0 ? 0 : (yCount > 0 ? -1 : 1);
+                for (int i = 0; i < Math.Max(Math.Abs(xCount), Math.Abs(yCount)); ++i)
+                {
+                    int x = startLoc.X + xMultiplier * i;
+                    int y = startLoc.Y + yMultiplier * i;
+                    _boardState[x, y] = null;
+                }
+            }
 
             // set new location, this has the effect of removing any piece that was there from the board
             _boardState[startLoc.X, startLoc.Y] = null;
