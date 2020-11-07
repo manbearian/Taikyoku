@@ -113,8 +113,8 @@ namespace WPF_UI
                 dc.DrawRectangle(Brushes.AntiqueWhite, null, new Rect(0, 0, ActualWidth, ActualHeight));
 
                 DrawBoard(dc);
-                DrawPieces(dc);
                 DrawMoves(dc);
+                DrawPieces(dc);
                 dc.Pop();
             }
 
@@ -225,12 +225,14 @@ namespace WPF_UI
 
                 foreach (var move in moves)
                 {
-                    var brush = (owner == Game.CurrentPlayer) ? Brushes.Blue : Brushes.Red;
+                    var brush = Brushes.Transparent;
+                    if (Game.GetPiece(move.Loc) != null)
+                        brush = owner == Game.CurrentPlayer ? Brushes.Blue : Brushes.Red;
                     var rect = BoardLocToRect(move.Loc);
                     rect.Location = new Point(rect.X + 1, rect.Y + 1);
                     rect.Height -= 2;
                     rect.Width -= 2;
-                    dc.DrawRectangle(Brushes.Transparent, new Pen(brush, 1.0), rect);
+                    dc.DrawRectangle(owner == Game.CurrentPlayer ? Brushes.LightBlue : Brushes.Pink, new Pen(brush, 1.0), rect);
                 }
             }
         }
