@@ -226,7 +226,11 @@ namespace WPF_UI
                 foreach (var move in moves)
                 {
                     var brush = (owner == Game.CurrentPlayer) ? Brushes.Blue : Brushes.Red;
-                    dc.DrawRectangle(Brushes.Transparent, new Pen(brush, 2.0), BoardLocToRect(move.Loc));
+                    var rect = BoardLocToRect(move.Loc);
+                    rect.Location = new Point(rect.X + 1, rect.Y + 1);
+                    rect.Height -= 2;
+                    rect.Width -= 2;
+                    dc.DrawRectangle(Brushes.Transparent, new Pen(brush, 1.0), rect);
                 }
             }
         }
