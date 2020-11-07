@@ -2552,12 +2552,26 @@ namespace Oracle
                 return (x, y);
             }
 
-            void AddSteps((int X, int Y) loc, int direction, int range, MovementType type) =>
-                Enumerable.Range(1, range).FirstOrDefault(i => AddMove(loc, direction, i, type) == null);
+            void AddMovesInRange((int X, int Y) loc, int direction, int range, MovementType type)
+            {
+                for (int i = 1; i <= range; ++i)
+                {
+                    var move = AddMove(loc, direction, i, type);
+                    if (move == null)
+                        break;
+
+                    if (type == MovementType.Hook)
+                    {
+                        var (left, right) = Rotate90(direction);
+                        AddMovesInRange(move.Value, left, Movement.Unlimited, MovementType.Standard);
+                        AddMovesInRange(move.Value, right, Movement.Unlimited, MovementType.Standard);
+                    }
+                }
+            }
 
             for (int direction = 0; direction < movement.StepRange.Length; ++direction)
             {
-                AddSteps(loc, direction, movement.StepRange[direction], MovementType.Standard);
+                AddMovesInRange(loc, direction, movement.StepRange[direction], MovementType.Standard);
             }
 
             for (int direction = 0; direction < movement.JumpRange.Length; ++direction)
@@ -2567,7 +2581,7 @@ namespace Oracle
                     var jumpLoc = AddMove(loc, direction, movement.JumpRange[direction].JumpDistances[i] + 1, MovementType.Jump);
                     if (jumpLoc != null)
                     {
-                        AddSteps(jumpLoc.Value, direction, movement.JumpRange[direction].RangeAfter, MovementType.Standard);
+                        AddMovesInRange(jumpLoc.Value, direction, movement.JumpRange[direction].RangeAfter, MovementType.Standard);
                     }
                 }
             }
@@ -2576,13 +2590,51 @@ namespace Oracle
             {
                 if (movement.RangeCapture[direction])
                 {
-                    AddSteps(loc, direction, Movement.Unlimited, MovementType.RangedCapture);
+                    AddMovesInRange(loc, direction, Movement.Unlimited, MovementType.RangedCapture);
+                }
+            }
+
+            if (movement.HookMove.HasValue)
+            {
+                switch (movement.HookMove.Value)
+                {
+                    case Movement.Hooks.Orthogonal:
+                        AddMovesInRange(loc, Movement.Up, Movement.Unlimited, MovementType.Hook);
+                        AddMovesInRange(loc, Movement.Down, Movement.Unlimited, MovementType.Hook);
+                        AddMovesInRange(loc, Movement.Left, Movement.Unlimited, MovementType.Hook);
+                        AddMovesInRange(loc, Movement.Right, Movement.Unlimited, MovementType.Hook);
+                        break;
+                    case Movement.Hooks.Diagonal:
+                        AddMovesInRange(loc, Movement.UpLeft, Movement.Unlimited, MovementType.Hook);
+                        AddMovesInRange(loc, Movement.UpRight, Movement.Unlimited, MovementType.Hook);
+                        AddMovesInRange(loc, Movement.DownLeft, Movement.Unlimited, MovementType.Hook);
+                        AddMovesInRange(loc, Movement.DownRight, Movement.Unlimited, MovementType.Hook);
+                        break;
+                    case Movement.Hooks.ForwardDiagnal:
+                        AddMovesInRange(loc, Movement.UpLeft, Movement.Unlimited, MovementType.Hook);
+                        AddMovesInRange(loc, Movement.UpRight, Movement.Unlimited, MovementType.Hook);
+                        break;
+                    default:
+                        throw new NotSupportedException();
                 }
             }
 
             return legalMoves;
         }
 
+        private static (int Left, int Right) Rotate90(int direction) =>
+            direction switch
+            {
+                Movement.Up => (Movement.Left, Movement.Right),
+                Movement.Down => (Movement.Right, Movement.Left),
+                Movement.Left => (Movement.Down, Movement.Up),
+                Movement.Right => (Movement.Up, Movement.Down),
+                Movement.UpLeft => (Movement.DownLeft, Movement.UpRight),
+                Movement.UpRight => (Movement.UpLeft, Movement.DownRight),
+                Movement.DownLeft => (Movement.DownRight, Movement.UpLeft),
+                Movement.DownRight => (Movement.UpRight, Movement.DownLeft),
+                _ => throw new NotSupportedException()
+            };
     }
 }
 
