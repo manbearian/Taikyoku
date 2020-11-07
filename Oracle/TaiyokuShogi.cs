@@ -21,7 +21,6 @@ namespace Oracle
         DivineSparrowAlternative,
         EarthDragonAlternative,
         FreeDemonAlternative,
-        MountainFalconAlternative,
         LongNosedGoblinAlternative,
         CapricornAlternative,
     }
@@ -82,38 +81,58 @@ namespace Oracle
             var legalMoves = new List<(int X, int Y)>();
             var movement = this.GetMovement(id);
 
+            // add a move the list of legal moves
+            // returns the location added if stepping can continue in the assocated direction
+            (int X, int Y)? AddMove((int X, int Y) loc, int direction, int distance)
+            {
+                var moveAmount = player == Player.White ? distance : -distance;
+                var (x, y) = direction switch
+                {
+                    Movement.Up => (loc.X, loc.Y - moveAmount),
+                    Movement.Down => (loc.X, loc.Y + moveAmount),
+                    Movement.Left => (loc.X - moveAmount, loc.Y),
+                    Movement.Right => (loc.X + moveAmount, loc.Y),
+                    Movement.UpLeft => (loc.X - moveAmount, loc.Y - moveAmount),
+                    Movement.UpRight => (loc.X + moveAmount, loc.Y - moveAmount),
+                    Movement.DownLeft => (loc.X - moveAmount, loc.Y + moveAmount),
+                    Movement.DownRight => (loc.X + moveAmount, loc.Y + moveAmount),
+                    _ => throw new NotSupportedException()
+                };
+
+                if (y < 0 || y >= BoardHeight)
+                    return null;
+                if (x < 0 || x >= BoardWidth)
+                    return null;
+
+                var existingPiece = _boardState[x, y];
+                if (existingPiece.HasValue)
+                {
+                    if (existingPiece.Value.Item1 != player)
+                        legalMoves.Add((x, y));
+                    return null;
+                }
+
+                legalMoves.Add((x, y));
+                return (x, y);
+            }
+
+            void AddSteps((int X, int Y) loc, int direction, int range) =>
+                Enumerable.Range(1, range).FirstOrDefault(i => AddMove(loc, direction, i) == null);
+
             for (int direction = 0; direction < movement.StepRange.Length; ++direction)
             {
-                for (int i = 1; i <= movement.StepRange[direction]; ++i)
+                AddSteps(loc, direction, movement.StepRange[direction]);
+            }
+
+            for (int direction = 0; direction < movement.JumpRange.Length; ++direction)
+            {
+                for (int i = 0; i < movement.JumpRange[direction].JumpDistances?.Length; ++i)
                 {
-                    var moveAmount = player == Player.White ? i : -i;
-                    var (x, y) = direction switch
+                    var jumpLoc = AddMove(loc, direction, movement.JumpRange[direction].JumpDistances[i] + 1);
+                    if (jumpLoc != null)
                     {
-                        Movement.Up => (loc.X, loc.Y - moveAmount),
-                        Movement.Down => (loc.X, loc.Y + moveAmount),
-                        Movement.Left => (loc.X - moveAmount, loc.Y),
-                        Movement.Right => (loc.X + moveAmount, loc.Y),
-                        Movement.UpLeft => (loc.X - moveAmount, loc.Y - moveAmount),
-                        Movement.UpRight => (loc.X + moveAmount, loc.Y - moveAmount),
-                        Movement.DownLeft => (loc.X - moveAmount, loc.Y + moveAmount),
-                        Movement.DownRight => (loc.X + moveAmount, loc.Y + moveAmount),
-                        _ => throw new NotSupportedException()
-                    };
-
-                    if (y < 0 || y >= BoardHeight)
-                        break;
-                    if (x < 0 || x >= BoardWidth)
-                        break;
-
-                    var existingPiece = _boardState[x, y];
-                    if (existingPiece.HasValue)
-                    {
-                        if (existingPiece.Value.Item1 != player)
-                            legalMoves.Add((x, y));
-                        break;
+                        AddSteps(jumpLoc.Value, direction, movement.JumpRange[direction].RangeAfter);
                     }
-
-                    legalMoves.Add((x, y));
                 }
             }
 

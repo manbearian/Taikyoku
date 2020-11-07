@@ -49,8 +49,8 @@ namespace Oracle
         //    0 means cannot jump that direction (jump matrix)
         //    states 8-15 => 1 means can jump to this square (all other values invalid, range after jump must be 0)
         //    states 0-7 => N can over N squares and move M squares ater
-        private (int[] Range, int RangeAfter)[] _jumpRange = new (int[] Range, int RangeAfter)[16];
-        public (int[] Range, int RangeAfter)[] JumpRange { get => _jumpRange; }
+        private (int[] JumpDistances, int RangeAfter)[] _jumpRange = new (int[] JumpDistances, int RangeAfter)[16];
+        public (int[] JumpDistances, int RangeAfter)[] JumpRange { get => _jumpRange; }
 
         // Hook Move (90-degree turn)
         //    3 choices: orthog, diag, forward-diag
@@ -1814,30 +1814,18 @@ namespace Oracle
                     break;
 
                 case PieceIdentity.MountainFalcon:
-                    if ((options & TaiyokuShogiOptions.MountainFalconAlternative) == 0)
-                    {
-                        m._stepRange[UpLeft] = Unlimited;
-                        m._stepRange[Up] = Unlimited;
-                        m._stepRange[UpRight] = Unlimited;
-                        m._stepRange[Right] = Unlimited;
-                        m._stepRange[DownRight] = 2;
-                        m._stepRange[Down] = Unlimited;
-                        m._stepRange[DownLeft] = 2;
-                        m._stepRange[Left] = Unlimited;
+                    // from https://www.chessvariants.com/shogivariants.dir/taikyoku_english.html
+                    // the English language Wikipedia page differs a bit and presents two alternatives
+                    m._stepRange[UpLeft] = Unlimited;
+                    m._stepRange[Up] = 2;
+                    m._stepRange[UpRight] = Unlimited;
+                    m._stepRange[Right] = Unlimited;
+                    m._stepRange[DownRight] = 2;
+                    m._stepRange[Down] = Unlimited;
+                    m._stepRange[DownLeft] = 2;
+                    m._stepRange[Left] = Unlimited;
 
-                        m._jumpRange[Up] = (new int[] { 1 }, 0);
-                    }
-                    else
-                    {
-                        m._stepRange[UpLeft] = Unlimited;
-                        m._stepRange[Up] = Unlimited;
-                        m._stepRange[UpRight] = Unlimited;
-                        m._stepRange[DownRight] = 2;
-                        m._stepRange[Down] = Unlimited;
-                        m._stepRange[DownLeft] = 2;
-
-                        m._jumpRange[Up] = (new int[] { 1 }, 0);
-                    }
+                    m._jumpRange[Up] = (new int[] { 1 }, Unlimited);
                     break;
 
                 case PieceIdentity.LittleTurtle:

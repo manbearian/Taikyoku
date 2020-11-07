@@ -263,6 +263,12 @@ namespace Oracle
                             board[col(j), row(i)] = (player, piece.Value);
                     }
                 }
+
+                // test pieces
+                board[17, 17] = (Player.White, PieceIdentity.WoodenDove);
+                board[18, 18] = (Player.White, PieceIdentity.Pawn);
+                board[19, 19] = (Player.Black, PieceIdentity.Pawn);
+                board[21, 21] = (Player.Black, PieceIdentity.Pawn);
             }
         }
     }
