@@ -265,11 +265,9 @@ namespace Oracle
                 }
 
                 // test pieces
-                board[17, 17] = (Player.White, PieceIdentity.Peacock);
-                board[15, 17] = (Player.Black, PieceIdentity.Capricorn);
-                board[12, 17] = (Player.White, PieceIdentity.HookMover);
-                //board[17, 17] = (Player.White, PieceIdentity.WoodenDove);
-                //board[18, 18] = (Player.White, PieceIdentity.Pawn);
+                //board[17, 17] = (Player.White, PieceIdentity.HeavenlyTetrarchKing);
+                //board[17, 16] = (Player.Black, PieceIdentity.Pawn);
+                //board[17, 15] = (Player.Black, PieceIdentity.Pawn);
                 //board[19, 19] = (Player.Black, PieceIdentity.Pawn);
                 //board[21, 21] = (Player.Black, PieceIdentity.Pawn);
             }

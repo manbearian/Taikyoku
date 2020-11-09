@@ -111,3 +111,40 @@ namespace WPF_UI
         }
     }
 }
+
+
+#if false
+                            case MoveType.Jump:
+                                {
+                                    var jumpGlpyh = new FormattedText(
+                                        "✬",
+                                        CultureInfo.GetCultureInfo("jp-jp"),
+                                        FlowDirection.LeftToRight,
+                                        new Typeface("MS Gothic"),
+                                        SpaceHeight * 0.5,
+                                        Brushes.Black,
+                                        1.25);
+                                    jumpGlpyh.TextAlignment = TextAlignment.Center;
+                                    var center = BoardLocToRect(move.Loc).Location;
+                                    center.Offset(SpaceWidth / 2, SpaceHeight / 2 - jumpGlpyh.Height / 2);
+                                    dc.DrawText(jumpGlpyh, center);
+                                    break;
+                                }
+
+                            case MoveType.Igui:
+                                {
+                                    var iguiGlpyh = new FormattedText(
+                                        "!",
+                                        CultureInfo.GetCultureInfo("jp-jp"),
+                                        FlowDirection.LeftToRight,
+                                        new Typeface("MS Gothic"),
+                                        SpaceHeight * 0.5,
+                                        Brushes.Black,
+                                        1.25);
+                                    iguiGlpyh.TextAlignment = TextAlignment.Center;
+                                    var center = BoardLocToRect(move.Loc).Location;
+                                    center.Offset(SpaceWidth / 2, SpaceHeight / 2 - iguiGlpyh.Height / 2);
+                                    dc.DrawText(iguiGlpyh, center);
+                                    break;
+                                }
+#endif

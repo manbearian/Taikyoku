@@ -7,13 +7,6 @@ namespace Oracle
 {
     public class Movement
     {
-        public enum Hooks
-        {
-            Orthogonal,
-            Diagonal,
-            ForwardDiagnal
-        };
-
         // basic directions
         public const int UpLeft = 0;
         public const int Up = 1;
@@ -23,6 +16,7 @@ namespace Oracle
         public const int Down = 5;
         public const int DownLeft = 6;
         public const int Left = 7;
+        public const int DirectionCount = 8;
 
         // extra directions for "knight" jumps 
         public const int UpUpLeft = 8;
@@ -33,6 +27,7 @@ namespace Oracle
         public const int DownLeftLeft = 13;
         public const int DownDownLeft = 14;
         public const int DownDownRight = 15;
+        public const int JumpDirectionCount = 16;
 
         public const int Unlimited = int.MaxValue;
         private static readonly int[] UnlimitedJump = Enumerable.Range(0, Math.Max(TaiyokuShogi.BoardWidth, TaiyokuShogi.BoardHeight)).ToArray();
@@ -54,20 +49,21 @@ namespace Oracle
 
         // Hook Move (90-degree turn)
         //    3 choices: orthog, diag, forward-diag
-        public Hooks? HookMove { get; private set; } = null;
+        private HookType? _hookMove = null;
+        public HookType? HookMove { get => _hookMove; }
 
-        // Area move (two single space moves, double capture)
-        public bool AreaMove { get; private set; } = false;
+        // Area move (up to 2 single space moves, mult-capture)
+        private bool _lionMove = false;
+        public bool LionMove { get => _lionMove; }
 
         // Range capture (move over and capture number of pieces of lower rank)
         //   move matrix of Booleans for direction
         private bool[] _rangeCapture = new bool[8];
         public IReadOnlyList<bool> RangeCapture { get => _rangeCapture; }
 
-        // Igui
-        //   capture without move in the given directions
-        private bool[] _igui = new bool[8];
-        public IReadOnlyList<bool> Igui { get => _igui; }
+        // Igui - capture without moving
+        private bool _igui = false;
+        public bool Igui { get => _igui; }
 
         public static Movement GetMovement(PieceIdentity id, TaiyokuShogiOptions options)
         {
@@ -2085,6 +2081,8 @@ namespace Oracle
                     break;
 
                 case PieceIdentity.FreeEagle:
+                    // Additional FreeEagle moves are listed @ https://www.chessvariants.com/shogivariants.dir/taikyoku_english.html
+                    // These are not implemented
                     m._jumpRange[UpLeft] = (new int[] { 1, 2, 3 }, Unlimited);
                     m._jumpRange[Up] = (new int[] { 1, 2 }, Unlimited);
                     m._jumpRange[UpRight] = (new int[] { 1, 2, 3 }, Unlimited);
@@ -2281,11 +2279,11 @@ namespace Oracle
                     break;
 
                 case PieceIdentity.HookMover:
-                    m.HookMove = Hooks.Orthogonal;
+                    m._hookMove = HookType.Orthogonal;
                     break;
 
                 case PieceIdentity.LongNosedGoblin:
-                    m.HookMove = Hooks.Diagonal;
+                    m._hookMove = HookType.Diagonal;
                     if ((options & TaiyokuShogiOptions.LongNosedGoblinAlternative) != 0)
                     {
                         m._stepRange[Up] = 1;
@@ -2296,7 +2294,7 @@ namespace Oracle
                     break;
 
                 case PieceIdentity.Capricorn:
-                    m.HookMove = Hooks.Diagonal;
+                    m._hookMove = HookType.Diagonal;
                     if ((options & TaiyokuShogiOptions.CapricornAlternative) != 0)
                     {
                         m._stepRange[Up] = 1;
@@ -2307,12 +2305,14 @@ namespace Oracle
                     break;
 
                 case PieceIdentity.Peacock:
-                    m.HookMove = Hooks.ForwardDiagnal;
+                    m._hookMove = HookType.ForwardDiagnal;
                     m._stepRange[DownRight] = 2;
                     m._stepRange[DownLeft] = 2;
                     break;
 
                 case PieceIdentity.HeavenlyTetrarchKing:
+                    m._igui = true;
+
                     m._stepRange[UpLeft] = Unlimited;
                     m._stepRange[Up] = Unlimited;
                     m._stepRange[UpRight] = Unlimited;
@@ -2331,48 +2331,16 @@ namespace Oracle
                     m._jumpRange[DownLeft] = (new int[] { 1 }, Unlimited);
                     m._jumpRange[Left] = (new int[] { 1 }, Unlimited);
 
-                    m._igui[UpLeft] = true;
-                    m._igui[Up] = true;
-                    m._igui[UpRight] = true;
-                    m._igui[Right] = true;
-                    m._igui[DownRight] = true;
-                    m._igui[Down] = true;
-                    m._igui[DownLeft] = true;
-                    m._igui[Left] = true;
                     break;
 
                 case PieceIdentity.Lion:
-                    m.AreaMove = true;
-
-                    m._jumpRange[UpLeft] = (new int[] { 1 }, 0);
-                    m._jumpRange[Up] = (new int[] { 1 }, 0);
-                    m._jumpRange[UpRight] = (new int[] { 1 }, 0);
-                    m._jumpRange[Right] = (new int[] { 1 }, 0);
-                    m._jumpRange[DownRight] = (new int[] { 1 }, 0);
-                    m._jumpRange[Down] = (new int[] { 1 }, 0);
-                    m._jumpRange[DownLeft] = (new int[] { 1 }, 0);
-                    m._jumpRange[Left] = (new int[] { 1 }, 0);
-                    m._jumpRange[UpUpLeft] = (new int[] { 1 }, 0);
-                    m._jumpRange[UpUpRight] = (new int[] { 1 }, 0);
-                    m._jumpRange[UpLeftLeft] = (new int[] { 1 }, 0);
-                    m._jumpRange[UpRightRight] = (new int[] { 1 }, 0);
-                    m._jumpRange[DownLeftLeft] = (new int[] { 1 }, 0);
-                    m._jumpRange[DownRightRight] = (new int[] { 1 }, 0);
-                    m._jumpRange[DownDownLeft] = (new int[] { 1 }, 0);
-                    m._jumpRange[DownDownRight] = (new int[] { 1 }, 0);
-
-                    m._igui[UpLeft] = true;
-                    m._igui[Up] = true;
-                    m._igui[UpRight] = true;
-                    m._igui[Right] = true;
-                    m._igui[DownRight] = true;
-                    m._igui[Down] = true;
-                    m._igui[DownLeft] = true;
-                    m._igui[Left] = true;
+                    m._lionMove = true;
+                    m._igui = true;
                     break;
 
                 case PieceIdentity.FuriousFiend:
-                    m.AreaMove = true;
+                    m._lionMove = true;
+                    m._igui = true;
 
                     m._stepRange[UpLeft] = 3;
                     m._stepRange[Up] = 3;
@@ -2382,36 +2350,11 @@ namespace Oracle
                     m._stepRange[Down] = 3;
                     m._stepRange[DownLeft] = 3;
                     m._stepRange[Left] = 3;
-
-                    m._jumpRange[UpLeft] = (new int[] { 1 }, 0);
-                    m._jumpRange[Up] = (new int[] { 1 }, 0);
-                    m._jumpRange[UpRight] = (new int[] { 1 }, 0);
-                    m._jumpRange[Right] = (new int[] { 1 }, 0);
-                    m._jumpRange[DownRight] = (new int[] { 1 }, 0);
-                    m._jumpRange[Down] = (new int[] { 1 }, 0);
-                    m._jumpRange[DownLeft] = (new int[] { 1 }, 0);
-                    m._jumpRange[Left] = (new int[] { 1 }, 0);
-                    m._jumpRange[UpUpLeft] = (new int[] { 1 }, 0);
-                    m._jumpRange[UpUpRight] = (new int[] { 1 }, 0);
-                    m._jumpRange[UpLeftLeft] = (new int[] { 1 }, 0);
-                    m._jumpRange[UpRightRight] = (new int[] { 1 }, 0);
-                    m._jumpRange[DownLeftLeft] = (new int[] { 1 }, 0);
-                    m._jumpRange[DownRightRight] = (new int[] { 1 }, 0);
-                    m._jumpRange[DownDownLeft] = (new int[] { 1 }, 0);
-                    m._jumpRange[DownDownRight] = (new int[] { 1 }, 0);
-
-                    m._igui[UpLeft] = true;
-                    m._igui[Up] = true;
-                    m._igui[UpRight] = true;
-                    m._igui[Right] = true;
-                    m._igui[DownRight] = true;
-                    m._igui[Down] = true;
-                    m._igui[DownLeft] = true;
-                    m._igui[Left] = true;
                     break;
 
                 case PieceIdentity.BuddhistSpirit:
-                    m.AreaMove = true;
+                    m._lionMove = true;
+                    m._igui = true;
 
                     m._stepRange[UpLeft] = Unlimited;
                     m._stepRange[Up] = Unlimited;
@@ -2421,36 +2364,11 @@ namespace Oracle
                     m._stepRange[Down] = Unlimited;
                     m._stepRange[DownLeft] = Unlimited;
                     m._stepRange[Left] = Unlimited;
-
-                    m._jumpRange[UpLeft] = (new int[] { 1 }, 0);
-                    m._jumpRange[Up] = (new int[] { 1 }, 0);
-                    m._jumpRange[UpRight] = (new int[] { 1 }, 0);
-                    m._jumpRange[Right] = (new int[] { 1 }, 0);
-                    m._jumpRange[DownRight] = (new int[] { 1 }, 0);
-                    m._jumpRange[Down] = (new int[] { 1 }, 0);
-                    m._jumpRange[DownLeft] = (new int[] { 1 }, 0);
-                    m._jumpRange[Left] = (new int[] { 1 }, 0);
-                    m._jumpRange[UpUpLeft] = (new int[] { 1 }, 0);
-                    m._jumpRange[UpUpRight] = (new int[] { 1 }, 0);
-                    m._jumpRange[UpLeftLeft] = (new int[] { 1 }, 0);
-                    m._jumpRange[UpRightRight] = (new int[] { 1 }, 0);
-                    m._jumpRange[DownLeftLeft] = (new int[] { 1 }, 0);
-                    m._jumpRange[DownRightRight] = (new int[] { 1 }, 0);
-                    m._jumpRange[DownDownLeft] = (new int[] { 1 }, 0);
-                    m._jumpRange[DownDownRight] = (new int[] { 1 }, 0);
-
-                    m._igui[UpLeft] = true;
-                    m._igui[Up] = true;
-                    m._igui[UpRight] = true;
-                    m._igui[Right] = true;
-                    m._igui[DownRight] = true;
-                    m._igui[Down] = true;
-                    m._igui[DownLeft] = true;
-                    m._igui[Left] = true;
                     break;
 
                 case PieceIdentity.LionHawk:
-                    m.AreaMove = true;
+                    m._lionMove = true;
+                    m._igui = true;
 
                     m._stepRange[UpLeft] = Unlimited;
                     m._stepRange[UpRight] = Unlimited;
@@ -2458,30 +2376,9 @@ namespace Oracle
                     m._stepRange[DownLeft] = Unlimited;
 
                     m._jumpRange[UpLeft] = (new int[] { 1 }, Unlimited);
-                    m._jumpRange[Up] = (new int[] { 1 }, 0);
                     m._jumpRange[UpRight] = (new int[] { 1 }, Unlimited);
-                    m._jumpRange[Right] = (new int[] { 1 }, 0);
                     m._jumpRange[DownRight] = (new int[] { 1 }, Unlimited);
-                    m._jumpRange[Down] = (new int[] { 1 }, 0);
                     m._jumpRange[DownLeft] = (new int[] { 1 }, Unlimited);
-                    m._jumpRange[Left] = (new int[] { 1 }, 0);
-                    m._jumpRange[UpUpLeft] = (new int[] { 1 }, 0);
-                    m._jumpRange[UpUpRight] = (new int[] { 1 }, 0);
-                    m._jumpRange[UpLeftLeft] = (new int[] { 1 }, 0);
-                    m._jumpRange[UpRightRight] = (new int[] { 1 }, 0);
-                    m._jumpRange[DownLeftLeft] = (new int[] { 1 }, 0);
-                    m._jumpRange[DownRightRight] = (new int[] { 1 }, 0);
-                    m._jumpRange[DownDownLeft] = (new int[] { 1 }, 0);
-                    m._jumpRange[DownDownRight] = (new int[] { 1 }, 0);
-
-                    m._igui[UpLeft] = true;
-                    m._igui[Up] = true;
-                    m._igui[UpRight] = true;
-                    m._igui[Right] = true;
-                    m._igui[DownRight] = true;
-                    m._igui[Down] = true;
-                    m._igui[DownLeft] = true;
-                    m._igui[Left] = true;
                     break;
             }
 
@@ -2489,137 +2386,108 @@ namespace Oracle
         }
     }
 
-    public enum MovementType
+    public enum HookType
+    {
+        Orthogonal,
+        Diagonal,
+        ForwardDiagnal
+    };
+
+
+    public enum MoveType
     {
         Standard, Jump, RangedCapture, Igui, Hook, Area
     }
 
-    public static class TaiyokuShogiMoves
+    internal class MoveGenerator
     {
-        public static Movement GetMovement(this TaiyokuShogi game, PieceIdentity id) => Movement.GetMovement(id, game.Options);
+        private TaiyokuShogi Game { get; }
 
-        public static IEnumerable<((int X, int Y) Loc, MovementType Type)> GetLegalMoves(this TaiyokuShogi game, Player player, PieceIdentity id, (int X, int Y) loc)
+        private Player Player { get; }
+
+        private PieceIdentity Id { get;  }
+
+        private (int X, int Y) StartLoc { get; }
+
+        private List<((int X, int Y) Loc, MoveType Type)> _moves = new List<((int X, int Y) Loc, MoveType Type)>();
+        public IEnumerable<((int X, int Y) Loc, MoveType Type)> Moves { get => _moves; }
+
+        public MoveGenerator(TaiyokuShogi game, Player player, PieceIdentity id, (int X, int Y) startLoc)
+            => (Game, Player, Id, StartLoc) = (game, player, id, startLoc);
+
+        private (int X, int Y)? ComputeMove((int X, int Y) loc, int direction, int distance)
         {
-            var legalMoves = new List<((int X, int Y) Loc, MovementType Type)> ();
-            var movement = game.GetMovement(id);
-
-            // add a move the list of legal moves
-            // returns the location added if stepping can continue in the assocated direction
-            (int X, int Y)? AddMove((int X, int Y) loc, int direction, int distance, MovementType type)
+            var moveAmount = Player == Player.White ? distance : -distance;
+            var (x, y) = direction switch
             {
-                var moveAmount = player == Player.White ? distance : -distance;
-                var (x, y) = direction switch
+                Movement.Up => (loc.X, loc.Y - moveAmount),
+                Movement.Down => (loc.X, loc.Y + moveAmount),
+                Movement.Left => (loc.X - moveAmount, loc.Y),
+                Movement.Right => (loc.X + moveAmount, loc.Y),
+                Movement.UpLeft => (loc.X - moveAmount, loc.Y - moveAmount),
+                Movement.UpRight => (loc.X + moveAmount, loc.Y - moveAmount),
+                Movement.DownLeft => (loc.X - moveAmount, loc.Y + moveAmount),
+                Movement.DownRight => (loc.X + moveAmount, loc.Y + moveAmount),
+                Movement.UpUpLeft => (loc.X - (moveAmount / 2), loc.Y - moveAmount),
+                Movement.UpUpRight => (loc.X + (moveAmount / 2), loc.Y - moveAmount),
+                Movement.UpLeftLeft => (loc.X - moveAmount, loc.Y - (moveAmount / 2)),
+                Movement.UpRightRight => (loc.X + moveAmount, loc.Y - (moveAmount / 2)),
+                Movement.DownDownLeft => (loc.X - (moveAmount / 2), loc.Y + moveAmount),
+                Movement.DownDownRight => (loc.X + (moveAmount / 2), loc.Y + moveAmount),
+                Movement.DownLeftLeft => (loc.X - moveAmount, loc.Y + (moveAmount / 2)),
+                Movement.DownRightRight => (loc.X + moveAmount, loc.Y + (moveAmount / 2)),
+                _ => throw new NotSupportedException()
+            };
+
+            if (y < 0 || y >= TaiyokuShogi.BoardHeight)
+                return null;
+            if (x < 0 || x >= TaiyokuShogi.BoardWidth)
+                return null;
+
+            return (x, y);
+        }
+
+        // returns the location added if stepping can continue in the assocated direction
+        public (int X, int Y)? Add((int X, int Y) loc, int direction, int distance, MoveType type)
+        {
+            var targetLoc = ComputeMove(loc, direction, distance);
+
+            if (!targetLoc.HasValue)
+                return null;
+
+            var existingPiece = Game.GetPiece(targetLoc.Value);
+            if (existingPiece.HasValue)
+            {
+                if (existingPiece?.Owner != Player || (targetLoc == StartLoc && (type == MoveType.Area || type == MoveType.Igui)))
                 {
-                    Movement.Up => (loc.X, loc.Y - moveAmount),
-                    Movement.Down => (loc.X, loc.Y + moveAmount),
-                    Movement.Left => (loc.X - moveAmount, loc.Y),
-                    Movement.Right => (loc.X + moveAmount, loc.Y),
-                    Movement.UpLeft => (loc.X - moveAmount, loc.Y - moveAmount),
-                    Movement.UpRight => (loc.X + moveAmount, loc.Y - moveAmount),
-                    Movement.DownLeft => (loc.X - moveAmount, loc.Y + moveAmount),
-                    Movement.DownRight => (loc.X + moveAmount, loc.Y + moveAmount),
-                    Movement.UpUpLeft => (loc.X - (moveAmount / 2), loc.Y - moveAmount),
-                    Movement.UpUpRight => (loc.X + (moveAmount / 2), loc.Y - moveAmount),
-                    Movement.UpLeftLeft => (loc.X - moveAmount, loc.Y - (moveAmount / 2)),
-                    Movement.UpRightRight => (loc.X + moveAmount, loc.Y - (moveAmount / 2)),
-                    Movement.DownDownLeft => (loc.X - (moveAmount / 2), loc.Y + moveAmount),
-                    Movement.DownDownRight => (loc.X + (moveAmount / 2), loc.Y + moveAmount),
-                    Movement.DownLeftLeft => (loc.X - moveAmount, loc.Y + (moveAmount / 2)),
-                    Movement.DownRightRight => (loc.X + moveAmount, loc.Y + (moveAmount / 2)),
-                    _ => throw new NotSupportedException()
-                };
+                    _moves.Add((targetLoc.Value, type));
 
-                if (y < 0 || y >= TaiyokuShogi.BoardHeight)
-                    return null;
-                if (x < 0 || x >= TaiyokuShogi.BoardWidth)
-                    return null;
-
-                var existingPiece = game.GetPiece((x, y));
-                if (existingPiece.HasValue)
-                {
-                    if (existingPiece?.Owner != player)
-                    {
-                        legalMoves.Add(((x, y), type));
-
-                        if (type == MovementType.RangedCapture && id.Rank() < existingPiece?.Id.Rank())
-                            return (x, y);
-                    }
-
-                    return null;
+                    if (type == MoveType.RangedCapture && Id.Rank() < existingPiece?.Id.Rank())
+                        return targetLoc;
                 }
 
-                legalMoves.Add(((x, y), type));
-                return (x, y);
+                return null;
             }
 
-            void AddMovesInRange((int X, int Y) loc, int direction, int range, MovementType type)
-            {
-                for (int i = 1; i <= range; ++i)
-                {
-                    var move = AddMove(loc, direction, i, type);
-                    if (move == null)
-                        break;
+            _moves.Add((targetLoc.Value, type));
+            return targetLoc;
+        }
 
-                    if (type == MovementType.Hook)
-                    {
-                        var (left, right) = Rotate90(direction);
-                        AddMovesInRange(move.Value, left, Movement.Unlimited, MovementType.Standard);
-                        AddMovesInRange(move.Value, right, Movement.Unlimited, MovementType.Standard);
-                    }
+        public void AddRange((int X, int Y) loc, int direction, int range, MoveType type)
+        {
+            for (int i = 1; i <= range; ++i)
+            {
+                var move = Add(loc, direction, i, type);
+                if (move == null)
+                    break;
+
+                if (type == MoveType.Hook)
+                {
+                    var (left, right) = Rotate90(direction);
+                    AddRange(move.Value, left, Movement.Unlimited, MoveType.Standard);
+                    AddRange(move.Value, right, Movement.Unlimited, MoveType.Standard);
                 }
             }
-
-            for (int direction = 0; direction < movement.StepRange.Length; ++direction)
-            {
-                AddMovesInRange(loc, direction, movement.StepRange[direction], MovementType.Standard);
-            }
-
-            for (int direction = 0; direction < movement.JumpRange.Length; ++direction)
-            {
-                for (int i = 0; i < movement.JumpRange[direction].JumpDistances?.Length; ++i)
-                {
-                    var jumpLoc = AddMove(loc, direction, movement.JumpRange[direction].JumpDistances[i] + 1, MovementType.Jump);
-                    if (jumpLoc != null)
-                    {
-                        AddMovesInRange(jumpLoc.Value, direction, movement.JumpRange[direction].RangeAfter, MovementType.Standard);
-                    }
-                }
-            }
-
-            for (int direction = 0; direction < movement.StepRange.Length; ++direction)
-            {
-                if (movement.RangeCapture[direction])
-                {
-                    AddMovesInRange(loc, direction, Movement.Unlimited, MovementType.RangedCapture);
-                }
-            }
-
-            if (movement.HookMove.HasValue)
-            {
-                switch (movement.HookMove.Value)
-                {
-                    case Movement.Hooks.Orthogonal:
-                        AddMovesInRange(loc, Movement.Up, Movement.Unlimited, MovementType.Hook);
-                        AddMovesInRange(loc, Movement.Down, Movement.Unlimited, MovementType.Hook);
-                        AddMovesInRange(loc, Movement.Left, Movement.Unlimited, MovementType.Hook);
-                        AddMovesInRange(loc, Movement.Right, Movement.Unlimited, MovementType.Hook);
-                        break;
-                    case Movement.Hooks.Diagonal:
-                        AddMovesInRange(loc, Movement.UpLeft, Movement.Unlimited, MovementType.Hook);
-                        AddMovesInRange(loc, Movement.UpRight, Movement.Unlimited, MovementType.Hook);
-                        AddMovesInRange(loc, Movement.DownLeft, Movement.Unlimited, MovementType.Hook);
-                        AddMovesInRange(loc, Movement.DownRight, Movement.Unlimited, MovementType.Hook);
-                        break;
-                    case Movement.Hooks.ForwardDiagnal:
-                        AddMovesInRange(loc, Movement.UpLeft, Movement.Unlimited, MovementType.Hook);
-                        AddMovesInRange(loc, Movement.UpRight, Movement.Unlimited, MovementType.Hook);
-                        break;
-                    default:
-                        throw new NotSupportedException();
-                }
-            }
-
-            return legalMoves;
         }
 
         private static (int Left, int Right) Rotate90(int direction) =>
@@ -2636,5 +2504,111 @@ namespace Oracle
                 _ => throw new NotSupportedException()
             };
     }
-}
 
+
+    public static class TaiyokuShogiMoves
+    {
+        public static Movement GetMovement(this TaiyokuShogi game, PieceIdentity id) => Movement.GetMovement(id, game.Options);
+
+        public static IEnumerable<((int X, int Y) Loc, MoveType Type)> GetLegalMoves(this TaiyokuShogi game, Player player, PieceIdentity id, (int X, int Y) loc, (int X, int Y)? midLoc = null)
+        {
+            var legalMoves = new MoveGenerator(game, player, id, loc);
+            var movement = game.GetMovement(id);
+
+            if (midLoc != null)
+            {
+                // An area-move (double-capture) or Igui (capture-in-place)
+
+                if (movement.LionMove)
+                {
+                    for (int i = 0; i < Movement.DirectionCount; ++i)
+                    {
+                        legalMoves.Add(midLoc.Value, i, 1, MoveType.Area);
+                    }
+                    legalMoves.Add(midLoc.Value, Movement.Up, 0, MoveType.Area);
+                }
+
+                if (movement.Igui)
+                {
+                    // back to initial is the only legal move
+                    legalMoves.Add(loc, Movement.Up, 0, MoveType.Igui);
+                }
+
+                return legalMoves.Moves;
+            }
+
+            for (int direction = 0; direction < movement.StepRange.Length; ++direction)
+            {
+                legalMoves.AddRange(loc, direction, movement.StepRange[direction], MoveType.Standard);
+            }
+
+            for (int direction = 0; direction < movement.JumpRange.Length; ++direction)
+            {
+                for (int i = 0; i < movement.JumpRange[direction].JumpDistances?.Length; ++i)
+                {
+                    var jumpLoc = legalMoves.Add(loc, direction, movement.JumpRange[direction].JumpDistances[i] + 1, MoveType.Jump);
+                    if (jumpLoc != null)
+                    {
+                        legalMoves.AddRange(jumpLoc.Value, direction, movement.JumpRange[direction].RangeAfter, MoveType.Standard);
+                    }
+                }
+            }
+
+            for (int direction = 0; direction < movement.StepRange.Length; ++direction)
+            {
+                if (movement.RangeCapture[direction])
+                {
+                    legalMoves.AddRange(loc, direction, Movement.Unlimited, MoveType.RangedCapture);
+                }
+            }
+
+            if (movement.HookMove.HasValue)
+            {
+                switch (movement.HookMove.Value)
+                {
+                    case HookType.Orthogonal:
+                        legalMoves.AddRange(loc, Movement.Up, Movement.Unlimited, MoveType.Hook);
+                        legalMoves.AddRange(loc, Movement.Down, Movement.Unlimited, MoveType.Hook);
+                        legalMoves.AddRange(loc, Movement.Left, Movement.Unlimited, MoveType.Hook);
+                        legalMoves.AddRange(loc, Movement.Right, Movement.Unlimited, MoveType.Hook);
+                        break;
+                    case HookType.Diagonal:
+                        legalMoves.AddRange(loc, Movement.UpLeft, Movement.Unlimited, MoveType.Hook);
+                        legalMoves.AddRange(loc, Movement.UpRight, Movement.Unlimited, MoveType.Hook);
+                        legalMoves.AddRange(loc, Movement.DownLeft, Movement.Unlimited, MoveType.Hook);
+                        legalMoves.AddRange(loc, Movement.DownRight, Movement.Unlimited, MoveType.Hook);
+                        break;
+                    case HookType.ForwardDiagnal:
+                        legalMoves.AddRange(loc, Movement.UpLeft, Movement.Unlimited, MoveType.Hook);
+                        legalMoves.AddRange(loc, Movement.UpRight, Movement.Unlimited, MoveType.Hook);
+                        break;
+                    default:
+                        throw new NotSupportedException();
+                }
+            }
+
+            if (movement.LionMove)
+            {
+                for (int direction = 0; direction < Movement.DirectionCount; ++direction)
+                {
+                    legalMoves.Add(loc, direction, 1, MoveType.Area);
+                }
+
+                for (int direction = 0; direction < Movement.JumpDirectionCount; ++direction)
+                {
+                    legalMoves.Add(loc, direction, 2, MoveType.Jump);
+                }
+            }
+
+            if (movement.Igui)
+            {
+                for (int i = 0; i < Movement.DirectionCount; ++i)
+                {
+                    legalMoves.Add(loc, i, 1, MoveType.Igui);
+                }
+            }
+
+            return legalMoves.Moves;
+        }
+    }
+}

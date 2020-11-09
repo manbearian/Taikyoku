@@ -84,21 +84,21 @@ namespace Oracle
             if (piece == null || piece.Value.Owner != CurrentPlayer)
                 throw new IllegalMoveException();
 
-            var moves = this.GetLegalMoves(CurrentPlayer, piece.Value.Id, startLoc).Where(move => move.Loc == endLoc);
+            var moves = this.GetLegalMoves(CurrentPlayer, piece.Value.Id, startLoc, midLoc).Where(move => move.Loc == endLoc);
 
             if (!moves.Any())
                 throw new IllegalMoveException();
 
             if (midLoc != null)
             {
-                if (!moves.Any(move => move.Type == MovementType.Area))
+                if (!moves.Any(move => move.Type == MoveType.Area || move.Type == MoveType.Igui))
                     throw new IllegalMoveException();
 
                 // capture any piece that got run over by the area-move
                 _boardState[midLoc.Value.X, midLoc.Value.Y] = null;
             }
 
-            if (moves.Any(move => move.Type == MovementType.RangedCapture))
+            if (moves.Any(move => move.Type == MoveType.RangedCapture))
             {
                 int xCount = startLoc.X - endLoc.X;
                 int yCount = startLoc.Y - endLoc.Y;
@@ -152,5 +152,4 @@ namespace Oracle
     {
         public BoardChangeEventArgs() { }
     }
-
 }
