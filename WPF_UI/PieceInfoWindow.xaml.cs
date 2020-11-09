@@ -73,12 +73,17 @@ namespace WPF_UI
                 moveGrid.RowDefinitions.Add(new RowDefinition());
             }
 
-            var glyphGrid = new TextBlock[gridSize, gridSize];
+            var glyphGrid = new (TextBlock TextBlock, Rectangle Background)[gridSize, gridSize];
 
             for (int i = 0; i < gridSize; ++i)
             {
                 for (int j = 0; j < gridSize; ++j)
                 {
+                    var background = new Rectangle();
+                    Grid.SetColumn(background, i);
+                    Grid.SetRow(background, j);
+                    moveGrid.Children.Add(background);
+
                     var glyphBox = new TextBlock
                     {
                         Text = "",
@@ -89,11 +94,12 @@ namespace WPF_UI
                     Grid.SetColumn(glyphBox, i);
                     Grid.SetRow(glyphBox, j);
                     moveGrid.Children.Add(glyphBox);
-                    glyphGrid[i, j] = glyphBox;
+
+                    glyphGrid[i, j] = (glyphBox, background);
                 }
             }
 
-            var pieceIcon = glyphGrid[gridSize / 2, gridSize / 2];
+            var pieceIcon = glyphGrid[gridSize / 2, gridSize / 2].TextBlock;
             pieceIcon.Text = "☖";
             pieceIcon.FontSize = 14;
 
@@ -102,7 +108,8 @@ namespace WPF_UI
                 for (int i = 1; i <= Math.Min(moves.StepRange[direction], maxMoves); ++i)
                 {
                     var (gridX, gridY) = GetGridPos(gridSize, direction, i);
-                    glyphGrid[gridX, gridY].Text = GetMoveChar(moves.StepRange[direction], direction);
+                    glyphGrid[gridX, gridY].TextBlock.Text = GetMoveChar(moves.StepRange[direction], direction);
+                    glyphGrid[gridX, gridY].Background.Fill = GetMoveColor(moves.StepRange[direction]);
                 }
             }
 
@@ -115,14 +122,16 @@ namespace WPF_UI
                 foreach (var jumpDistance in jumpInfo.JumpDistances)
                 {
                     var (gridX, gridY) = GetGridPos(gridSize, direction, jumpDistance + 1);
-                    glyphGrid[gridX, gridY].Text = "✬";
+                    glyphGrid[gridX, gridY].TextBlock.Text = "✬";
+                    glyphGrid[gridX, gridY].Background.Fill = Brushes.LightYellow;
                 }
 
                 var maxJumpRange = (jumpInfo.RangeAfter < Movement.Unlimited) ? jumpInfo.RangeAfter + jumpInfo.JumpDistances.Max() + 2 : Movement.Unlimited;
                 for (int i = jumpInfo.JumpDistances.Max() + 2; i <= Math.Min(maxJumpRange, maxMoves); ++i)
                 {
                     var (gridX, gridY) = GetGridPos(gridSize, direction, i);
-                    glyphGrid[gridX, gridY].Text = GetMoveChar(jumpInfo.RangeAfter, direction);
+                    glyphGrid[gridX, gridY].TextBlock.Text = GetMoveChar(jumpInfo.RangeAfter, direction);
+                    glyphGrid[gridX, gridY].Background.Fill = GetMoveColor(jumpInfo.RangeAfter);
                 }
             }
 
@@ -134,14 +143,16 @@ namespace WPF_UI
                         for (int i = 1; i <= 2; ++i)
                         {
                             var (gridX, gridY) = GetGridPos(gridSize, direction, i);
-                            glyphGrid[gridX, gridY].Text = "┼";
+                            glyphGrid[gridX, gridY].TextBlock.Text = "┼";
+                            glyphGrid[gridX, gridY].Background.Fill = GetMoveColor(Movement.Unlimited);
                         }
                     }
 
                     foreach (int direction in Movement.JumpDirections)
                     {
                         var (gridX, gridY) = GetGridPos(gridSize, direction, 2);
-                        glyphGrid[gridX, gridY].Text = direction switch
+                        glyphGrid[gridX, gridY].Background.Fill = GetMoveColor(Movement.Unlimited);
+                        glyphGrid[gridX, gridY].TextBlock.Text = direction switch
                         {
                             Movement.UpUpLeft => "─",
                             Movement.UpUpRight => "─",
@@ -162,7 +173,8 @@ namespace WPF_UI
                         for (int i = 1; i <= 2; ++i)
                         {
                             var (gridX, gridY) = GetGridPos(gridSize, direction, i);
-                            glyphGrid[gridX, gridY].Text = "╳";
+                            glyphGrid[gridX, gridY].TextBlock.Text = "╳";
+                            glyphGrid[gridX, gridY].Background.Fill = GetMoveColor(Movement.Unlimited);
                         }
                     }
                     break;
@@ -173,14 +185,16 @@ namespace WPF_UI
                         for (int i = 1; i <= 3; ++i)
                         {
                             var (gridX, gridY) = GetGridPos(gridSize, direction, i);
-                            glyphGrid[gridX, gridY].Text = "╳";
+                            glyphGrid[gridX, gridY].TextBlock.Text = "╳";
+                            glyphGrid[gridX, gridY].Background.Fill = GetMoveColor(Movement.Unlimited);
                         }
                     }
 
                     foreach (int direction in new int[] { Movement.Left, Movement.Right })
                     {
                         var (gridX, gridY) = GetGridPos(gridSize, direction, 2);
-                        glyphGrid[gridX, gridY].Text = direction switch
+                        glyphGrid[gridX, gridY].Background.Fill = GetMoveColor(Movement.Unlimited);
+                        glyphGrid[gridX, gridY].TextBlock.Text = direction switch
                         {
                             Movement.Left => "╱",
                             Movement.Right => "╲",
@@ -191,7 +205,8 @@ namespace WPF_UI
                     foreach (int direction in Movement.JumpDirections)
                     {
                         var (gridX, gridY) = GetGridPos(gridSize, direction, 3);
-                        glyphGrid[gridX, gridY].Text = direction switch
+                        glyphGrid[gridX, gridY].Background.Fill = GetMoveColor(Movement.Unlimited);
+                        glyphGrid[gridX, gridY].TextBlock.Text = direction switch
                         {
                             Movement.UpUpLeft => "╱",
                             Movement.UpUpRight => "╲",
@@ -207,6 +222,8 @@ namespace WPF_UI
                     break;
             }
 
+            static Brush GetMoveColor(int amount) => new SolidColorBrush(amount < Movement.Unlimited ? Color.FromRgb(0xd0, 0xf0, 0xf0) : Color.FromRgb(0xf0, 0xd0, 0xd0));
+
             static string GetMoveChar(int amount, int direction) =>
                 amount < Movement.Unlimited ? "○" :
                 direction switch
@@ -219,7 +236,6 @@ namespace WPF_UI
                     Movement.UpRight => "╱",
                     Movement.DownLeft => "╱",
                     Movement.DownRight => "╲",
-
                     _ => throw new InvalidOperationException()
                 };
 
