@@ -38,11 +38,14 @@ namespace WPF_UI
 
             headerText.Text = $"{Pieces.Name(id)}\n{Pieces.Kanji(id)} ({Pieces.Romanji(id)})";
 
-            // figure out our grid size
+            //////
+            //
+            // figure out the grid size
+            //
             int maxMoves = 1;
             for (int i = 0; i < moves.StepRange.Length; ++i)
             {
-                maxMoves = Math.Max(maxMoves, moves.StepRange[i] == Movement.Unlimited ? 1 : moves.StepRange[i]);
+                maxMoves = Math.Max(maxMoves, moves.StepRange[i] == Movement.Unlimited ? 2 : moves.StepRange[i]);
             }
 
             for (int i = 0; i < moves.JumpRange.Length; ++i)
@@ -52,6 +55,13 @@ namespace WPF_UI
                 maxMoves = Math.Max(maxMoves, jumpRange ?? 0);
             }
 
+            for (int i = 0; i < moves.RangeCapture.Count; ++i)
+            {
+                maxMoves = Math.Max(maxMoves, moves.RangeCapture[i] ? 2 : 0);
+            }
+
+            maxMoves = Math.Max(maxMoves, moves.LionMove ? 3 : 0);
+
             maxMoves = Math.Max(maxMoves, moves.HookMove switch
             {
                 HookType.Orthogonal => 2,
@@ -59,12 +69,13 @@ namespace WPF_UI
                 HookType.ForwardDiagnal => 3,
                 _ => 0
             });
+            //
+            ///////
 
+            var gridSize = maxMoves * 2 + 1;
             moveGrid.ColumnDefinitions.Clear();
             moveGrid.RowDefinitions.Clear();
             moveGrid.Children.Clear();
-
-            var gridSize = maxMoves * 2 + 1;
             moveGrid.Width = gridSize * 20.0;
             moveGrid.Height = gridSize * 20.0;
             for (int i = 0; i < gridSize; ++i)
@@ -132,6 +143,45 @@ namespace WPF_UI
                     var (gridX, gridY) = GetGridPos(gridSize, direction, i);
                     glyphGrid[gridX, gridY].TextBlock.Text = GetMoveChar(jumpInfo.RangeAfter, direction);
                     glyphGrid[gridX, gridY].Background.Fill = GetMoveColor(jumpInfo.RangeAfter);
+                }
+            }
+
+            if (moves.LionMove)
+            {
+                for (int direction = 0; direction < Movement.DirectionCount; ++direction)
+                {
+                    var (gridX, gridY) = GetGridPos(gridSize, direction, 1);
+                    glyphGrid[gridX, gridY].TextBlock.Text = "!";
+                    glyphGrid[gridX, gridY].Background.Fill = Brushes.LightGreen;
+                }
+
+                for (int direction = 0; direction < Movement.DirectionCountWithJumps; ++direction)
+                {
+                    var (gridX, gridY) = GetGridPos(gridSize, direction, 2);
+                    glyphGrid[gridX, gridY].TextBlock.Text = "✬";
+                    glyphGrid[gridX, gridY].Background.Fill = Brushes.LightGreen;
+                }
+            }
+            else if (moves.Igui)
+            {
+                for (int direction = 0; direction < Movement.DirectionCount; ++direction)
+                {
+                    var (gridX, gridY) = GetGridPos(gridSize, direction, 1);
+                    glyphGrid[gridX, gridY].TextBlock.Text = "!";
+                    glyphGrid[gridX, gridY].Background.Fill = GetMoveColor(1);
+                }
+            }
+
+            for (int direction = 0; direction < moves.RangeCapture.Count; ++direction)
+            {
+                if (moves.RangeCapture[direction])
+                {
+                    for (int i = 1; i <= maxMoves; ++i)
+                    {
+                        var (gridX, gridY) = GetGridPos(gridSize, direction, i);
+                        glyphGrid[gridX, gridY].TextBlock.Text = GetMoveChar(Movement.Unlimited, direction);
+                        glyphGrid[gridX, gridY].Background.Fill = Brushes.LightSalmon;
+                    }
                 }
             }
 

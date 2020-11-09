@@ -27,7 +27,7 @@ namespace Oracle
         public const int DownLeftLeft = 13;
         public const int DownDownLeft = 14;
         public const int DownDownRight = 15;
-        public const int JumpDirectionCount = 16;
+        public const int DirectionCountWithJumps = 16;
 
         public const int Unlimited = int.MaxValue;
         private static readonly int[] UnlimitedJump = Enumerable.Range(0, Math.Max(TaiyokuShogi.BoardWidth, TaiyokuShogi.BoardHeight)).ToArray();
@@ -2612,7 +2612,7 @@ namespace Oracle
                     legalMoves.Add(loc, direction, 1, MoveType.Area);
                 }
 
-                for (int direction = 0; direction < Movement.JumpDirectionCount; ++direction)
+                for (int direction = 0; direction < Movement.DirectionCountWithJumps; ++direction)
                 {
                     legalMoves.Add(loc, direction, 2, MoveType.Jump);
                 }
