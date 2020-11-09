@@ -2057,8 +2057,12 @@ namespace Oracle
                     break;
 
                 case PieceIdentity.CenterMaster:
+                    m._stepRange[UpLeft] = Unlimited;
+                    m._stepRange[Up] = Unlimited;
+                    m._stepRange[UpRight] = Unlimited;
                     m._stepRange[Right] = 3;
                     m._stepRange[DownRight] = 3;
+                    m._stepRange[Down] = Unlimited;
                     m._stepRange[DownLeft] = 3;
                     m._stepRange[Left] = 3;
 
@@ -2083,6 +2087,16 @@ namespace Oracle
                 case PieceIdentity.FreeEagle:
                     // Additional FreeEagle moves are listed @ https://www.chessvariants.com/shogivariants.dir/taikyoku_english.html
                     // These are not implemented
+
+                    m._stepRange[UpLeft] = Unlimited;
+                    m._stepRange[Up] = Unlimited;
+                    m._stepRange[UpRight] = Unlimited;
+                    m._stepRange[Right] = Unlimited;
+                    m._stepRange[DownRight] = Unlimited;
+                    m._stepRange[Down] = Unlimited;
+                    m._stepRange[DownLeft] = Unlimited;
+                    m._stepRange[Left] = Unlimited;
+
                     m._jumpRange[UpLeft] = (new int[] { 1, 2, 3 }, Unlimited);
                     m._jumpRange[Up] = (new int[] { 1, 2 }, Unlimited);
                     m._jumpRange[UpRight] = (new int[] { 1, 2, 3 }, Unlimited);
