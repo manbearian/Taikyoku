@@ -52,10 +52,13 @@ namespace WPF_UI
                 maxMoves = Math.Max(maxMoves, jumpRange ?? 0);
             }
 
-            if (moves.HookMove.HasValue)
+            maxMoves = Math.Max(maxMoves, moves.HookMove switch
             {
-                maxMoves = Math.Max(maxMoves, 2);
-            }
+                HookType.Orthogonal => 2,
+                HookType.Diagonal => 2,
+                HookType.ForwardDiagnal => 3,
+                _ => 0
+            });
 
             moveGrid.ColumnDefinitions.Clear();
             moveGrid.RowDefinitions.Clear();
@@ -123,6 +126,87 @@ namespace WPF_UI
                 }
             }
 
+            switch (moves.HookMove)
+            {
+                case HookType.Orthogonal:
+                    foreach (int direction in Movement.OrthoganalDirectrions)
+                    {
+                        for (int i = 1; i <= 2; ++i)
+                        {
+                            var (gridX, gridY) = GetGridPos(gridSize, direction, i);
+                            glyphGrid[gridX, gridY].Text = "┼";
+                        }
+                    }
+
+                    foreach (int direction in Movement.JumpDirections)
+                    {
+                        var (gridX, gridY) = GetGridPos(gridSize, direction, 2);
+                        glyphGrid[gridX, gridY].Text = direction switch
+                        {
+                            Movement.UpUpLeft => "─",
+                            Movement.UpUpRight => "─",
+                            Movement.DownDownLeft => "─",
+                            Movement.DownDownRight => "─",
+                            Movement.UpLeftLeft => "│",
+                            Movement.UpRightRight => "│",
+                            Movement.DownLeftLeft => "│",
+                            Movement.DownRightRight => "│",
+                            _ => throw new InvalidOperationException()
+                        };
+                    }
+                    break;
+
+                case HookType.Diagonal:
+                    foreach (int direction in Movement.DiagnalDirectrions)
+                    {
+                        for (int i = 1; i <= 2; ++i)
+                        {
+                            var (gridX, gridY) = GetGridPos(gridSize, direction, i);
+                            glyphGrid[gridX, gridY].Text = "╳";
+                        }
+                    }
+                    break;
+
+                case HookType.ForwardDiagnal:
+                    foreach (int direction in new int[] { Movement.UpLeft, Movement.UpRight })
+                    {
+                        for (int i = 1; i <= 3; ++i)
+                        {
+                            var (gridX, gridY) = GetGridPos(gridSize, direction, i);
+                            glyphGrid[gridX, gridY].Text = "╳";
+                        }
+                    }
+
+                    foreach (int direction in new int[] { Movement.Left, Movement.Right })
+                    {
+                        var (gridX, gridY) = GetGridPos(gridSize, direction, 2);
+                        glyphGrid[gridX, gridY].Text = direction switch
+                        {
+                            Movement.Left => "╱",
+                            Movement.Right => "╲",
+                            _ => throw new InvalidOperationException()
+                        };
+                    }
+
+                    foreach (int direction in Movement.JumpDirections)
+                    {
+                        var (gridX, gridY) = GetGridPos(gridSize, direction, 3);
+                        glyphGrid[gridX, gridY].Text = direction switch
+                        {
+                            Movement.UpUpLeft => "╱",
+                            Movement.UpUpRight => "╲",
+                            Movement.UpLeftLeft => "╱",
+                            Movement.UpRightRight => "╲",
+                            Movement.DownDownLeft => "",
+                            Movement.DownDownRight => "",
+                            Movement.DownLeftLeft => "╱",
+                            Movement.DownRightRight => "╲",
+                            _ => throw new InvalidOperationException()
+                        };
+                    }
+                    break;
+            }
+
             static string GetMoveChar(int amount, int direction) =>
                 amount < Movement.Unlimited ? "○" :
                 direction switch
@@ -135,6 +219,7 @@ namespace WPF_UI
                     Movement.UpRight => "╱",
                     Movement.DownLeft => "╱",
                     Movement.DownRight => "╲",
+
                     _ => throw new InvalidOperationException()
                 };
 
@@ -166,23 +251,6 @@ namespace WPF_UI
 
 
 #if false
-                            case MoveType.Jump:
-                                {
-                                    var jumpGlpyh = new FormattedText(
-                                        "✬",
-                                        CultureInfo.GetCultureInfo("jp-jp"),
-                                        FlowDirection.LeftToRight,
-                                        new Typeface("MS Gothic"),
-                                        SpaceHeight * 0.5,
-                                        Brushes.Black,
-                                        1.25);
-                                    jumpGlpyh.TextAlignment = TextAlignment.Center;
-                                    var center = BoardLocToRect(move.Loc).Location;
-                                    center.Offset(SpaceWidth / 2, SpaceHeight / 2 - jumpGlpyh.Height / 2);
-                                    dc.DrawText(jumpGlpyh, center);
-                                    break;
-                                }
-
                             case MoveType.Igui:
                                 {
                                     var iguiGlpyh = new FormattedText(

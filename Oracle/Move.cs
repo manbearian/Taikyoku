@@ -32,6 +32,10 @@ namespace Oracle
         public const int Unlimited = int.MaxValue;
         private static readonly int[] UnlimitedJump = Enumerable.Range(0, Math.Max(TaiyokuShogi.BoardWidth, TaiyokuShogi.BoardHeight)).ToArray();
 
+        public static readonly int[] OrthoganalDirectrions = new int[] { Up, Right, Down, Left };
+        public static readonly int[] DiagnalDirectrions = new int[] { UpLeft, UpRight, DownRight, DownLeft };
+        public static readonly int[] JumpDirections = new int[] { UpUpLeft, UpUpRight, UpLeftLeft, UpRightRight, DownRightRight, DownLeftLeft, DownDownLeft, DownDownRight };
+
         // 8 states values 1-N
         //    0 means cannot move that direction (movement matrix)
         //    1 means single spaces in that direction
