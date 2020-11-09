@@ -95,9 +95,9 @@ namespace WPF_UI
                         Selected = null;
                         Selected2 = null;
                     }
-                    else if (clickedPiece != null)
+                    else
                     {
-                        Selected = loc;
+                        Selected = clickedPiece != null ? loc : null;
                         Selected2 = null;
                     }
                 }
