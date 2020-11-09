@@ -168,7 +168,7 @@ namespace WPF_UI
             void DrawPiece(DrawingContext dc, (int X, int Y) loc, PieceIdentity id, Player owner)
             {
                 dc.PushTransform(new TranslateTransform(SpaceWidth * loc.X, SpaceHeight * loc.Y));
-                dc.PushTransform(new RotateTransform(owner == Player.Black ? 180 : 0, SpaceWidth / 2, SpaceHeight / 2));
+                dc.PushTransform(new RotateTransform(owner == Player.White ? 180 : 0, SpaceWidth / 2, SpaceHeight / 2));
 
 #if true
                 var border = SpaceWidth * 0.05; // 5% border

@@ -2435,7 +2435,7 @@ namespace Oracle
 
         private (int X, int Y)? ComputeMove((int X, int Y) loc, int direction, int distance)
         {
-            var moveAmount = Player == Player.White ? distance : -distance;
+            var moveAmount = Player == Player.Black ? distance : -distance;
             var (x, y) = direction switch
             {
                 Movement.Up => (loc.X, loc.Y - moveAmount),

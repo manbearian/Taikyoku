@@ -244,13 +244,13 @@ namespace Oracle
                 for (int j = 0; j < board.GetLength(1); ++j)
                     board[i, j] = null;
 
-            SetupPlayer(Player.White);
             SetupPlayer(Player.Black);
+            SetupPlayer(Player.White);
 
             void SetupPlayer(Player player)
             {
-                int row(int i) => player == Player.White ? TaiyokuShogi.BoardWidth - i - 1 : i;
-                int col(int i) => player == Player.White ? i : TaiyokuShogi.BoardHeight - i - 1;
+                int row(int i) => player == Player.Black ? TaiyokuShogi.BoardWidth - i - 1 : i;
+                int col(int i) => player == Player.Black ? i : TaiyokuShogi.BoardHeight - i - 1;
 
                 for (int i = 0; i < InitialBoardData.Length; ++i)
                 {

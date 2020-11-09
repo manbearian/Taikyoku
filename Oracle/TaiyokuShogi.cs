@@ -7,8 +7,8 @@ namespace Oracle
 {
     public enum Player
     {
-        White,
-        Black
+        Black,
+        White
     }
 
     public class IllegalMoveException : Exception { }
@@ -130,12 +130,12 @@ namespace Oracle
             NextTurn();
         }
 
-        public void NextTurn() => CurrentPlayer = (CurrentPlayer == Player.White ? Player.Black : Player.White);
+        public void NextTurn() => CurrentPlayer = (CurrentPlayer == Player.Black ? Player.White : Player.Black);
 
         public void Reset()
         {
             SetInitialBoard();
-            CurrentPlayer = Player.White;
+            CurrentPlayer = Player.Black;
         }
     }
 
