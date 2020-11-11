@@ -1,5 +1,6 @@
 ﻿
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Windows;
@@ -45,11 +46,11 @@ namespace WPF_UI
             if (p.X < 0 || p.Y < 0)
                 return null;
 
-            var (x, y) =  DisplayFlipped ?
+            var (x, y) = DisplayFlipped ?
                 (BoardWidth - 1 - (int)(p.X / SpaceWidth), BoardHeight - 1 - (int)(p.Y / SpaceHeight))
                     : ((int)(p.X / SpaceWidth), (int)(p.Y / SpaceHeight));
 
-            return (x < 0 || x >= BoardWidth || y < 0 || y >= BoardHeight) ? null as (int,int)? : (x, y);
+            return (x < 0 || x >= BoardWidth || y < 0 || y >= BoardHeight) ? null as (int, int)? : (x, y);
         }
 
         public Rect BoardLocToRect((int X, int Y) loc) => new Rect(loc.X * SpaceWidth, loc.Y * SpaceHeight, SpaceWidth, SpaceHeight);
@@ -85,7 +86,7 @@ namespace WPF_UI
                 if (selectedPiece.Owner == Game.CurrentPlayer)
                 {
                     if (Selected2 == null
-                        &&  Game.GetLegalMoves(selectedPiece.Owner, selectedPiece.Id, Selected.Value).Where(move => move.Loc == loc.Value).Any(move => move.Type == MoveType.Igui || move.Type == MoveType.Area))
+                        && Game.GetLegalMoves(selectedPiece.Owner, selectedPiece.Id, Selected.Value).Where(move => move.Loc == loc.Value).Any(move => move.Type == MoveType.Igui || move.Type == MoveType.Area))
                     {
                         Selected2 = loc;
                     }
@@ -116,7 +117,7 @@ namespace WPF_UI
         protected override void OnRender(DrawingContext dc)
         {
             // we need at least 1 px to draw the grid
-            if (ActualWidth == 0 || ActualHeight== 0)
+            if (ActualWidth == 0 || ActualHeight == 0)
                 return;
 
             if (Game != null)
@@ -151,6 +152,38 @@ namespace WPF_UI
 
             void DrawPieces(DrawingContext dc)
             {
+                Geometry ComputePieceGeometry()
+                {
+                    var border = SpaceWidth * 0.05; // 5% border
+
+                    var pieceWidth = (SpaceWidth - (2 * border)) * 0.7; // narrow piece
+                    var pieceHeight = (SpaceHeight - (2 * border));
+
+                    var upperWidth = pieceWidth * 0.2;
+                    var upperHeight = pieceHeight * 0.3;
+
+                    var upperLeft = new Point((pieceWidth - upperWidth) / 2, upperHeight);
+                    var upperRight = new Point(SpaceWidth - upperLeft.X, upperHeight);
+                    var upperMid = new Point(SpaceWidth / 2, border);
+
+                    var lowerLeft = new Point((SpaceWidth - pieceWidth) / 2, SpaceHeight - border);
+                    var lowerRight = new Point(SpaceWidth - lowerLeft.X, SpaceHeight - border);
+
+                    PathFigure f = new PathFigure(upperLeft, new List<PathSegment>()
+                    {
+                        new LineSegment(upperMid, true),       //  /
+                        new LineSegment(upperRight, true),     //    \
+                        new LineSegment(lowerRight, true),     //    |
+                        new LineSegment(lowerLeft, true),      //    _
+                        new LineSegment(upperLeft, true),      // |
+                    }, true);
+
+                    return new PathGeometry(new List<PathFigure>() { f });
+                }
+
+                // Compute geometry once as all the pieces are identical
+                var pieceGeometry = ComputePieceGeometry();
+
                 for (int i = 0; i < BoardWidth; ++i)
                 {
                     for (int j = 0; j < BoardHeight; ++j)
@@ -159,54 +192,21 @@ namespace WPF_UI
 
                         if (piece != null)
                         {
-                            DrawPiece(dc, (i, j), piece.Value.Id, piece.Value.Owner);
+                            DrawPiece(dc, pieceGeometry, (i, j), piece.Value.Id, piece.Value.Owner);
                         }
                     }
                 }
             }
 
-            void DrawPiece(DrawingContext dc, (int X, int Y) loc, PieceIdentity id, Player owner)
+            void DrawPiece(DrawingContext dc, Geometry pieceGeometry, (int X, int Y) loc, PieceIdentity id, Player owner)
             {
                 dc.PushTransform(new TranslateTransform(SpaceWidth * loc.X, SpaceHeight * loc.Y));
                 dc.PushTransform(new RotateTransform(owner == Player.White ? 180 : 0, SpaceWidth / 2, SpaceHeight / 2));
 
-#if true
-                var border = SpaceWidth * 0.05; // 5% border
-
-                var pieceWidth = (SpaceWidth - (2 * border)) * 0.7; // narrow piece
-                var pieceHeight = (SpaceHeight - (2 * border));
-
-                var upperWidth = pieceWidth * 0.2;
-                var upperHeight = pieceHeight * 0.3;
-
-                var upperLeft = new Point((pieceWidth - upperWidth) / 2, upperHeight);
-                var upperRight = new Point(SpaceWidth - upperLeft.X, upperHeight);
-                var upperMid = new Point(SpaceWidth / 2, border);
-
-                var lowerLeft = new Point((SpaceWidth - pieceWidth) / 2, SpaceHeight - border);
-                var lowerRight = new Point(SpaceWidth - lowerLeft.X, SpaceHeight - border);
-
                 var brush = (loc == Selected) ? ((owner == Game.CurrentPlayer) ? Brushes.Blue : Brushes.Red) : Brushes.Black;
                 var pen = new Pen(brush, 1.0);
-                dc.DrawLine(pen, upperLeft, upperMid);     //  /
-                dc.DrawLine(pen, upperMid, upperRight);    //    \
-                dc.DrawLine(pen, upperRight, lowerRight);  //    |
-                dc.DrawLine(pen, lowerRight, lowerLeft);   //    _
-                dc.DrawLine(pen, lowerLeft, upperLeft);    // |
+                dc.DrawGeometry(Brushes.SandyBrown, pen, pieceGeometry);
 
-#else
-
-                var piece = new FormattedText(
-                    "☖",
-                    CultureInfo.GetCultureInfo("jp-jp"),
-                    FlowDirection.LeftToRight,
-                    new Typeface("MS Gothic"),
-                    spaceHeight * 1.1,
-                    (loc == Selected) ? Brushes.Red : Brushes.Black,
-                    1.25);
-
-                dc.DrawText(piece, new Point(spaceWidth * 0.15, -(spaceHeight * 0.05)));
-#endif
                 var chars = Pieces.Kanji(id).EnumerateRunes();
                 var verticalKanji = string.Join("\n", chars);
                 var size = chars.Count() == 1 ? SpaceHeight * 0.5 : SpaceHeight * 0.33;
