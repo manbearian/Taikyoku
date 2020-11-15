@@ -137,6 +137,26 @@ namespace Oracle
             SetInitialBoard();
             CurrentPlayer = Player.Black;
         }
+
+
+        public void Debug_AddPiece((Player Player, PieceIdentity Id) piece, (int X, int Y) loc)
+        {
+            if (_boardState[loc.X, loc.Y] != null)
+                throw new IllegalMoveException();
+            _boardState[loc.X, loc.Y] = piece;
+        }
+
+        public void Debug_RemovePiece((int X, int Y) loc)
+        {
+            if (_boardState[loc.X, loc.Y] == null)
+                throw new IllegalMoveException();
+            _boardState[loc.X, loc.Y] = null;
+        }
+
+        public void Debug_EndTurn()
+        {
+            NextTurn();
+        }
     }
 
     public class PlayerChangeEventArgs : EventArgs

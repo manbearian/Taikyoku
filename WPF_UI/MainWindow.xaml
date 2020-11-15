@@ -6,6 +6,9 @@
         xmlns:local="clr-namespace:WPF_UI"
         mc:Ignorable="d"
         Title="Taiyoku Shogi" Height="450" Width="800">
+    <Window.Resources>
+        <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
+    </Window.Resources>
     <Grid x:Name="grid">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
@@ -28,8 +31,15 @@
         <Rectangle x:Name="borderBottomLeft" Grid.Row="3" Grid.Column="0" />
         <Rectangle x:Name="borderBottomRight" Grid.Row="3" Grid.Column="3" />
         <Menu Grid.ColumnSpan="99">
-            <MenuItem Header="Game">
+            <MenuItem Header="Game" x:Name="gameMenu">
                 <MenuItem x:Name="newGameMenuItem" Header="New Game" Click="MenuItem_Click" />
+                <MenuItem x:Name="debugModeMenuItem" Header="Debug Mode" Click="MenuItem_Click" IsCheckable="True" IsChecked="False"/>
+            </MenuItem>
+            <MenuItem Header="Debug" x:Name="debugMenu" Visibility="{Binding IsChecked, Converter={StaticResource BooleanToVisibilityConverter}, ElementName=debugModeMenuItem}">
+                <MenuItem x:Name="addBlackPieceMenuItem" Header="Add Black Piece" Click="MenuItem_Click"/>
+                <MenuItem x:Name="addWhitePieceMenuItem" Header="Add White Piece" Click="MenuItem_Click"/>
+                <MenuItem x:Name="removePieceMenuItem" Header="Remove Piece" Click="MenuItem_Click" />
+                <MenuItem x:Name="switchTurnMenuItem" Header="Change Turn" Click="MenuItem_Click" />
             </MenuItem>
         </Menu>
     </Grid>

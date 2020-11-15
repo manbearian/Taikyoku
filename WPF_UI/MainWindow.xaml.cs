@@ -25,9 +25,12 @@ namespace WPF_UI
     {
         readonly List<Shape> corners = new List<Shape>();
         readonly List<NumberPanel> borders = new List<NumberPanel>();
+        readonly Dictionary<MenuItem, (Player, PieceIdentity)> pieceMenuItems = new Dictionary<MenuItem, (Player, PieceIdentity)>();
 
         TaiyokuShogi Game = null;
         PieceInfoWindow _pieceInfoWindow = null;
+
+        private bool DebugMode { get; set; }
 
         public MainWindow()
         {
@@ -45,6 +48,19 @@ namespace WPF_UI
             borders.Add(borderBottom);
             borders.Add(borderLeft);
             borders.Add(borderRight);
+
+            foreach(var pieceId in (Enum.GetValues(typeof(PieceIdentity)) as PieceIdentity[]).OrderBy(piece => piece.Name()))
+            {
+                var blackMenuItem = new MenuItem();
+                blackMenuItem.Header = pieceId.Name();
+                var whiteMenuItem = new MenuItem();
+                whiteMenuItem.Header = pieceId.Name();
+
+                pieceMenuItems.Add(blackMenuItem, (Player.Black, pieceId));
+                addBlackPieceMenuItem.Items.Add(blackMenuItem);
+                pieceMenuItems.Add(whiteMenuItem, (Player.White, pieceId));
+                addWhitePieceMenuItem.Items.Add(whiteMenuItem);
+            }
 
             NewGame();
         }
@@ -79,6 +95,7 @@ namespace WPF_UI
 
             InvalidateVisual();
         }
+
         private void OnBoardChange(object sender, BoardChangeEventArgs eventArgs)
         {
             gameBoard.InvalidateVisual();
@@ -90,6 +107,22 @@ namespace WPF_UI
             {
                 Game.Reset();
             }
+            else if (e.Source == debugModeMenuItem)
+            {
+                DebugMode = (e.Source as MenuItem).IsChecked;
+            }
+            else if (pieceMenuItems.TryGetValue(e.Source as MenuItem, out var piece))
+            {
+                gameBoard.AddingPiece = piece;
+            }
+            else if (e.Source == removePieceMenuItem)
+            {
+                gameBoard.RemovingPiece = true;
+            }
+            else if (e.Source == switchTurnMenuItem)
+            {
+                Game.Debug_EndTurn();
+            }
             else
             {
                 throw new NotImplementedException();
@@ -98,6 +131,9 @@ namespace WPF_UI
 
         void ShowPieceInfo(object sender, MouseEventArgs e)
         {
+            if (e.Source is MenuItem)
+                return;
+
             var loc = gameBoard.GetBoardLoc(e.GetPosition(gameBoard));
 
             if (loc == null)

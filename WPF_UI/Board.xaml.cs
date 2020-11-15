@@ -33,9 +33,37 @@ namespace WPF_UI
 
         public bool DisplayFlipped { get => false; } //  get => Game.CurrentPlayer == Player.Black;  <-- this was disorienting, disabled
 
+        private (Player player, PieceIdentity id)? _addingPiece = null;
+        private bool _removingPiece = false;
+
+        public (Player player, PieceIdentity id)? AddingPiece
+        {
+            get => _addingPiece;
+            set
+            {
+                Cursor = value == null ? Cursors.Arrow : Cursors.Cross;
+                _addingPiece = value;
+                _removingPiece = false;
+            }
+        }
+
+        public bool RemovingPiece
+        {
+            get => _removingPiece;
+            set
+            {
+                Cursor = value ? Cursors.Cross : Cursors.Arrow;
+                _removingPiece = value;
+                _addingPiece = null;
+            }
+        }
+
         public Board()
         {
             InitializeComponent();
+
+            MouseLeftButtonUp += LeftClickHandler;
+            MouseRightButtonUp += RightClickHandler;
         }
 
         public void SetGame(TaiyokuShogi game) => Game = game;
@@ -55,17 +83,16 @@ namespace WPF_UI
 
         public Rect BoardLocToRect((int X, int Y) loc) => new Rect(loc.X * SpaceWidth, loc.Y * SpaceHeight, SpaceWidth, SpaceHeight);
 
-        protected override void OnMouseRightButtonUp(MouseButtonEventArgs e)
+        private void RightClickHandler(object sender, MouseButtonEventArgs e)
         {
             Selected = null;
             Selected2 = null;
 
             InvalidateVisual();
             e.Handled = true;
-            base.OnMouseLeftButtonUp(e);
         }
 
-        protected override void OnMouseLeftButtonUp(MouseButtonEventArgs e)
+        private void LeftClickHandler(object sender, MouseButtonEventArgs e)
         {
             var loc = GetBoardLoc(e.GetPosition(this));
 
@@ -74,7 +101,31 @@ namespace WPF_UI
 
             var clickedPiece = Game.GetPiece(loc.Value);
 
-            if (Selected == null)
+            if (AddingPiece != null)
+            {
+                if (clickedPiece == null)
+                {
+                    Game.Debug_AddPiece(AddingPiece.Value, loc.Value);
+                }
+
+                AddingPiece = null;
+            }
+            else if (RemovingPiece)
+            {
+                if (clickedPiece != null)
+                {
+                    Game.Debug_RemovePiece(loc.Value);
+                }
+
+                if (Selected == loc || Selected2 == loc)
+                {
+                    Selected = null;
+                    Selected2 = null;
+                }
+
+                RemovingPiece = false;
+            }
+            else if (Selected == null)
             {
                 Selected = clickedPiece != null ? loc : null;
                 Selected2 = null;
@@ -111,7 +162,6 @@ namespace WPF_UI
 
             InvalidateVisual();
             e.Handled = true;
-            base.OnMouseLeftButtonUp(e);
         }
 
         protected override void OnRender(DrawingContext dc)
