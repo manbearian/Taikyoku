@@ -11,8 +11,6 @@ namespace Oracle
         White
     }
 
-    public class IllegalMoveException : Exception { }
-
     [Flags]
     public enum TaiyokuShogiOptions
     {
@@ -50,7 +48,6 @@ namespace Oracle
             }
         }
 
-
         public TaiyokuShogi()
         {
         }
@@ -65,6 +62,7 @@ namespace Oracle
 
         public TaiyokuShogiOptions Options { get; }
 
+        // Layout the pieces on the board in their starting position
         private void SetInitialBoard()
         {
             _boardState.SetInitialState();
@@ -75,24 +73,31 @@ namespace Oracle
                 OnBoardChange(this, args);
             }
         }
-        // move the piece at startLoc to endLoc
-        //   midLoc is for area-moves
-        public void MakeMove((int X, int Y) startLoc, (int X, int Y) endLoc, (int X, int Y)? midLoc = null)
+
+        // Move the turn to the next player
+        private void NextTurn() => CurrentPlayer = (CurrentPlayer == Player.Black ? Player.White : Player.Black);
+
+        // Public API: move the piece at startLoc to endLoc
+        //   Raises "OnBoardChange" event if move completes (i.e. was legal)
+        //   CurrentPlayer is advanced
+        //   The optional parameter `midLoc` is used for area-moves (e..g lion move)
+        //   return value indicates if the move is legal and was thus completed
+        public bool MakeMove((int X, int Y) startLoc, (int X, int Y) endLoc, (int X, int Y)? midLoc = null)
         {
             var piece = GetPiece(startLoc);
 
             if (piece == null || piece.Value.Owner != CurrentPlayer)
-                throw new IllegalMoveException();
+                return false;
 
             var moves = this.GetLegalMoves(CurrentPlayer, piece.Value.Id, startLoc, midLoc).Where(move => move.Loc == endLoc);
 
             if (!moves.Any())
-                throw new IllegalMoveException();
+                return false;
 
             if (midLoc != null)
             {
                 if (!moves.Any(move => move.Type == MoveType.Area || move.Type == MoveType.Igui))
-                    throw new IllegalMoveException();
+                    return false;
 
                 // capture any piece that got run over by the area-move
                 _boardState[midLoc.Value.X, midLoc.Value.Y] = null;
@@ -105,7 +110,7 @@ namespace Oracle
 
                 // orthoganal or diagonal only
                 if (xCount != 0 && yCount != 0 && Math.Abs(xCount) != Math.Abs(yCount))
-                    throw new IllegalMoveException();
+                    return false;
 
                 var xMultiplier = xCount == 0 ? 0 : (xCount > 0 ? -1 : 1);
                 var yMultiplier = yCount == 0 ? 0 : (yCount > 0 ? -1 : 1);
@@ -128,35 +133,34 @@ namespace Oracle
             }
 
             NextTurn();
+            return true;
         }
-
-        public void NextTurn() => CurrentPlayer = (CurrentPlayer == Player.Black ? Player.White : Player.Black);
-
+        // Public API: Reset the game to its initial state
         public void Reset()
         {
             SetInitialBoard();
             CurrentPlayer = Player.Black;
         }
 
-
-        public void Debug_AddPiece((Player Player, PieceIdentity Id) piece, (int X, int Y) loc)
+        // Public "debug" API: Set which piece (or no piece) at a board location.
+        //   Raises "OnBoardChange" event if board state changes
+        public void Debug_SetPiece((Player Player, PieceIdentity Id)? piece, (int X, int Y) loc)
         {
-            if (_boardState[loc.X, loc.Y] != null)
-                throw new IllegalMoveException();
+            if (_boardState[loc.X, loc.Y] == piece)
+                return;
+
             _boardState[loc.X, loc.Y] = piece;
+
+            if (OnBoardChange != null)
+            {
+                var args = new BoardChangeEventArgs();
+                OnBoardChange(this, args);
+            }
         }
 
-        public void Debug_RemovePiece((int X, int Y) loc)
-        {
-            if (_boardState[loc.X, loc.Y] == null)
-                throw new IllegalMoveException();
-            _boardState[loc.X, loc.Y] = null;
-        }
-
-        public void Debug_EndTurn()
-        {
+        // Public "debug" API: Set let the next player take a turn
+        public void Debug_EndTurn() =>
             NextTurn();
-        }
     }
 
     public class PlayerChangeEventArgs : EventArgs

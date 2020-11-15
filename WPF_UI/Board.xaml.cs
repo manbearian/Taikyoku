@@ -105,7 +105,7 @@ namespace WPF_UI
             {
                 if (clickedPiece == null)
                 {
-                    Game.Debug_AddPiece(AddingPiece.Value, loc.Value);
+                    Game.Debug_SetPiece(AddingPiece.Value, loc.Value);
                 }
 
                 AddingPiece = null;
@@ -114,7 +114,7 @@ namespace WPF_UI
             {
                 if (clickedPiece != null)
                 {
-                    Game.Debug_RemovePiece(loc.Value);
+                    Game.Debug_SetPiece(null, loc.Value);
                 }
 
                 if (Selected == loc || Selected2 == loc)
@@ -143,7 +143,13 @@ namespace WPF_UI
                     }
                     else if (Game.GetLegalMoves(selectedPiece.Owner, selectedPiece.Id, Selected.Value, Selected2).Any(move => move.Loc == loc.Value))
                     {
-                        Game.MakeMove(Selected.Value, loc.Value, Selected2);
+                        bool legalMove = Game.MakeMove(Selected.Value, loc.Value, Selected2);
+
+                        if (!legalMove)
+                        {
+                            throw new NotImplementedException("Illegal move support not implemented");
+                        }
+
                         Selected = null;
                         Selected2 = null;
                     }

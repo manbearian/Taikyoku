@@ -39,6 +39,7 @@
                 <MenuItem x:Name="addBlackPieceMenuItem" Header="Add Black Piece" Click="MenuItem_Click"/>
                 <MenuItem x:Name="addWhitePieceMenuItem" Header="Add White Piece" Click="MenuItem_Click"/>
                 <MenuItem x:Name="removePieceMenuItem" Header="Remove Piece" Click="MenuItem_Click" />
+                <MenuItem x:Name="clearBoardMenuItem" Header="Clear Board" Click="MenuItem_Click" />
                 <MenuItem x:Name="switchTurnMenuItem" Header="Change Turn" Click="MenuItem_Click" />
             </MenuItem>
         </Menu>

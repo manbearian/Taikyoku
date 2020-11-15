@@ -119,6 +119,16 @@ namespace WPF_UI
             {
                 gameBoard.RemovingPiece = true;
             }
+            else if (e.Source == clearBoardMenuItem)
+            {
+                for (int i = 0; i < TaiyokuShogi.BoardHeight; ++i)
+                {
+                    for (int j = 0; j < TaiyokuShogi.BoardHeight; ++j)
+                    {
+                        Game.Debug_SetPiece(null, (i, j));
+                    }
+                }
+            }
             else if (e.Source == switchTurnMenuItem)
             {
                 Game.Debug_EndTurn();
