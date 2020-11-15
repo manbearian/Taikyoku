@@ -725,8 +725,8 @@ namespace Oracle
                     m._stepRange[DownRight] = Unlimited;
                     break;
 
-                case PieceIdentity.LeftHowlingDog:
-                case PieceIdentity.RightHowlingDog:
+                case PieceIdentity.HowlingDog_Left:
+                case PieceIdentity.HowlingDog_Right:
                     m._stepRange[Up] = Unlimited;
                     m._stepRange[Down] = 1;
                     break;
