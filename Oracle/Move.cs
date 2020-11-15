@@ -2423,7 +2423,7 @@ namespace Oracle
 
         private Player Player { get; }
 
-        private PieceIdentity Id { get;  }
+        private PieceIdentity Id { get; }
 
         private (int X, int Y) StartLoc { get; }
 
@@ -2465,8 +2465,8 @@ namespace Oracle
             return (x, y);
         }
 
-        // returns the location added if stepping can continue in the assocated direction
-        public (int X, int Y)? Add((int X, int Y) loc, int direction, int distance, MoveType type)
+        // Compute a target move and add it to the list of moves if it is legal. Returns the computed location regardless
+        public (int X, int Y)? Add((int X, int Y) loc, int direction, int distance, MoveType type, bool captureOnly = false)
         {
             var targetLoc = ComputeMove(loc, direction, distance);
 
@@ -2479,31 +2479,47 @@ namespace Oracle
                 if (existingPiece?.Owner != Player || (targetLoc == StartLoc && (type == MoveType.Area || type == MoveType.Igui)))
                 {
                     _moves.Add((targetLoc.Value, type));
-
-                    if (type == MoveType.RangedCapture && Id.Rank() < existingPiece?.Id.Rank())
-                        return targetLoc;
                 }
-
-                return null;
+            }
+            else if (!captureOnly)
+            {
+                _moves.Add((targetLoc.Value, type));
             }
 
-            _moves.Add((targetLoc.Value, type));
             return targetLoc;
         }
 
+        // add all legal moves in the given range
         public void AddRange((int X, int Y) loc, int direction, int range, MoveType type)
         {
+            bool captureOnly = false;
+
             for (int i = 1; i <= range; ++i)
             {
-                var move = Add(loc, direction, i, type);
+                var move = Add(loc, direction, i, type, captureOnly);
                 if (move == null)
                     break;
 
-                if (type == MoveType.Hook)
+                var existingPiece = Game.GetPiece(move.Value);
+
+                if (type == MoveType.Hook && existingPiece == null)
                 {
                     var (left, right) = Rotate90(direction);
                     AddRange(move.Value, left, Movement.Unlimited, MoveType.Standard);
                     AddRange(move.Value, right, Movement.Unlimited, MoveType.Standard);
+                }
+                else if (type == MoveType.RangedCapture)
+                {
+                    if (existingPiece != null)
+                    {
+                        captureOnly = true;
+                        if (Id.Rank() > existingPiece.Value.Id.Rank())
+                            break;
+                    }
+                }
+                else if (existingPiece != null)
+                {
+                    break;
                 }
             }
         }
@@ -2565,7 +2581,7 @@ namespace Oracle
                 for (int i = 0; i < movement.JumpRange[direction].JumpDistances?.Length; ++i)
                 {
                     var jumpLoc = legalMoves.Add(loc, direction, movement.JumpRange[direction].JumpDistances[i] + 1, MoveType.Jump);
-                    if (jumpLoc != null)
+                    if (jumpLoc != null && game.GetPiece(jumpLoc.Value) == null)
                     {
                         legalMoves.AddRange(jumpLoc.Value, direction, movement.JumpRange[direction].RangeAfter, MoveType.Standard);
                     }
