@@ -2402,6 +2402,37 @@ namespace Oracle
 
             return m;
         }
+
+        public static (int X, int Y)? ComputeMove((int X, int Y) loc, int direction, int distance)
+        {
+            var (x, y) = direction switch
+            {
+                Up => (loc.X, loc.Y - distance),
+                Down => (loc.X, loc.Y + distance),
+                Left => (loc.X - distance, loc.Y),
+                Right => (loc.X + distance, loc.Y),
+                UpLeft => (loc.X - distance, loc.Y - distance),
+                UpRight => (loc.X + distance, loc.Y - distance),
+                DownLeft => (loc.X - distance, loc.Y + distance),
+                DownRight => (loc.X + distance, loc.Y + distance),
+                UpUpLeft => (loc.X - (distance / 2), loc.Y - distance),
+                UpUpRight => (loc.X + (distance / 2), loc.Y - distance),
+                UpLeftLeft => (loc.X - distance, loc.Y - (distance / 2)),
+                UpRightRight => (loc.X + distance, loc.Y - (distance / 2)),
+                DownDownLeft => (loc.X - (distance / 2), loc.Y + distance),
+                DownDownRight => (loc.X + (distance / 2), loc.Y + distance),
+                DownLeftLeft => (loc.X - distance, loc.Y + (distance / 2)),
+                DownRightRight => (loc.X + distance, loc.Y + (distance / 2)),
+                _ => throw new NotSupportedException()
+            };
+
+            if (y < 0 || y >= TaiyokuShogi.BoardHeight)
+                return null;
+            if (x < 0 || x >= TaiyokuShogi.BoardWidth)
+                return null;
+
+            return (x, y);
+        }
     }
 
     public enum HookType
@@ -2410,7 +2441,6 @@ namespace Oracle
         Diagonal,
         ForwardDiagnal
     };
-
 
     public enum MoveType
     {
@@ -2433,42 +2463,10 @@ namespace Oracle
         public MoveGenerator(TaiyokuShogi game, Player player, PieceIdentity id, (int X, int Y) startLoc)
             => (Game, Player, Id, StartLoc) = (game, player, id, startLoc);
 
-        private (int X, int Y)? ComputeMove((int X, int Y) loc, int direction, int distance)
-        {
-            var moveAmount = Player == Player.Black ? distance : -distance;
-            var (x, y) = direction switch
-            {
-                Movement.Up => (loc.X, loc.Y - moveAmount),
-                Movement.Down => (loc.X, loc.Y + moveAmount),
-                Movement.Left => (loc.X - moveAmount, loc.Y),
-                Movement.Right => (loc.X + moveAmount, loc.Y),
-                Movement.UpLeft => (loc.X - moveAmount, loc.Y - moveAmount),
-                Movement.UpRight => (loc.X + moveAmount, loc.Y - moveAmount),
-                Movement.DownLeft => (loc.X - moveAmount, loc.Y + moveAmount),
-                Movement.DownRight => (loc.X + moveAmount, loc.Y + moveAmount),
-                Movement.UpUpLeft => (loc.X - (moveAmount / 2), loc.Y - moveAmount),
-                Movement.UpUpRight => (loc.X + (moveAmount / 2), loc.Y - moveAmount),
-                Movement.UpLeftLeft => (loc.X - moveAmount, loc.Y - (moveAmount / 2)),
-                Movement.UpRightRight => (loc.X + moveAmount, loc.Y - (moveAmount / 2)),
-                Movement.DownDownLeft => (loc.X - (moveAmount / 2), loc.Y + moveAmount),
-                Movement.DownDownRight => (loc.X + (moveAmount / 2), loc.Y + moveAmount),
-                Movement.DownLeftLeft => (loc.X - moveAmount, loc.Y + (moveAmount / 2)),
-                Movement.DownRightRight => (loc.X + moveAmount, loc.Y + (moveAmount / 2)),
-                _ => throw new NotSupportedException()
-            };
-
-            if (y < 0 || y >= TaiyokuShogi.BoardHeight)
-                return null;
-            if (x < 0 || x >= TaiyokuShogi.BoardWidth)
-                return null;
-
-            return (x, y);
-        }
-
         // Compute a target move and add it to the list of moves if it is legal. Returns the computed location regardless
         public (int X, int Y)? Add((int X, int Y) loc, int direction, int distance, MoveType type, bool captureOnly = false)
         {
-            var targetLoc = ComputeMove(loc, direction, distance);
+            var targetLoc = Movement.ComputeMove(loc, direction, Player == Player.Black ? distance : -distance);
 
             if (!targetLoc.HasValue)
                 return null;
