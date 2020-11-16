@@ -2451,30 +2451,28 @@ namespace Oracle
     {
         private TaiyokuShogi Game { get; }
 
-        private Player Player { get; }
-
-        private PieceIdentity Id { get; }
+        private Piece Piece { get; }
 
         private (int X, int Y) StartLoc { get; }
 
         private List<((int X, int Y) Loc, MoveType Type)> _moves = new List<((int X, int Y) Loc, MoveType Type)>();
         public IEnumerable<((int X, int Y) Loc, MoveType Type)> Moves { get => _moves; }
 
-        public MoveGenerator(TaiyokuShogi game, Player player, PieceIdentity id, (int X, int Y) startLoc)
-            => (Game, Player, Id, StartLoc) = (game, player, id, startLoc);
+        public MoveGenerator(TaiyokuShogi game, Piece piece, (int X, int Y) startLoc)
+            => (Game, Piece, StartLoc) = (game, piece, startLoc);
 
         // Compute a target move and add it to the list of moves if it is legal. Returns the computed location regardless
         public (int X, int Y)? Add((int X, int Y) loc, int direction, int distance, MoveType type, bool captureOnly = false)
         {
-            var targetLoc = Movement.ComputeMove(loc, direction, Player == Player.Black ? distance : -distance);
+            var targetLoc = Movement.ComputeMove(loc, direction, Piece.Owner == Player.Black ? distance : -distance);
 
             if (!targetLoc.HasValue)
                 return null;
 
             var existingPiece = Game.GetPiece(targetLoc.Value);
-            if (existingPiece.HasValue)
+            if (existingPiece != null)
             {
-                if (existingPiece?.Owner != Player || (targetLoc == StartLoc && (type == MoveType.Area || type == MoveType.Igui)))
+                if (existingPiece?.Owner != Piece.Owner || (targetLoc == StartLoc && (type == MoveType.Area || type == MoveType.Igui)))
                 {
                     _moves.Add((targetLoc.Value, type));
                 }
@@ -2511,7 +2509,7 @@ namespace Oracle
                     if (existingPiece != null)
                     {
                         captureOnly = true;
-                        if (Id.Rank() > existingPiece.Value.Id.Rank())
+                        if (Piece.Rank > existingPiece.Rank)
                             break;
                     }
                 }
@@ -2542,10 +2540,10 @@ namespace Oracle
     {
         public static Movement GetMovement(this TaiyokuShogi game, PieceIdentity id) => Movement.GetMovement(id, game.Options);
 
-        public static IEnumerable<((int X, int Y) Loc, MoveType Type)> GetLegalMoves(this TaiyokuShogi game, Player player, PieceIdentity id, (int X, int Y) loc, (int X, int Y)? midLoc = null)
+        public static IEnumerable<((int X, int Y) Loc, MoveType Type)> GetLegalMoves(this TaiyokuShogi game, Piece piece, (int X, int Y) loc, (int X, int Y)? midLoc = null)
         {
-            var legalMoves = new MoveGenerator(game, player, id, loc);
-            var movement = game.GetMovement(id);
+            var legalMoves = new MoveGenerator(game, piece, loc);
+            var movement = game.GetMovement(piece.Id);
 
             if (midLoc != null)
             {

@@ -237,7 +237,7 @@ namespace Oracle
             { " ", null }
         };
 
-        public static void SetInitialState(this (Player, PieceIdentity)?[,] board)
+        public static void SetInitialState(this Piece[,] board)
         {
             // remove any existing pieces
             for (int i = 0; i < board.GetLength(0); ++i)
@@ -260,7 +260,7 @@ namespace Oracle
                     {
                         var piece = PieceMap[pieces[j]];
                         if (piece != null)
-                            board[col(j), row(i)] = (player, piece.Value);
+                            board[col(j), row(i)] = new Piece(player, piece.Value);
                     }
                 }
             }

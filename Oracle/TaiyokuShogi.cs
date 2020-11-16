@@ -28,7 +28,7 @@ namespace Oracle
         public const int BoardHeight = 36;
         public const int BoardWidth = 36;
 
-        private readonly (Player, PieceIdentity)?[,] _boardState = new (Player, PieceIdentity)?[BoardWidth, BoardHeight];
+        private readonly Piece[,] _boardState = new Piece[BoardWidth, BoardHeight];
         private Player _currentPlayer;
 
         public Player CurrentPlayer
@@ -58,7 +58,7 @@ namespace Oracle
         public delegate void BoardChangeHandler(object sender, BoardChangeEventArgs e);
         public event BoardChangeHandler OnBoardChange;
 
-        public (Player Owner, PieceIdentity Id)? GetPiece((int X, int Y) loc) => _boardState[loc.X, loc.Y];
+        public Piece GetPiece((int X, int Y) loc) => _boardState[loc.X, loc.Y];
 
         public TaiyokuShogiOptions Options { get; }
 
@@ -82,14 +82,14 @@ namespace Oracle
         //   CurrentPlayer is advanced
         //   The optional parameter `midLoc` is used for area-moves (e..g lion move)
         //   return value indicates if the move is legal and was thus completed
-        public bool MakeMove((int X, int Y) startLoc, (int X, int Y) endLoc, (int X, int Y)? midLoc = null)
+        public bool MakeMove((int X, int Y) startLoc, (int X, int Y) endLoc, bool promote = false, (int X, int Y)? midLoc = null)
         {
             var piece = GetPiece(startLoc);
 
-            if (piece == null || piece.Value.Owner != CurrentPlayer)
+            if (piece == null || piece.Owner != CurrentPlayer)
                 return false;
 
-            var moves = this.GetLegalMoves(CurrentPlayer, piece.Value.Id, startLoc, midLoc).Where(move => move.Loc == endLoc);
+            var moves = this.GetLegalMoves(piece, startLoc, midLoc).Where(move => move.Loc == endLoc);
 
             if (!moves.Any())
                 return false;
@@ -122,9 +122,20 @@ namespace Oracle
                 }
             }
 
+            if (promote)
+            {
+                // validate promotion
+                if (!piece.CanPromote()
+                    || (piece.Owner == Player.Black && endLoc.Y >= 11)
+                    || (piece.Owner == Player.White && endLoc.Y <= (BoardHeight - 11)))
+                {
+                    return false;
+                }
+            }
+
             // set new location, this has the effect of removing any piece that was there from the board
             _boardState[startLoc.X, startLoc.Y] = null;
-            _boardState[endLoc.X, endLoc.Y] = piece;
+            _boardState[endLoc.X, endLoc.Y] = promote ? piece.Promote() : piece;
 
             if (OnBoardChange != null)
             {
@@ -135,6 +146,7 @@ namespace Oracle
             NextTurn();
             return true;
         }
+
         // Public API: Reset the game to its initial state
         public void Reset()
         {
@@ -144,7 +156,7 @@ namespace Oracle
 
         // Public "debug" API: Set which piece (or no piece) at a board location.
         //   Raises "OnBoardChange" event if board state changes
-        public void Debug_SetPiece((Player Player, PieceIdentity Id)? piece, (int X, int Y) loc)
+        public void Debug_SetPiece(Piece piece, (int X, int Y) loc)
         {
             if (_boardState[loc.X, loc.Y] == piece)
                 return;

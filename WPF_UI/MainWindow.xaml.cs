@@ -25,7 +25,7 @@ namespace WPF_UI
     {
         readonly List<Shape> corners = new List<Shape>();
         readonly List<NumberPanel> borders = new List<NumberPanel>();
-        readonly Dictionary<MenuItem, (Player, PieceIdentity)> pieceMenuItems = new Dictionary<MenuItem, (Player, PieceIdentity)>();
+        readonly Dictionary<MenuItem, Piece> pieceMenuItems = new Dictionary<MenuItem, Piece>();
 
         TaiyokuShogi Game = null;
         PieceInfoWindow _pieceInfoWindow = null;
@@ -56,9 +56,9 @@ namespace WPF_UI
                 var whiteMenuItem = new MenuItem();
                 whiteMenuItem.Header = pieceId.Name();
 
-                pieceMenuItems.Add(blackMenuItem, (Player.Black, pieceId));
+                pieceMenuItems.Add(blackMenuItem, new Piece(Player.Black, pieceId));
                 addBlackPieceMenuItem.Items.Add(blackMenuItem);
-                pieceMenuItems.Add(whiteMenuItem, (Player.White, pieceId));
+                pieceMenuItems.Add(whiteMenuItem, new Piece(Player.White, pieceId));
                 addWhitePieceMenuItem.Items.Add(whiteMenuItem);
             }
 
@@ -164,7 +164,7 @@ namespace WPF_UI
             var pos = e.GetPosition(mainWindow);
 
             _pieceInfoWindow ??= new PieceInfoWindow();
-            _pieceInfoWindow.SetPiece(Game, piece.Value.Id);
+            _pieceInfoWindow.SetPiece(Game, piece.Id);
 
             if (mainWindow.WindowState == WindowState.Normal)
             {

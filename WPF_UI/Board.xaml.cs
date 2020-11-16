@@ -33,10 +33,10 @@ namespace WPF_UI
 
         public bool DisplayFlipped { get => false; } //  get => Game.CurrentPlayer == Player.Black;  <-- this was disorienting, disabled
 
-        private (Player player, PieceIdentity id)? _addingPiece = null;
+        private Piece _addingPiece = null;
         private bool _removingPiece = false;
 
-        public (Player player, PieceIdentity id)? AddingPiece
+        public Piece AddingPiece
         {
             get => _addingPiece;
             set
@@ -105,7 +105,7 @@ namespace WPF_UI
             {
                 if (clickedPiece == null)
                 {
-                    Game.Debug_SetPiece(AddingPiece.Value, loc.Value);
+                    Game.Debug_SetPiece(AddingPiece, loc.Value);
                 }
 
                 AddingPiece = null;
@@ -132,16 +132,16 @@ namespace WPF_UI
             }
             else
             {
-                var selectedPiece = Game.GetPiece(Selected.Value).Value;
+                var selectedPiece = Game.GetPiece(Selected.Value);
 
                 if (selectedPiece.Owner == Game.CurrentPlayer)
                 {
                     if (Selected2 == null
-                        && Game.GetLegalMoves(selectedPiece.Owner, selectedPiece.Id, Selected.Value).Where(move => move.Loc == loc.Value).Any(move => move.Type == MoveType.Igui || move.Type == MoveType.Area))
+                        && Game.GetLegalMoves(selectedPiece, Selected.Value).Where(move => move.Loc == loc.Value).Any(move => move.Type == MoveType.Igui || move.Type == MoveType.Area))
                     {
                         Selected2 = loc;
                     }
-                    else if (Game.GetLegalMoves(selectedPiece.Owner, selectedPiece.Id, Selected.Value, Selected2).Any(move => move.Loc == loc.Value))
+                    else if (Game.GetLegalMoves(selectedPiece, Selected.Value, Selected2).Any(move => move.Loc == loc.Value))
                     {
                         bool legalMove = Game.MakeMove(Selected.Value, loc.Value, Selected2);
 
@@ -248,22 +248,22 @@ namespace WPF_UI
 
                         if (piece != null)
                         {
-                            DrawPiece(dc, pieceGeometry, (i, j), piece.Value.Id, piece.Value.Owner);
+                            DrawPiece(dc, pieceGeometry, (i, j), piece);
                         }
                     }
                 }
             }
 
-            void DrawPiece(DrawingContext dc, Geometry pieceGeometry, (int X, int Y) loc, PieceIdentity id, Player owner)
+            void DrawPiece(DrawingContext dc, Geometry pieceGeometry, (int X, int Y) loc, Piece piece)
             {
                 dc.PushTransform(new TranslateTransform(SpaceWidth * loc.X, SpaceHeight * loc.Y));
-                dc.PushTransform(new RotateTransform(owner == Player.White ? 180 : 0, SpaceWidth / 2, SpaceHeight / 2));
+                dc.PushTransform(new RotateTransform(piece.Owner == Player.White ? 180 : 0, SpaceWidth / 2, SpaceHeight / 2));
 
-                var brush = (loc == Selected) ? ((owner == Game.CurrentPlayer) ? Brushes.Blue : Brushes.Red) : Brushes.Black;
+                var brush = (loc == Selected) ? ((piece.Owner == Game.CurrentPlayer) ? Brushes.Blue : Brushes.Red) : Brushes.Black;
                 var pen = new Pen(brush, 1.0);
                 dc.DrawGeometry(Brushes.SandyBrown, pen, pieceGeometry);
 
-                var chars = Pieces.Kanji(id).EnumerateRunes();
+                var chars = piece.Kanji.EnumerateRunes();
                 var verticalKanji = string.Join("\n", chars);
                 var size = chars.Count() == 1 ? SpaceHeight * 0.5 : SpaceHeight * 0.33;
                 var pieceText = new FormattedText(
@@ -272,7 +272,7 @@ namespace WPF_UI
                     FlowDirection.LeftToRight,
                     new Typeface("MS Gothic"),
                     size,
-                    Brushes.Black,
+                    piece.Promoted ? Brushes.Gold : Brushes.Black,
                     1.25);
 
                 dc.DrawText(pieceText, new Point(SpaceWidth / 2 - pieceText.Width / 2, SpaceHeight * 0.2));
@@ -295,30 +295,30 @@ namespace WPF_UI
                 if (Selected != null)
                 {
                     var loc = Selected.Value;
-                    var (selectedOwner, selectedId) = Game.GetPiece(loc).Value;
+                    var selectedPiece = Game.GetPiece(loc);
 
-                    var moves = Game.GetLegalMoves(selectedOwner, selectedId, loc);
+                    var moves = Game.GetLegalMoves(selectedPiece, loc);
 
                     // first color in the basic background for movable squares
                     foreach (var move in moves)
                     {
                         var outlineBrush = Brushes.Transparent;
                         if (Game.GetPiece(move.Loc) != null)
-                            outlineBrush = selectedOwner == Game.CurrentPlayer ? Brushes.Blue : Brushes.Red;
-                        dc.DrawRectangle(selectedOwner == Game.CurrentPlayer ? Brushes.LightBlue : Brushes.Pink, new Pen(outlineBrush, 1.0), GetRect(move.Loc));
+                            outlineBrush = selectedPiece.Owner == Game.CurrentPlayer ? Brushes.Blue : Brushes.Red;
+                        dc.DrawRectangle(selectedPiece.Owner == Game.CurrentPlayer ? Brushes.LightBlue : Brushes.Pink, new Pen(outlineBrush, 1.0), GetRect(move.Loc));
                     }
 
                     if (Selected2 != null)
                     {
-                        var secondMoves = Game.GetLegalMoves(selectedOwner, selectedId, loc, Selected2.Value);
+                        var secondMoves = Game.GetLegalMoves(selectedPiece, loc, Selected2.Value);
 
                         // Color in the location for secondary moves
                         foreach (var move in secondMoves)
                         {
                             var outlineBrush = Brushes.Transparent;
-                            var (captureOwner, _) = Game.GetPiece(move.Loc) ?? (Game.CurrentPlayer, 0);
+                            var captureOwner = Game.GetPiece(move.Loc)?.Owner ?? Game.CurrentPlayer;
                             if (captureOwner != Game.CurrentPlayer)
-                                outlineBrush = selectedOwner == Game.CurrentPlayer ? Brushes.Blue : Brushes.Red;
+                                outlineBrush = selectedPiece.Owner == Game.CurrentPlayer ? Brushes.Blue : Brushes.Red;
                             dc.DrawRectangle(Brushes.LightGreen, new Pen(outlineBrush, 1.0), GetRect(move.Loc));
                         }
 

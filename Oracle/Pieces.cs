@@ -639,4 +639,40 @@ namespace Oracle
                 _ => 5
             };
     }
+
+    public class Piece
+    {
+        public Player Owner { get; }
+
+        public PieceIdentity Id { get; }
+
+        public bool Promoted { get; }
+
+        public Piece(Player owner, PieceIdentity id, bool promoted = false) =>
+            (Owner, Id, Promoted) = (owner, id, promoted);
+
+        public string Name { get => Id.Name(); }
+
+        public string Kanji { get => Id.Kanji(); }
+
+        public string Romanji { get => Id.Romanji(); }
+
+        public bool CanPromote() => !Promoted && Id.PromotesTo() != null;
+
+        public Piece Promote() => CanPromote() ? new Piece(Owner, Id.PromotesTo().Value, true) : null;
+
+        public int Rank { get => Id.Rank(); }
+
+        public override bool Equals(object obj) =>
+            Equals(obj as Piece);
+
+        public bool Equals(Piece other) =>
+            (Owner, Id, Promoted) == (other?.Owner, other?.Id, other?.Promoted);
+
+        public override int GetHashCode() => (Owner, Id, Promoted).GetHashCode();
+
+        public static bool operator ==(Piece lhs, Piece rhs) => lhs?.Equals(rhs) ?? rhs is null;
+
+        public static bool operator !=(Piece lhs, Piece rhs) => !(lhs == rhs);
+    }
 }
