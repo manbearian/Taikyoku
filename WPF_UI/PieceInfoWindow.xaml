@@ -8,15 +8,5 @@
     <Window.Effect>
         <DropShadowEffect/>
     </Window.Effect>
-    <Grid x:Name="layoutGrid"
-          MinWidth="50"
-          MinHeight="100">
-        <Grid.RowDefinitions>
-            <RowDefinition/>
-            <RowDefinition/>
-        </Grid.RowDefinitions>
-        <TextBlock x:Name="headerText" FontSize="14" />
-        <Rectangle Grid.Row="1" Fill="Transparent" Stroke="Black" StrokeThickness="0.1"/>
-        <Grid x:Name="moveGrid" Grid.Row="1" ShowGridLines="True"></Grid>
-    </Grid>
+    <local:PieceInfoDisplay x:Name="pieceInfoDisplay"/>
 </Window>

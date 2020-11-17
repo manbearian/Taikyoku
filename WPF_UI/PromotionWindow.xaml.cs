@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Text;
 using System.Windows;
 using System.Windows.Controls;
@@ -16,16 +15,16 @@ using Oracle;
 namespace WPF_UI
 {
     /// <summary>
-    /// Interaction logic for PieceInfo.xaml
+    /// Interaction logic for PromotionWindow.xaml
     /// </summary>
-    public partial class PieceInfoWindow : Window
+    public partial class PromotionWindow : Window
     {
-        public PieceInfoWindow()
+        public PromotionWindow()
         {
             InitializeComponent();
-        }
 
-        public void SetPiece(TaiyokuShogi game, PieceIdentity id) =>
-            pieceInfoDisplay.SetPiece(game, id);
+            originalPieceDisplay.SetPiece(new TaiyokuShogi(), PieceIdentity.AncientDragon);
+            promotedPieceDisplay.SetPiece(new TaiyokuShogi(), PieceIdentity.GreatDragon);
+        }
     }
 }
