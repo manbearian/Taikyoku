@@ -82,7 +82,7 @@ namespace Oracle
         //   CurrentPlayer is advanced
         //   The optional parameter `midLoc` is used for area-moves (e..g lion move)
         //   return value indicates if the move is legal and was thus completed
-        public bool MakeMove((int X, int Y) startLoc, (int X, int Y) endLoc, bool promote = false, (int X, int Y)? midLoc = null)
+        public bool MakeMove((int X, int Y) startLoc, (int X, int Y) endLoc, (int X, int Y)? midLoc = null, bool promote = false)
         {
             var piece = GetPiece(startLoc);
 

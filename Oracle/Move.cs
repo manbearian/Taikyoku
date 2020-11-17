@@ -2433,6 +2433,19 @@ namespace Oracle
 
             return (x, y);
         }
+
+        public static PromotionType CheckPromotion(Piece piece, (int X, int Y) startLoc, (int X, int Y) endLoc, bool _capture /* ignored in Taikyoku Shogi */)
+        {
+            if (!piece.CanPromote())
+                return PromotionType.None;
+
+            return piece.Owner switch
+            {
+                Player.Black => endLoc.Y < 11 ? PromotionType.May : PromotionType.None,
+                Player.White => endLoc.Y > TaiyokuShogi.BoardHeight - 11 ? PromotionType.May : PromotionType.None,
+                _ => throw new NotSupportedException()
+            };
+        }
     }
 
     public enum HookType
@@ -2447,6 +2460,12 @@ namespace Oracle
         Standard, Jump, RangedCapture, Igui, Hook, Area
     }
 
+    public enum PromotionType
+    {
+        None, May, Must
+    }
+
+
     internal class MoveGenerator
     {
         private TaiyokuShogi Game { get; }
@@ -2455,16 +2474,16 @@ namespace Oracle
 
         private (int X, int Y) StartLoc { get; }
 
-        private List<((int X, int Y) Loc, MoveType Type)> _moves = new List<((int X, int Y) Loc, MoveType Type)>();
-        public IEnumerable<((int X, int Y) Loc, MoveType Type)> Moves { get => _moves; }
+        private List<((int X, int Y) Loc, MoveType Type, PromotionType Promotion)> _moves = new List<((int X, int Y) Loc, MoveType Type, PromotionType Promotion)>();
+        public IEnumerable<((int X, int Y) Loc, MoveType Type, PromotionType Promotion)> Moves { get => _moves; }
 
         public MoveGenerator(TaiyokuShogi game, Piece piece, (int X, int Y) startLoc)
             => (Game, Piece, StartLoc) = (game, piece, startLoc);
 
         // Compute a target move and add it to the list of moves if it is legal. Returns the computed location regardless
-        public (int X, int Y)? Add((int X, int Y) loc, int direction, int distance, MoveType type, bool captureOnly = false)
+        public (int X, int Y)? Add((int X, int Y) startLoc, int direction, int distance, MoveType type, bool captureOnly = false)
         {
-            var targetLoc = Movement.ComputeMove(loc, direction, Piece.Owner == Player.Black ? distance : -distance);
+            var targetLoc = Movement.ComputeMove(startLoc, direction, Piece.Owner == Player.Black ? distance : -distance);
 
             if (!targetLoc.HasValue)
                 return null;
@@ -2474,12 +2493,12 @@ namespace Oracle
             {
                 if (existingPiece?.Owner != Piece.Owner || (targetLoc == StartLoc && (type == MoveType.Area || type == MoveType.Igui)))
                 {
-                    _moves.Add((targetLoc.Value, type));
+                    _moves.Add((targetLoc.Value, type, Movement.CheckPromotion(Piece, startLoc, targetLoc.Value, true)));
                 }
             }
             else if (!captureOnly)
             {
-                _moves.Add((targetLoc.Value, type));
+                _moves.Add((targetLoc.Value, type, Movement.CheckPromotion(Piece, startLoc, targetLoc.Value, false)));
             }
 
             return targetLoc;
@@ -2540,7 +2559,7 @@ namespace Oracle
     {
         public static Movement GetMovement(this TaiyokuShogi game, PieceIdentity id) => Movement.GetMovement(id, game.Options);
 
-        public static IEnumerable<((int X, int Y) Loc, MoveType Type)> GetLegalMoves(this TaiyokuShogi game, Piece piece, (int X, int Y) loc, (int X, int Y)? midLoc = null)
+        public static IEnumerable<((int X, int Y) Loc, MoveType Type, PromotionType Promotion)> GetLegalMoves(this TaiyokuShogi game, Piece piece, (int X, int Y) loc, (int X, int Y)? midLoc = null)
         {
             var legalMoves = new MoveGenerator(game, piece, loc);
             var movement = game.GetMovement(piece.Id);

@@ -141,22 +141,36 @@ namespace WPF_UI
                     {
                         Selected2 = loc;
                     }
-                    else if (Game.GetLegalMoves(selectedPiece, Selected.Value, Selected2).Any(move => move.Loc == loc.Value))
-                    {
-                        bool legalMove = Game.MakeMove(Selected.Value, loc.Value, Selected2);
-
-                        if (!legalMove)
-                        {
-                            throw new NotImplementedException("Illegal move support not implemented");
-                        }
-
-                        Selected = null;
-                        Selected2 = null;
-                    }
                     else
                     {
-                        Selected = clickedPiece != null ? loc : null;
-                        Selected2 = null;
+                        var legalMoves = Game.GetLegalMoves(selectedPiece, Selected.Value, Selected2).Where(move => move.Loc == loc.Value);
+                        if (legalMoves.Any())
+                        {
+                            if (legalMoves.Any(move => move.Promotion == PromotionType.May))
+                            {
+                                // must ask the player...
+                                var x = new PromotionWindow();
+                                x.Show();
+                            }
+                            else
+                            {
+                                bool promote = legalMoves.Any(move => move.Promotion == PromotionType.Must);
+                                bool legalMove = Game.MakeMove(Selected.Value, loc.Value, Selected2, promote);
+
+                                if (!legalMove)
+                                {
+                                    throw new NotImplementedException("Illegal move support not implemented");
+                                }
+
+                                Selected = null;
+                                Selected2 = null;
+                            }
+                        }
+                        else
+                        {
+                            Selected = clickedPiece != null ? loc : null;
+                            Selected2 = null;
+                        }
                     }
                 }
                 else
