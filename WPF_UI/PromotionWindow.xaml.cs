@@ -22,9 +22,17 @@ namespace WPF_UI
         public PromotionWindow()
         {
             InitializeComponent();
+        }
 
-            originalPieceDisplay.SetPiece(new TaiyokuShogi(), PieceIdentity.AncientDragon);
-            promotedPieceDisplay.SetPiece(new TaiyokuShogi(), PieceIdentity.GreatDragon);
+        // Require passing in piece info
+        private new void Show() => base.Show();
+
+        public void Show(TaiyokuShogi game, PieceIdentity idBefore, PieceIdentity idAfter)
+        {
+            originalPieceDisplay.SetPiece(game, idBefore);
+            promotedPieceDisplay.SetPiece(game, idAfter);
+
+            Show();
         }
     }
 }

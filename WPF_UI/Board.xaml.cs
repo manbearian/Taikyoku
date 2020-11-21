@@ -150,7 +150,7 @@ namespace WPF_UI
                             {
                                 // must ask the player...
                                 var x = new PromotionWindow();
-                                x.Show();
+                                x.Show(Game, selectedPiece.Id, selectedPiece.Id.PromotesTo().Value);
                             }
                             else
                             {
