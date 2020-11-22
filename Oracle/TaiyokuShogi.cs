@@ -94,13 +94,18 @@ namespace Oracle
             if (!moves.Any())
                 return false;
 
+            var capturedPieces = new List<(int X, int Y)>();
+
             if (midLoc != null)
             {
                 if (!moves.Any(move => move.Type == MoveType.Area || move.Type == MoveType.Igui))
                     return false;
 
                 // capture any piece that got run over by the area-move
-                _boardState[midLoc.Value.X, midLoc.Value.Y] = null;
+                if (_boardState[midLoc.Value.X, midLoc.Value.Y] != null)
+                {
+                    capturedPieces.Add(midLoc.Value);
+                }
             }
 
             if (moves.Any(move => move.Type == MoveType.RangedCapture))
@@ -118,15 +123,32 @@ namespace Oracle
                 {
                     int x = startLoc.X + xMultiplier * i;
                     int y = startLoc.Y + yMultiplier * i;
-                    _boardState[x, y] = null;
+                    if (_boardState[x, y] != null)
+                    {
+                        capturedPieces.Add((x, y));
+                    }
                 }
             }
 
+            if (_boardState[endLoc.X, endLoc.Y] != null)
+            {
+                capturedPieces.Add(endLoc);
+            }
+
             // validate promotion
-            if (promote && Movement.CheckPromotion(piece, startLoc, endLoc) == PromotionType.None)
+            if (promote && Movement.CheckPromotion(piece, startLoc, endLoc, capturedPieces.Any()) == PromotionType.None)
                 return false;
 
-            // set new location, this has the effect of removing any piece that was there from the board
+            // Check for game ending move
+            CheckGameEndingMove(capturedPieces);
+
+            // remove captured pieces
+            foreach (var (x, y) in capturedPieces)
+            {
+                _boardState[x, y] = null;
+            }
+
+            // set new location
             _boardState[startLoc.X, startLoc.Y] = null;
             _boardState[endLoc.X, endLoc.Y] = promote ? piece.Promote() : piece;
 
@@ -145,6 +167,40 @@ namespace Oracle
         {
             SetInitialBoard();
             CurrentPlayer = Player.Black;
+        }
+
+        private bool CheckGameEndingMove(IReadOnlyList<(int X, int Y)> capturedPieces)
+        {
+            static bool IsRoyalty(PieceIdentity id) => id == PieceIdentity.Prince || id == PieceIdentity.King;
+
+            // trigger this search only on a capture of king/prince
+            if (!capturedPieces.Select(loc => _boardState[loc.X, loc.Y]).Any(piece => IsRoyalty(piece.Id)))
+                return false;
+
+            // No way to capture your own king/prince (ranged-capture lets one capture their own non-royal pieces)
+            if (capturedPieces.Select(loc => _boardState[loc.X, loc.Y]).Where(piece => IsRoyalty(piece.Id)).Any(piece => piece.Owner == CurrentPlayer))
+            {
+                // cannot capture ones own royalty
+                throw new NotSupportedException();
+            }
+
+            var remainingRoyals = new List<(int X, int Y)>();
+
+            // find all the royal pieces
+            for (int x = 0; x < _boardState.GetLength(0); ++x)
+            {
+                for (int y = 0; y < _boardState.GetLength(1); ++y)
+                {
+                    if (capturedPieces.Contains((x, y)))
+                        continue;
+
+                    // the opponent still has a royal piece
+                    if (_boardState[x, y]?.Owner != CurrentPlayer && IsRoyalty(_boardState[x, y]?.Id ?? PieceIdentity.Pawn))
+                        return false;
+                }
+            }
+
+            return true;
         }
 
         // Public "debug" API: Set which piece (or no piece) at a board location.
