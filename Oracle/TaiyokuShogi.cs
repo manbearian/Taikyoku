@@ -122,16 +122,9 @@ namespace Oracle
                 }
             }
 
-            if (promote)
-            {
-                // validate promotion
-                if (!piece.CanPromote()
-                    || (piece.Owner == Player.Black && endLoc.Y >= 11)
-                    || (piece.Owner == Player.White && endLoc.Y <= (BoardHeight - 11)))
-                {
-                    return false;
-                }
-            }
+            // validate promotion
+            if (promote && Movement.CheckPromotion(piece, startLoc, endLoc) == PromotionType.None)
+                return false;
 
             // set new location, this has the effect of removing any piece that was there from the board
             _boardState[startLoc.X, startLoc.Y] = null;

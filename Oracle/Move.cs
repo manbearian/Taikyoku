@@ -2434,7 +2434,7 @@ namespace Oracle
             return (x, y);
         }
 
-        public static PromotionType CheckPromotion(Piece piece, (int X, int Y) startLoc, (int X, int Y) endLoc, bool _capture /* ignored in Taikyoku Shogi */)
+        public static PromotionType CheckPromotion(Piece piece, (int X, int Y) startLoc, (int X, int Y) endLoc, bool _capture = false /* ignored in Taikyoku Shogi */)
         {
             if (!piece.CanPromote())
                 return PromotionType.None;
@@ -2442,7 +2442,7 @@ namespace Oracle
             return piece.Owner switch
             {
                 Player.Black => endLoc.Y < 11 ? PromotionType.May : PromotionType.None,
-                Player.White => endLoc.Y > TaiyokuShogi.BoardHeight - 11 ? PromotionType.May : PromotionType.None,
+                Player.White => endLoc.Y >= TaiyokuShogi.BoardHeight - 11 ? PromotionType.May : PromotionType.None,
                 _ => throw new NotSupportedException()
             };
         }
