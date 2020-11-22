@@ -5,18 +5,22 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:WPF_UI"
         mc:Ignorable="d"
-        Title="Promotion Window" Height="450" Width="800" ResizeMode="NoResize" WindowStartupLocation="CenterOwner" WindowStyle="ToolWindow">
+        Height="450" Width="800" ResizeMode="NoResize" WindowStartupLocation="CenterOwner" WindowStyle="None">
     <Grid>
         <Grid.RowDefinitions>
-            <RowDefinition/>
-            <RowDefinition/>
+            <RowDefinition Height="65*"/>
+            <RowDefinition Height="288*"/>
+            <RowDefinition Height="81*"/>
         </Grid.RowDefinitions>
         <Grid.ColumnDefinitions>
-            <ColumnDefinition/>
-            <ColumnDefinition/>
+            <ColumnDefinition />
+            <ColumnDefinition />
         </Grid.ColumnDefinitions>
-        <local:PieceInfoDisplay x:Name="originalPieceDisplay" HorizontalAlignment="Left" Margin="226,132,0,0" Grid.Row="1" VerticalAlignment="Top"/>
-        <local:PieceInfoDisplay x:Name="promotedPieceDisplay" HorizontalAlignment="Left" Margin="226,132,0,0" Grid.Row="1" Grid.Column="1" VerticalAlignment="Top"/>
-
+        <Rectangle Grid.ColumnSpan="99" Grid.RowSpan="99" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Stroke="{DynamicResource {x:Static SystemColors.ActiveCaptionTextBrushKey}}"/>
+        <TextBlock Text="Promote this piece?" Grid.ColumnSpan="2" VerticalAlignment="Center" FontSize="36"/>
+        <local:PieceInfoDisplay x:Name="originalPieceDisplay" Grid.Column="0" Grid.Row="1" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Margin="10"/>
+        <local:PieceInfoDisplay x:Name="promotedPieceDisplay" Grid.Column="1" Grid.Row="1" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Margin="10" />
+        <Button x:Name="keepButton" Content="Keep" Grid.Row="2" HorizontalAlignment="Center" VerticalAlignment="Center" Width="200" Height="50" FontSize="20" Click="keepButton_Click" />
+        <Button x:Name="promoteButton" Content="Promote" Grid.Row="2" Grid.Column="1" HorizontalAlignment="Center" VerticalAlignment="Center" Width="200" Height="50" FontSize="20" Click="promoteButton_Click" />
     </Grid>
 </Window>

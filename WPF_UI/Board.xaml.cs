@@ -146,25 +146,23 @@ namespace WPF_UI
                         var legalMoves = Game.GetLegalMoves(selectedPiece, Selected.Value, Selected2).Where(move => move.Loc == loc.Value);
                         if (legalMoves.Any())
                         {
-                            if (legalMoves.Any(move => move.Promotion == PromotionType.May))
+                            bool promote = legalMoves.Any(move => move.Promotion == PromotionType.Must);
+
+                            if (!promote && legalMoves.Any(move => move.Promotion == PromotionType.May))
                             {
                                 // must ask the player...
                                 var x = new PromotionWindow();
-                                x.Show(Game, selectedPiece.Id, selectedPiece.Id.PromotesTo().Value);
+                                promote = x.ShowDialog(Game, selectedPiece.Id, selectedPiece.Id.PromotesTo().Value);
                             }
-                            else
+
+                            bool legalMove = Game.MakeMove(Selected.Value, loc.Value, Selected2, promote);
+                            if (!legalMove)
                             {
-                                bool promote = legalMoves.Any(move => move.Promotion == PromotionType.Must);
-                                bool legalMove = Game.MakeMove(Selected.Value, loc.Value, Selected2, promote);
-
-                                if (!legalMove)
-                                {
-                                    throw new NotImplementedException("Illegal move support not implemented");
-                                }
-
-                                Selected = null;
-                                Selected2 = null;
+                                throw new NotImplementedException("Illegal move support not implemented");
                             }
+
+                            Selected = null;
+                            Selected2 = null;
                         }
                         else
                         {

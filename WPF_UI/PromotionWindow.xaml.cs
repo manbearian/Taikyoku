@@ -24,15 +24,21 @@ namespace WPF_UI
             InitializeComponent();
         }
 
-        // Require passing in piece info
-        private new void Show() => base.Show();
-
-        public void Show(TaiyokuShogi game, PieceIdentity idBefore, PieceIdentity idAfter)
+        public bool ShowDialog(TaiyokuShogi game, PieceIdentity idBefore, PieceIdentity idAfter)
         {
             originalPieceDisplay.SetPiece(game, idBefore);
             promotedPieceDisplay.SetPiece(game, idAfter);
+            return ShowDialog() ?? false;
+        }
 
-            Show();
+        private void promoteButton_Click(object sender, RoutedEventArgs e)
+        {
+            DialogResult = true;
+        }
+
+        private void keepButton_Click(object sender, RoutedEventArgs e)
+        {
+            DialogResult = false;
         }
     }
 }
