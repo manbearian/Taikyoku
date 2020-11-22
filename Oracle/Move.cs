@@ -30,7 +30,7 @@ namespace Oracle
         public const int DirectionCountWithJumps = 16;
 
         public const int Unlimited = int.MaxValue;
-        private static readonly int[] UnlimitedJump = Enumerable.Range(0, Math.Max(TaiyokuShogi.BoardWidth, TaiyokuShogi.BoardHeight)).ToArray();
+        private static readonly int[] UnlimitedJump = new int[] { Unlimited };
 
         public static readonly int[] OrthoganalDirectrions = new int[] { Up, Right, Down, Left };
         public static readonly int[] DiagnalDirectrions = new int[] { UpLeft, UpRight, DownRight, DownLeft };
@@ -2532,7 +2532,7 @@ namespace Oracle
                             break;
                     }
                 }
-                else if (existingPiece != null)
+                else if (type != MoveType.Jump && existingPiece != null)
                 {
                     break;
                 }
@@ -2593,6 +2593,12 @@ namespace Oracle
 
             for (int direction = 0; direction < movement.JumpRange.Length; ++direction)
             {
+                    if (movement.JumpRange[direction].JumpDistances?.FirstOrDefault() == Movement.Unlimited)
+                    {
+                        legalMoves.AddRange(loc, direction, Movement.Unlimited, MoveType.Jump);
+                        break;
+                    }
+
                 for (int i = 0; i < movement.JumpRange[direction].JumpDistances?.Length; ++i)
                 {
                     var jumpLoc = legalMoves.Add(loc, direction, movement.JumpRange[direction].JumpDistances[i] + 1, MoveType.Jump);

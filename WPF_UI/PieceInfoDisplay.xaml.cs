@@ -50,7 +50,8 @@ namespace WPF_UI
 
             for (int i = 0; i < moves.JumpRange.Length; ++i)
             {
-                var jumpRange = moves.JumpRange[i].JumpDistances?.Max() + 1;
+                var maxJump = moves.JumpRange[i].JumpDistances?.Max();
+                var jumpRange = maxJump == Movement.Unlimited ? 2 : maxJump + 1;
                 jumpRange += moves.JumpRange[i].RangeAfter == Movement.Unlimited ? 1 : moves.JumpRange[i].RangeAfter;
                 maxMoves = Math.Max(maxMoves, jumpRange ?? 0);
             }
@@ -130,6 +131,18 @@ namespace WPF_UI
                 if (jumpInfo.JumpDistances == null)
                     continue;
 
+                if (jumpInfo.JumpDistances.FirstOrDefault() == Movement.Unlimited)
+                {
+                    for (int i = 1; i <= maxMoves; ++i)
+                    {
+                        var (gridX, gridY) = GetGridPos(gridSize, direction, i);
+                        glyphGrid[gridX, gridY].TextBlock.Text = GetMoveChar(Movement.Unlimited, direction);
+                        glyphGrid[gridX, gridY].Background.Fill = Brushes.LightYellow;
+                    }
+
+                    continue;
+                }
+
                 foreach (var jumpDistance in jumpInfo.JumpDistances)
                 {
                     var (gridX, gridY) = GetGridPos(gridSize, direction, jumpDistance + 1);
@@ -137,12 +150,15 @@ namespace WPF_UI
                     glyphGrid[gridX, gridY].Background.Fill = Brushes.LightYellow;
                 }
 
-                var maxJumpRange = (jumpInfo.RangeAfter < Movement.Unlimited) ? jumpInfo.RangeAfter + jumpInfo.JumpDistances.Max() + 2 : Movement.Unlimited;
-                for (int i = jumpInfo.JumpDistances.Max() + 2; i <= Math.Min(maxJumpRange, maxMoves); ++i)
+                if (jumpInfo.RangeAfter > 0)
                 {
-                    var (gridX, gridY) = GetGridPos(gridSize, direction, i);
-                    glyphGrid[gridX, gridY].TextBlock.Text = GetMoveChar(jumpInfo.RangeAfter, direction);
-                    glyphGrid[gridX, gridY].Background.Fill = GetMoveColor(jumpInfo.RangeAfter);
+                    var maxJumpRange = (jumpInfo.RangeAfter < Movement.Unlimited) ? jumpInfo.RangeAfter + jumpInfo.JumpDistances.Max() + 2 : Movement.Unlimited;
+                    for (int i = jumpInfo.JumpDistances.Max() + 2; i <= Math.Min(maxJumpRange, maxMoves); ++i)
+                    {
+                        var (gridX, gridY) = GetGridPos(gridSize, direction, i);
+                        glyphGrid[gridX, gridY].TextBlock.Text = GetMoveChar(jumpInfo.RangeAfter, direction);
+                        glyphGrid[gridX, gridY].Background.Fill = GetMoveColor(jumpInfo.RangeAfter);
+                    }
                 }
             }
 
