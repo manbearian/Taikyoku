@@ -72,7 +72,12 @@ namespace WPF_UI
             Game.OnBoardChange += OnBoardChange;
             Game.OnGameEnd += OnGameEnd;
 
-            IsEnabled = (Game.GameEnding == null);
+            Selected = null;
+            Selected2 = null;
+
+            IsEnabled = (Game.CurrentPlayer != null);
+
+            InvalidateVisual();
         }
 
         private void OnBoardChange(object sender, BoardChangeEventArgs eventArgs)

@@ -75,22 +75,18 @@ namespace WPF_UI
             InvalidateVisual();
         }
 
-        private void SetPlayer(Player player)
+        private void SetPlayer(Player? player)
         {
-            if (player == Player.White)
+            var (fillColor, textColor) = player switch
             {
-                corners.ForEach(corner => { corner.Fill = Brushes.White; });
-                borders.ForEach(border => { border.FillColor = Brushes.White; border.TextColor = Brushes.Black; border.InvalidateVisual(); });
-            }
-            else if (player == Player.Black)
-            {
-                corners.ForEach(corner => { corner.Fill = Brushes.Black; });
-                borders.ForEach(border => { border.FillColor = Brushes.Black; border.TextColor = Brushes.White; border.InvalidateVisual(); });
-            }
-            else
-            {
-                throw new NotSupportedException();
-            }
+                Player.White => (Brushes.White, Brushes.Black),
+                Player.Black => (Brushes.Black, Brushes.White),
+                null => (Brushes.Gray, Brushes.Black),
+                _ => throw new InvalidOperationException()
+            };
+
+            corners.ForEach(corner => { corner.Fill = fillColor; });
+            borders.ForEach(border => { border.FillColor = fillColor; border.TextColor = textColor; border.InvalidateVisual(); });
 
             InvalidateVisual();
         }

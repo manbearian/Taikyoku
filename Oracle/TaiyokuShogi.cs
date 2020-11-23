@@ -35,10 +35,9 @@ namespace Oracle
         public const int BoardWidth = 36;
 
         private readonly Piece[,] _boardState = new Piece[BoardWidth, BoardHeight];
-        private Player _currentPlayer;
-        private (GameEndType, Player? winner)? _gameEnding;
+        private Player? _currentPlayer;
 
-        public Player CurrentPlayer
+        public Player? CurrentPlayer
         {
             get => _currentPlayer;
 
@@ -54,23 +53,7 @@ namespace Oracle
                 }
             }
         }
-
-        private Player OtherPlayer { get => CurrentPlayer == Player.Black ? Player.White : Player.Black; }
-
-        public (GameEndType, Player? winner)? GameEnding
-        {
-            get => _gameEnding;
-            
-            private set
-            {
-                _gameEnding = value;
-                if (OnGameEnd != null)
-                {
-                    var args = new GameEndEventArgs(value.Value.Item1, CurrentPlayer);
-                    OnGameEnd(this, args);
-                }
-            }
-        }
+        private Player OtherPlayer { get => CurrentPlayer.Value == Player.Black ? Player.White : Player.Black; }
 
         public TaiyokuShogi()
         {
@@ -106,6 +89,12 @@ namespace Oracle
         // Move the turn to the next player
         private void NextTurn() => CurrentPlayer = (CurrentPlayer == Player.Black ? Player.White : Player.Black);
 
+        private void EndGame(GameEndType gameEnding, Player? winner)
+        {
+            CurrentPlayer = null;
+            OnGameEnd?.Invoke(this, new GameEndEventArgs(gameEnding, winner));
+        }
+
         // Public API: move the piece at startLoc to endLoc
         //   Raises "OnBoardChange" event if move completes (i.e. was legal)
         //   CurrentPlayer is advanced
@@ -115,7 +104,7 @@ namespace Oracle
         {
             bool IllegalMove()
             {
-                GameEnding = (GameEndType.IllegalMove, OtherPlayer);
+                EndGame(GameEndType.IllegalMove, OtherPlayer);
                 return true;
             }
 
@@ -124,7 +113,7 @@ namespace Oracle
             var piece = GetPiece(startLoc);
 
             // nonsencial moves are invalid
-            if (GameEnding != null || piece == null)
+            if (CurrentPlayer == null || piece == null)
             {
                 return InvalidMove();
             }
@@ -196,15 +185,11 @@ namespace Oracle
             _boardState[startLoc.X, startLoc.Y] = null;
             _boardState[endLoc.X, endLoc.Y] = promote ? piece.Promote() : piece;
 
-            if (OnBoardChange != null)
-            {
-                var args = new BoardChangeEventArgs();
-                OnBoardChange(this, args);
-            }
+            OnBoardChange?.Invoke(this, new BoardChangeEventArgs());
 
             if (IsCheckmate())
             {
-                GameEnding = (GameEndType.Checkmate, CurrentPlayer);
+                EndGame(GameEndType.Checkmate, CurrentPlayer);
                 return true;
             }
 
@@ -253,11 +238,11 @@ namespace Oracle
 
     public class PlayerChangeEventArgs : EventArgs
     {
-        public Player OldPlayer { get; }
+        public Player? OldPlayer { get; }
 
-        public Player NewPlayer { get; }
+        public Player? NewPlayer { get; }
 
-        public PlayerChangeEventArgs(Player oldPlayer, Player newPlayer) => (OldPlayer, NewPlayer) = (oldPlayer, newPlayer);
+        public PlayerChangeEventArgs(Player? oldPlayer, Player? newPlayer) => (OldPlayer, NewPlayer) = (oldPlayer, newPlayer);
     }
 
     public class BoardChangeEventArgs : EventArgs
