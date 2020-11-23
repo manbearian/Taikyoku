@@ -66,7 +66,35 @@ namespace WPF_UI
             MouseRightButtonUp += RightClickHandler;
         }
 
-        public void SetGame(TaiyokuShogi game) => Game = game;
+        public void SetGame(TaiyokuShogi game)
+        {
+            Game = game;
+            Game.OnBoardChange += OnBoardChange;
+            Game.OnGameEnd += OnGameEnd;
+
+            IsEnabled = (Game.GameEnding == null);
+        }
+
+        private void OnBoardChange(object sender, BoardChangeEventArgs eventArgs)
+        {
+            if ((Selected != null && Game.GetPiece(Selected.Value) == null)
+                || (Selected2 != null && Game.GetPiece(Selected2.Value) == null))
+            {
+                Selected = null;
+                Selected2 = null;
+            }
+
+            InvalidateVisual();
+        }
+
+        private void OnGameEnd(object sender, GameEndEventArgs eventArgs)
+        {
+            Selected = null;
+            Selected2 = null;
+            IsEnabled = false;
+
+            InvalidateVisual();
+        }
 
         public (int X, int Y)? GetBoardLoc(Point p)
         {
@@ -155,14 +183,10 @@ namespace WPF_UI
                                 promote = x.ShowDialog(Game, selectedPiece.Id, selectedPiece.Id.PromotesTo().Value);
                             }
 
-                            bool legalMove = Game.MakeMove(Selected.Value, loc.Value, Selected2, promote);
-                            if (!legalMove)
-                            {
-                                throw new NotImplementedException("Illegal move support not implemented");
-                            }
+                            bool moveCompleted = Game.MakeMove(Selected.Value, loc.Value, Selected2, promote);
 
-                            Selected = null;
-                            Selected2 = null;
+                            if (!moveCompleted)
+                                throw new InvalidOperationException("Move unuspported with current game state");
                         }
                         else
                         {

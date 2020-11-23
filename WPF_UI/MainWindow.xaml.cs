@@ -71,7 +71,7 @@ namespace WPF_UI
             gameBoard.SetGame(Game);
 
             Game.OnPlayerChange += OnPlayerChange;
-            Game.OnBoardChange += OnBoardChange;
+            Game.OnGameEnd += OnGameEnd;
 
             Game.Reset();
         }
@@ -96,9 +96,10 @@ namespace WPF_UI
             InvalidateVisual();
         }
 
-        private void OnBoardChange(object sender, BoardChangeEventArgs eventArgs)
+        private void OnGameEnd(object sender, GameEndEventArgs eventArgs)
         {
-            gameBoard.InvalidateVisual();
+            var gameEndWindow = new GameEndWindow();
+            gameEndWindow.ShowDialog();
         }
 
         private void MenuItem_Click(object sender, RoutedEventArgs e)
