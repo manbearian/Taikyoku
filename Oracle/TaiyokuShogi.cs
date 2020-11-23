@@ -11,6 +11,12 @@ namespace Oracle
         White
     }
 
+    public enum GameEndType
+    {
+        Checkmate,
+        IllegalMove
+    }
+
     [Flags]
     public enum TaiyokuShogiOptions
     {
@@ -30,6 +36,7 @@ namespace Oracle
 
         private readonly Piece[,] _boardState = new Piece[BoardWidth, BoardHeight];
         private Player _currentPlayer;
+        private (GameEndType, Player? winner)? _gameEnding;
 
         public Player CurrentPlayer
         {
@@ -48,6 +55,23 @@ namespace Oracle
             }
         }
 
+        private Player OtherPlayer { get => CurrentPlayer == Player.Black ? Player.White : Player.Black; }
+
+        public (GameEndType, Player? winner)? GameEnding
+        {
+            get => _gameEnding;
+            
+            private set
+            {
+                _gameEnding = value;
+                if (OnGameEnd != null)
+                {
+                    var args = new GameEndEventArgs(value.Value.Item1, CurrentPlayer);
+                    OnGameEnd(this, args);
+                }
+            }
+        }
+
         public TaiyokuShogi()
         {
         }
@@ -57,6 +81,9 @@ namespace Oracle
 
         public delegate void BoardChangeHandler(object sender, BoardChangeEventArgs e);
         public event BoardChangeHandler OnBoardChange;
+
+        public delegate void GameEndHandler(object sender, GameEndEventArgs e);
+        public event GameEndHandler OnGameEnd;
 
         public Piece GetPiece((int X, int Y) loc) => _boardState[loc.X, loc.Y];
 
@@ -81,25 +108,40 @@ namespace Oracle
         //   Raises "OnBoardChange" event if move completes (i.e. was legal)
         //   CurrentPlayer is advanced
         //   The optional parameter `midLoc` is used for area-moves (e..g lion move)
-        //   return value indicates if the move is legal and was thus completed
+        //   return value indicates if the move was valid. Note that illegal moves are concerned valid, but will end the game.
         public bool MakeMove((int X, int Y) startLoc, (int X, int Y) endLoc, (int X, int Y)? midLoc = null, bool promote = false)
         {
+            bool IllegalMove()
+            {
+                GameEnding = (GameEndType.IllegalMove, OtherPlayer);
+                return true;
+            }
+
+            bool InvalidMove() => false;
+
             var piece = GetPiece(startLoc);
 
-            if (piece == null || piece.Owner != CurrentPlayer)
-                return false;
+            // nonsencial moves are invalid
+            if (GameEnding != null || piece == null)
+            {
+                return InvalidMove();
+            }
+
+            // moving your oppontents piece is illegal
+            if (piece.Owner != CurrentPlayer)
+                return IllegalMove();
 
             var moves = this.GetLegalMoves(piece, startLoc, midLoc).Where(move => move.Loc == endLoc);
 
             if (!moves.Any())
-                return false;
+                return IllegalMove();
 
             var capturedPieces = new List<(int X, int Y)>();
 
             if (midLoc != null)
             {
                 if (!moves.Any(move => move.Type == MoveType.Area || move.Type == MoveType.Igui))
-                    return false;
+                    return IllegalMove();
 
                 // capture any piece that got run over by the area-move
                 if (_boardState[midLoc.Value.X, midLoc.Value.Y] != null)
@@ -115,7 +157,7 @@ namespace Oracle
 
                 // orthoganal or diagonal only
                 if (xCount != 0 && yCount != 0 && Math.Abs(xCount) != Math.Abs(yCount))
-                    return false;
+                    return IllegalMove();
 
                 var xMultiplier = xCount == 0 ? 0 : (xCount > 0 ? -1 : 1);
                 var yMultiplier = yCount == 0 ? 0 : (yCount > 0 ? -1 : 1);
@@ -137,10 +179,10 @@ namespace Oracle
 
             // validate promotion
             if (promote && Movement.CheckPromotion(piece, startLoc, endLoc, capturedPieces.Any()) == PromotionType.None)
-                return false;
+                return IllegalMove();
 
-            // Check for game ending move
-            CheckGameEndingMove(capturedPieces);
+            // to allow for testing without king/prince on the board, only check for mate on capture of king/prince
+            var checkForCheckmate = capturedPieces.Select(loc => _boardState[loc.X, loc.Y]).Any(piece => IsRoyalty(piece.Id));
 
             // remove captured pieces
             foreach (var (x, y) in capturedPieces)
@@ -158,8 +200,32 @@ namespace Oracle
                 OnBoardChange(this, args);
             }
 
+            if (IsCheckmate())
+            {
+                GameEnding = (GameEndType.Checkmate, CurrentPlayer);
+                return true;
+            }
+
             NextTurn();
             return true;
+
+            static bool IsRoyalty(PieceIdentity id) => id == PieceIdentity.Prince || id == PieceIdentity.King;
+
+            bool IsCheckmate()
+            {
+                if (!checkForCheckmate)
+                    return false;
+
+                foreach (var p in _boardState)
+                {
+                    if (p?.Owner == OtherPlayer && IsRoyalty(p.Id))
+                    {
+                        return false;
+                    }
+                }
+
+                return true;
+            }
         }
 
         // Public API: Reset the game to its initial state
@@ -167,40 +233,6 @@ namespace Oracle
         {
             SetInitialBoard();
             CurrentPlayer = Player.Black;
-        }
-
-        private bool CheckGameEndingMove(IReadOnlyList<(int X, int Y)> capturedPieces)
-        {
-            static bool IsRoyalty(PieceIdentity id) => id == PieceIdentity.Prince || id == PieceIdentity.King;
-
-            // trigger this search only on a capture of king/prince
-            if (!capturedPieces.Select(loc => _boardState[loc.X, loc.Y]).Any(piece => IsRoyalty(piece.Id)))
-                return false;
-
-            // No way to capture your own king/prince (ranged-capture lets one capture their own non-royal pieces)
-            if (capturedPieces.Select(loc => _boardState[loc.X, loc.Y]).Where(piece => IsRoyalty(piece.Id)).Any(piece => piece.Owner == CurrentPlayer))
-            {
-                // cannot capture ones own royalty
-                throw new NotSupportedException();
-            }
-
-            var remainingRoyals = new List<(int X, int Y)>();
-
-            // find all the royal pieces
-            for (int x = 0; x < _boardState.GetLength(0); ++x)
-            {
-                for (int y = 0; y < _boardState.GetLength(1); ++y)
-                {
-                    if (capturedPieces.Contains((x, y)))
-                        continue;
-
-                    // the opponent still has a royal piece
-                    if (_boardState[x, y]?.Owner != CurrentPlayer && IsRoyalty(_boardState[x, y]?.Id ?? PieceIdentity.Pawn))
-                        return false;
-                }
-            }
-
-            return true;
         }
 
         // Public "debug" API: Set which piece (or no piece) at a board location.
@@ -236,5 +268,14 @@ namespace Oracle
     public class BoardChangeEventArgs : EventArgs
     {
         public BoardChangeEventArgs() { }
+    }
+
+    public class GameEndEventArgs : EventArgs
+    {
+        public GameEndType Ending { get; }
+
+        public Player? Winner { get; }
+
+        public GameEndEventArgs(GameEndType gameEnding, Player? winner) => (Ending, Winner) = (gameEnding, winner);
     }
 }
