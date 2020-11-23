@@ -10,6 +10,8 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
 
+using Oracle;
+
 namespace WPF_UI
 {
     /// <summary>
@@ -22,12 +24,27 @@ namespace WPF_UI
             InitializeComponent();
         }
 
-        private void ViewBoardButtonClick(object sender, RoutedEventArgs e)
+        public void ShowDialog(GameEndType gameEndType, Player? winner)
         {
-            Opacity = 0.1;
+            upperTextBox.Text = gameEndType switch
+            {
+                GameEndType.Checkmate => "Checkmate!",
+                GameEndType.IllegalMove => "Illegal Move!",
+                _ => throw new NotSupportedException()
+            };
+
+            lowerTextBox.Text = winner switch
+            {
+                Player.White => "White Wins!",
+                Player.Black => "Black Wins!",
+                null => "Draw!",
+                _ => throw new NotSupportedException(),
+            };
+
+            ShowDialog();
         }
 
-        private void EndGameButtonClick(object sender, RoutedEventArgs e)
+        private void OKButtonClick(object sender, RoutedEventArgs e)
         {
             Close();
         }

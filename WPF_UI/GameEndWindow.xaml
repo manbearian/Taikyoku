@@ -5,15 +5,15 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:WPF_UI"
         mc:Ignorable="d"
-        Height="120" Width="240" WindowStyle="None" BorderThickness="1,1,1,0" AllowsTransparency="True" ResizeMode="NoResize" ShowInTaskbar="False">
+        Height="110" Width="240" WindowStyle="None" BorderThickness="1,1,1,0" AllowsTransparency="True" ResizeMode="NoResize" ShowInTaskbar="False">
     <Grid>
         <Grid.RowDefinitions>
-            <RowDefinition/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
             <RowDefinition/>
         </Grid.RowDefinitions>
-        <TextBlock x:Name="winnerTextBox" Text="Checkmate!" HorizontalAlignment="Center" VerticalAlignment="Bottom" FontSize="24" FontWeight="Normal"/>
-        <TextBlock x:Name="winnerTextBox2" Text="Black Wins!" HorizontalAlignment="Center" VerticalAlignment="Top" Grid.Row="1" FontSize="36"/>
-        <Button Content="View Board" Margin="160,5,5,35" Click="ViewBoardButtonClick"/>
-        <Button Content="End Game" Margin="5,5,160,35" Click="EndGameButtonClick"/>
+        <TextBlock x:Name="upperTextBox" Text="Checkmate!" HorizontalAlignment="Center" VerticalAlignment="Stretch" FontSize="24" FontWeight="Normal"/>
+        <TextBlock x:Name="lowerTextBox" Text="Black Wins!" HorizontalAlignment="Center" VerticalAlignment="Stretch" Grid.Row="1" FontSize="36"/>
+        <Button Content="OK" Grid.Row="2" HorizontalAlignment="Center" VerticalAlignment="Center" Click="OKButtonClick" Width="50" />
     </Grid>
 </Window>

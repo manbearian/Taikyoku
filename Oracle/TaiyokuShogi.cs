@@ -74,6 +74,8 @@ namespace Oracle
 
         public TaiyokuShogi()
         {
+            SetInitialBoard();
+            CurrentPlayer = Player.Black;
         }
 
         public delegate void PlayerChangeHandler(object sender, PlayerChangeEventArgs e);
@@ -226,13 +228,6 @@ namespace Oracle
 
                 return true;
             }
-        }
-
-        // Public API: Reset the game to its initial state
-        public void Reset()
-        {
-            SetInitialBoard();
-            CurrentPlayer = Player.Black;
         }
 
         // Public "debug" API: Set which piece (or no piece) at a board location.

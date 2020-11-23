@@ -30,8 +30,6 @@ namespace WPF_UI
         TaiyokuShogi Game = null;
         PieceInfoWindow _pieceInfoWindow = null;
 
-        private bool DebugMode { get; set; }
-
         public MainWindow()
         {
             InitializeComponent();
@@ -73,17 +71,18 @@ namespace WPF_UI
             Game.OnPlayerChange += OnPlayerChange;
             Game.OnGameEnd += OnGameEnd;
 
-            Game.Reset();
+            SetPlayer(Game.CurrentPlayer);
+            InvalidateVisual();
         }
 
-        private void OnPlayerChange(object sender, PlayerChangeEventArgs eventArgs)
+        private void SetPlayer(Player player)
         {
-            if (eventArgs.NewPlayer == Player.White)
+            if (player == Player.White)
             {
                 corners.ForEach(corner => { corner.Fill = Brushes.White; });
                 borders.ForEach(border => { border.FillColor = Brushes.White; border.TextColor = Brushes.Black; border.InvalidateVisual(); });
             }
-            else if (eventArgs.NewPlayer == Player.Black)
+            else if (player == Player.Black)
             {
                 corners.ForEach(corner => { corner.Fill = Brushes.Black; });
                 borders.ForEach(border => { border.FillColor = Brushes.Black; border.TextColor = Brushes.White; border.InvalidateVisual(); });
@@ -96,21 +95,24 @@ namespace WPF_UI
             InvalidateVisual();
         }
 
+        private void OnPlayerChange(object sender, PlayerChangeEventArgs eventArgs) =>
+            SetPlayer(eventArgs.NewPlayer);
+
         private void OnGameEnd(object sender, GameEndEventArgs eventArgs)
         {
             var gameEndWindow = new GameEndWindow();
-            gameEndWindow.ShowDialog();
+            gameEndWindow.ShowDialog(eventArgs.Ending, eventArgs.Winner);
         }
 
         private void MenuItem_Click(object sender, RoutedEventArgs e)
         {
             if (e.Source == newGameMenuItem)
             {
-                Game.Reset();
+                NewGame();
             }
             else if (e.Source == debugModeMenuItem)
             {
-                DebugMode = (e.Source as MenuItem).IsChecked;
+                // nothing to do... "Debug" state is tracked through the "checked" property of this menu item
             }
             else if (pieceMenuItems.TryGetValue(e.Source as MenuItem, out var piece))
             {
