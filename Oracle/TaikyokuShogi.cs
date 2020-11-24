@@ -22,15 +22,17 @@ namespace Oracle
     [Flags]
     public enum TaikyokuShogiOptions
     {
-        ViolentBearAlternative,
-        TreacherousFoxAlternative,
-        DivineSparrowAlternative,
-        EarthDragonAlternative,
-        FreeDemonAlternative,
-        LongNosedGoblinAlternative,
-        CapricornAlternative,
+        None =                            0,
+        ViolentBearAlternative =          1,
+        TreacherousFoxAlternative =       2,
+        DivineSparrowAlternative =        4,
+        EarthDragonAlternative =          8,
+        FreeDemonAlternative =         0x10,
+        LongNosedGoblinAlternative =   0x20,
+        CapricornAlternative =         0x40,
     }
 
+    [JsonConverter(typeof(TaikyokuJsonConverter))]
     public class TaikyokuShogi
     {
         public const int BoardHeight = 36;
@@ -61,7 +63,25 @@ namespace Oracle
         {
             SetInitialBoard();
             CurrentPlayer = Player.Black;
+            Options = TaikyokuShogiOptions.None;
         }
+
+        // Constructor for deserialization
+        internal TaikyokuShogi(Piece[,] pieces, Player ?currentPlayer, TaikyokuShogiOptions options)
+        {
+            if (pieces.Rank != 2 || pieces.GetLength(0) != BoardWidth || pieces.GetLength(1) != BoardHeight)
+                throw new NotSupportedException();
+
+            _boardState = pieces;
+            CurrentPlayer = currentPlayer;
+            Options = options;
+        }
+
+        public static TaikyokuShogi Deserlialize(byte [] serialBytes) =>
+            JsonSerializer.Deserialize<TaikyokuShogi>(serialBytes);
+
+        public byte[] Serialize() =>
+            JsonSerializer.SerializeToUtf8Bytes(this, new JsonSerializerOptions { WriteIndented = true });
 
         public delegate void PlayerChangeHandler(object sender, PlayerChangeEventArgs e);
         public event PlayerChangeHandler OnPlayerChange;
