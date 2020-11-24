@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Text;
@@ -47,12 +48,10 @@ namespace WPF_UI
             borders.Add(borderLeft);
             borders.Add(borderRight);
 
-            foreach(var pieceId in (Enum.GetValues(typeof(PieceIdentity)) as PieceIdentity[]).OrderBy(piece => piece.Name()))
+            foreach (var pieceId in (Enum.GetValues(typeof(PieceIdentity)) as PieceIdentity[]).OrderBy(piece => piece.Name()))
             {
-                var blackMenuItem = new MenuItem();
-                blackMenuItem.Header = pieceId.Name();
-                var whiteMenuItem = new MenuItem();
-                whiteMenuItem.Header = pieceId.Name();
+                var blackMenuItem = new MenuItem() { Header = pieceId.Name() };
+                var whiteMenuItem = new MenuItem() { Header = pieceId.Name() };
 
                 pieceMenuItems.Add(blackMenuItem, new Piece(Player.Black, pieceId));
                 addBlackPieceMenuItem.Items.Add(blackMenuItem);
@@ -63,9 +62,9 @@ namespace WPF_UI
             NewGame();
         }
 
-        private void NewGame()
+        private void NewGame(TaikyokuShogi game = null)
         {
-            Game = new TaikyokuShogi();
+            Game = game ?? new TaikyokuShogi();
             gameBoard.SetGame(Game);
 
             Game.OnPlayerChange += OnPlayerChange;
@@ -105,6 +104,20 @@ namespace WPF_UI
             if (e.Source == newGameMenuItem)
             {
                 NewGame();
+            }
+            else if (e.Source == saveGameMenuItem)
+            {
+                var path = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+                using FileStream fs = File.Open($"{path}\\a.state", FileMode.OpenOrCreate);
+                fs.Write(Game.Serialize());
+            }
+            else if (e.Source == loadGameMenuItem)
+            {
+                var path = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+                using FileStream fs = File.Open($"{path}\\a.state", FileMode.Open);
+                var buffer = new byte[fs.Length];
+                fs.Read(buffer);
+                NewGame(TaikyokuShogi.Deserlialize(buffer));
             }
             else if (e.Source == debugModeMenuItem)
             {
