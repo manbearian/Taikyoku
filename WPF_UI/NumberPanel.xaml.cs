@@ -38,11 +38,11 @@ namespace WPF_UI
 
             if (Orientation == Orientation.Horizontal)
             {
-                static string ColumnName(int i) => $"{TaiyokuShogi.BoardWidth - i}";
+                static string ColumnName(int i) => $"{TaikyokuShogi.BoardWidth - i}";
 
-                var spacing = ActualWidth / TaiyokuShogi.BoardWidth;
+                var spacing = ActualWidth / TaikyokuShogi.BoardWidth;
 
-                for (int i = 0; i < TaiyokuShogi.BoardWidth; ++i)
+                for (int i = 0; i < TaikyokuShogi.BoardWidth; ++i)
                 {
                     var text = new FormattedText(
                         ColumnName(i),
@@ -61,9 +61,9 @@ namespace WPF_UI
             {
                 static string RowName(int i) => new string((char)('A' + (i % 26)), i / 26 + 1);
 
-                var spacing = ActualHeight / TaiyokuShogi.BoardHeight;
+                var spacing = ActualHeight / TaikyokuShogi.BoardHeight;
 
-                for (int i = 0; i < TaiyokuShogi.BoardHeight; ++i)
+                for (int i = 0; i < TaikyokuShogi.BoardHeight; ++i)
                 {
                     var text = new FormattedText(
                         RowName(i),

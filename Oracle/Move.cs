@@ -69,7 +69,7 @@ namespace Oracle
         private bool _igui = false;
         public bool Igui { get => _igui; }
 
-        public static Movement GetMovement(PieceIdentity id, TaiyokuShogiOptions options)
+        public static Movement GetMovement(PieceIdentity id, TaikyokuShogiOptions options)
         {
             Movement m = new Movement();
             switch (id)
@@ -340,7 +340,7 @@ namespace Oracle
                     break;
 
                 case PieceIdentity.ViolentBear:
-                    if ((options & TaiyokuShogiOptions.ViolentBearAlternative) == 0)
+                    if ((options & TaikyokuShogiOptions.ViolentBearAlternative) == 0)
                     {
                         m._stepRange[Up] = 1;
                         m._stepRange[Left] = 1;
@@ -664,7 +664,7 @@ namespace Oracle
                     break;
 
                 case PieceIdentity.TreacherousFox:
-                    if ((options & TaiyokuShogiOptions.TreacherousFoxAlternative) == 0)
+                    if ((options & TaikyokuShogiOptions.TreacherousFoxAlternative) == 0)
                     {
                         m._stepRange[Up] = Unlimited;
                         m._stepRange[Down] = Unlimited;
@@ -866,7 +866,7 @@ namespace Oracle
                     break;
 
                 case PieceIdentity.DivineSparrow:
-                    if ((options & TaiyokuShogiOptions.DivineSparrowAlternative) == 0)
+                    if ((options & TaikyokuShogiOptions.DivineSparrowAlternative) == 0)
                     {
                         m._stepRange[Up] = 1;
                         m._stepRange[Down] = 1;
@@ -1378,7 +1378,7 @@ namespace Oracle
                     break;
 
                 case PieceIdentity.EarthDragon:
-                    if ((options & TaiyokuShogiOptions.EarthDragonAlternative) == 0)
+                    if ((options & TaikyokuShogiOptions.EarthDragonAlternative) == 0)
                     {
                         m._stepRange[UpLeft] = 2;
                         m._stepRange[Up] = 1;
@@ -1672,7 +1672,7 @@ namespace Oracle
                     break;
 
                 case PieceIdentity.FreeDemon:
-                    if ((options & TaiyokuShogiOptions.FreeDemonAlternative) == 0)
+                    if ((options & TaikyokuShogiOptions.FreeDemonAlternative) == 0)
                     {
                         m._stepRange[UpLeft] = Unlimited;
                         m._stepRange[UpRight] = Unlimited;
@@ -2302,7 +2302,7 @@ namespace Oracle
 
                 case PieceIdentity.LongNosedGoblin:
                     m._hookMove = HookType.Diagonal;
-                    if ((options & TaiyokuShogiOptions.LongNosedGoblinAlternative) != 0)
+                    if ((options & TaikyokuShogiOptions.LongNosedGoblinAlternative) != 0)
                     {
                         m._stepRange[Up] = 1;
                         m._stepRange[Right] = 1;
@@ -2313,7 +2313,7 @@ namespace Oracle
 
                 case PieceIdentity.Capricorn:
                     m._hookMove = HookType.Diagonal;
-                    if ((options & TaiyokuShogiOptions.CapricornAlternative) != 0)
+                    if ((options & TaikyokuShogiOptions.CapricornAlternative) != 0)
                     {
                         m._stepRange[Up] = 1;
                         m._stepRange[Right] = 1;
@@ -2426,9 +2426,9 @@ namespace Oracle
                 _ => throw new NotSupportedException()
             };
 
-            if (y < 0 || y >= TaiyokuShogi.BoardHeight)
+            if (y < 0 || y >= TaikyokuShogi.BoardHeight)
                 return null;
-            if (x < 0 || x >= TaiyokuShogi.BoardWidth)
+            if (x < 0 || x >= TaikyokuShogi.BoardWidth)
                 return null;
 
             return (x, y);
@@ -2442,7 +2442,7 @@ namespace Oracle
             return piece.Owner switch
             {
                 Player.Black => endLoc.Y < 11 ? PromotionType.May : PromotionType.None,
-                Player.White => endLoc.Y >= TaiyokuShogi.BoardHeight - 11 ? PromotionType.May : PromotionType.None,
+                Player.White => endLoc.Y >= TaikyokuShogi.BoardHeight - 11 ? PromotionType.May : PromotionType.None,
                 _ => throw new NotSupportedException()
             };
         }
@@ -2468,7 +2468,7 @@ namespace Oracle
 
     internal class MoveGenerator
     {
-        private TaiyokuShogi Game { get; }
+        private TaikyokuShogi Game { get; }
 
         private Piece Piece { get; }
 
@@ -2477,7 +2477,7 @@ namespace Oracle
         private List<((int X, int Y) Loc, MoveType Type, PromotionType Promotion)> _moves = new List<((int X, int Y) Loc, MoveType Type, PromotionType Promotion)>();
         public IEnumerable<((int X, int Y) Loc, MoveType Type, PromotionType Promotion)> Moves { get => _moves; }
 
-        public MoveGenerator(TaiyokuShogi game, Piece piece, (int X, int Y) startLoc)
+        public MoveGenerator(TaikyokuShogi game, Piece piece, (int X, int Y) startLoc)
             => (Game, Piece, StartLoc) = (game, piece, startLoc);
 
         // Compute a target move and add it to the list of moves if it is legal. Returns the computed location regardless
@@ -2555,11 +2555,11 @@ namespace Oracle
     }
 
 
-    public static class TaiyokuShogiMoves
+    public static class TaikyokuShogiMoves
     {
-        public static Movement GetMovement(this TaiyokuShogi game, PieceIdentity id) => Movement.GetMovement(id, game.Options);
+        public static Movement GetMovement(this TaikyokuShogi game, PieceIdentity id) => Movement.GetMovement(id, game.Options);
 
-        public static IEnumerable<((int X, int Y) Loc, MoveType Type, PromotionType Promotion)> GetLegalMoves(this TaiyokuShogi game, Piece piece, (int X, int Y) loc, (int X, int Y)? midLoc = null)
+        public static IEnumerable<((int X, int Y) Loc, MoveType Type, PromotionType Promotion)> GetLegalMoves(this TaikyokuShogi game, Piece piece, (int X, int Y) loc, (int X, int Y)? midLoc = null)
         {
             var legalMoves = new MoveGenerator(game, piece, loc);
             var movement = game.GetMovement(piece.Id);

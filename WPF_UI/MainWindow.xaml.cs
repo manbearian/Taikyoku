@@ -27,7 +27,7 @@ namespace WPF_UI
         readonly List<NumberPanel> borders = new List<NumberPanel>();
         readonly Dictionary<MenuItem, Piece> pieceMenuItems = new Dictionary<MenuItem, Piece>();
 
-        TaiyokuShogi Game = null;
+        TaikyokuShogi Game = null;
         PieceInfoWindow _pieceInfoWindow = null;
 
         public MainWindow()
@@ -65,7 +65,7 @@ namespace WPF_UI
 
         private void NewGame()
         {
-            Game = new TaiyokuShogi();
+            Game = new TaikyokuShogi();
             gameBoard.SetGame(Game);
 
             Game.OnPlayerChange += OnPlayerChange;
@@ -120,9 +120,9 @@ namespace WPF_UI
             }
             else if (e.Source == clearBoardMenuItem)
             {
-                for (int i = 0; i < TaiyokuShogi.BoardHeight; ++i)
+                for (int i = 0; i < TaikyokuShogi.BoardHeight; ++i)
                 {
-                    for (int j = 0; j < TaiyokuShogi.BoardHeight; ++j)
+                    for (int j = 0; j < TaikyokuShogi.BoardHeight; ++j)
                     {
                         Game.Debug_SetPiece(null, (i, j));
                     }

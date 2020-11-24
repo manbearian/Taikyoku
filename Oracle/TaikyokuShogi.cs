@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 
 namespace Oracle
@@ -18,7 +20,7 @@ namespace Oracle
     }
 
     [Flags]
-    public enum TaiyokuShogiOptions
+    public enum TaikyokuShogiOptions
     {
         ViolentBearAlternative,
         TreacherousFoxAlternative,
@@ -29,7 +31,7 @@ namespace Oracle
         CapricornAlternative,
     }
 
-    public class TaiyokuShogi
+    public class TaikyokuShogi
     {
         public const int BoardHeight = 36;
         public const int BoardWidth = 36;
@@ -55,7 +57,7 @@ namespace Oracle
         }
         private Player OtherPlayer { get => CurrentPlayer.Value == Player.Black ? Player.White : Player.Black; }
 
-        public TaiyokuShogi()
+        public TaikyokuShogi()
         {
             SetInitialBoard();
             CurrentPlayer = Player.Black;
@@ -72,7 +74,7 @@ namespace Oracle
 
         public Piece GetPiece((int X, int Y) loc) => _boardState[loc.X, loc.Y];
 
-        public TaiyokuShogiOptions Options { get; }
+        public TaikyokuShogiOptions Options { get; }
 
         // Layout the pieces on the board in their starting position
         private void SetInitialBoard()

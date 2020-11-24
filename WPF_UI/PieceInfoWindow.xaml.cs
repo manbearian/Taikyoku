@@ -25,7 +25,7 @@ namespace WPF_UI
             InitializeComponent();
         }
 
-        public void SetPiece(TaiyokuShogi game, PieceIdentity id) =>
+        public void SetPiece(TaikyokuShogi game, PieceIdentity id) =>
             pieceInfoDisplay.SetPiece(game, id);
     }
 }

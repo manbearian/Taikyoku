@@ -24,7 +24,7 @@ namespace WPF_UI
             InitializeComponent();
         }
 
-        public bool ShowDialog(TaiyokuShogi game, PieceIdentity idBefore, PieceIdentity idAfter)
+        public bool ShowDialog(TaikyokuShogi game, PieceIdentity idBefore, PieceIdentity idAfter)
         {
             originalPieceDisplay.SetPiece(game, idBefore);
             promotedPieceDisplay.SetPiece(game, idAfter);

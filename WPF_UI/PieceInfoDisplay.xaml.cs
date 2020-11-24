@@ -32,7 +32,7 @@ namespace WPF_UI
         //   ─ | ☖| ─
         //  ---+---+---
         //   ○ |   | ○
-        public void SetPiece(TaiyokuShogi game, PieceIdentity id)
+        public void SetPiece(TaikyokuShogi game, PieceIdentity id)
         {
             var moves = game.GetMovement(id);
 

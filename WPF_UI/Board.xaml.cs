@@ -17,11 +17,11 @@ namespace WPF_UI
     /// </summary>
     public partial class Board : UserControl
     {
-        private TaiyokuShogi Game;
+        private TaikyokuShogi Game;
 
-        public int BoardWidth { get => TaiyokuShogi.BoardWidth; }
+        public int BoardWidth { get => TaikyokuShogi.BoardWidth; }
 
-        public int BoardHeight { get => TaiyokuShogi.BoardHeight; }
+        public int BoardHeight { get => TaikyokuShogi.BoardHeight; }
 
         public double SpaceWidth { get => ActualWidth / BoardWidth; }
 
@@ -66,7 +66,7 @@ namespace WPF_UI
             MouseRightButtonUp += RightClickHandler;
         }
 
-        public void SetGame(TaiyokuShogi game)
+        public void SetGame(TaikyokuShogi game)
         {
             Game = game;
             Game.OnBoardChange += OnBoardChange;

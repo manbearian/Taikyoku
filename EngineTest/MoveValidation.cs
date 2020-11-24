@@ -12,7 +12,7 @@ namespace EngineTest
         [Fact]
         public void NoPiece()
         {
-            var game = new TaiyokuShogi(); // empty board
+            var game = new TaikyokuShogi(); // empty board
             var loc = (17, 17);
             Assert.Null(game.GetPiece(loc));
             Assert.False(game.MakeMove(loc, Movement.ComputeMove(loc, Movement.Up, 1).Value));
@@ -21,7 +21,7 @@ namespace EngineTest
         [Fact]
         public void OtherPlayersPiece()
         {
-            var game = new TaiyokuShogi();
+            var game = new TaikyokuShogi();
             var testPiece = new Piece(Player.White, PieceIdentity.Queen);
             var startLoc = (17, 17);
             game.Debug_SetPiece(testPiece, startLoc);
@@ -31,11 +31,11 @@ namespace EngineTest
         private void ValidateMoves(Piece testPiece, (int, int) startLoc, HashSet<(int, int)> validMoves, Dictionary<(int, int), Piece> otherPieces = null)
         {
             // test all the squares on the baord
-            for (int x = 0; x < TaiyokuShogi.BoardWidth; ++x)
+            for (int x = 0; x < TaikyokuShogi.BoardWidth; ++x)
             {
-                for (int y = 0; y < TaiyokuShogi.BoardHeight; ++y)
+                for (int y = 0; y < TaikyokuShogi.BoardHeight; ++y)
                 {
-                    var game = new TaiyokuShogi();
+                    var game = new TaikyokuShogi();
                     game.Debug_SetPiece(testPiece, startLoc);
                     if (otherPieces != null)
                     {

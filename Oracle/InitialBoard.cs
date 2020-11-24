@@ -249,8 +249,8 @@ namespace Oracle
 
             void SetupPlayer(Player player)
             {
-                int row(int i) => player == Player.Black ? TaiyokuShogi.BoardWidth - i - 1 : i;
-                int col(int i) => player == Player.Black ? i : TaiyokuShogi.BoardHeight - i - 1;
+                int row(int i) => player == Player.Black ? TaikyokuShogi.BoardWidth - i - 1 : i;
+                int col(int i) => player == Player.Black ? i : TaikyokuShogi.BoardHeight - i - 1;
 
                 for (int i = 0; i < InitialBoardData.Length; ++i)
                 {
