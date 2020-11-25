@@ -9,6 +9,20 @@ namespace Oracle
 {
     internal class TaikyokuJsonConverter : JsonConverter<TaikyokuShogi>
     {
+        private int ComputeChecksum(TaikyokuShogi game)
+        {
+            int checksum = 0;
+            for (int x = 0; x < TaikyokuShogi.BoardWidth; ++x)
+            {
+                for (int y = 0; y < TaikyokuShogi.BoardWidth; ++y)
+                {
+                    var piece = game.GetPiece((x, y));
+                    checksum += piece != null ? (x + 1) * (y + 1) * ((int)piece.Id + 1) * ((int)piece.Owner + 1) * (piece.Promoted ? 1 : 2) : 0;
+                }
+            }
+            return checksum;
+        }
+
         public override TaikyokuShogi Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
             if (reader.TokenType != JsonTokenType.StartObject)
@@ -17,11 +31,21 @@ namespace Oracle
             Piece[,] pieces = new Piece[TaikyokuShogi.BoardWidth, TaikyokuShogi.BoardHeight];
             Player? currentPlayer = null;
             TaikyokuShogiOptions gameOptions = TaikyokuShogiOptions.None;
+            int checksum = 0;
 
             while (reader.Read())
             {
                 if (reader.TokenType == JsonTokenType.EndObject)
-                    return new TaikyokuShogi(pieces, currentPlayer, gameOptions);
+                {
+                    var game = new TaikyokuShogi(pieces, currentPlayer, gameOptions);
+
+                    var computedChecksum = ComputeChecksum(game);
+
+                    if (computedChecksum != checksum)
+                        throw new JsonException("Unable to validate checksum");
+
+                    return game;
+                }
 
                 if (reader.TokenType != JsonTokenType.PropertyName)
                     throw new JsonException();
@@ -88,6 +112,13 @@ namespace Oracle
                         }
                         break;
 
+                    case "Checksum":
+                        reader.Read();
+                        if (reader.TokenType != JsonTokenType.Number)
+                            throw new JsonException();
+                        checksum = reader.GetInt32();
+                        break;
+
                     default:
                         throw new JsonException();
                 }
@@ -99,6 +130,26 @@ namespace Oracle
         public override void Write(Utf8JsonWriter writer, TaikyokuShogi game, JsonSerializerOptions options)
         {
             writer.WriteStartObject();
+
+            if (game.CurrentPlayer == null)
+            {
+                writer.WriteNull("CurrentPlayer");
+            }
+            else
+            {
+                writer.WriteString("CurrentPlayer", game.CurrentPlayer.ToString());
+            }
+
+            writer.WriteStartArray("Options");
+            for (int i = 0; i < sizeof(TaikyokuShogiOptions) * 8; ++i)
+            {
+                var flag = (TaikyokuShogiOptions)(1 << i);
+                if ((game.Options & flag) == flag)
+                {
+                    writer.WriteStringValue(flag.ToString());
+                }
+            }
+            writer.WriteEndArray();
 
             writer.WriteStartArray("_boardState");
             for (int x = 0; x < TaikyokuShogi.BoardWidth; ++x)
@@ -123,25 +174,7 @@ namespace Oracle
             }
             writer.WriteEndArray();
 
-            if (game.CurrentPlayer == null)
-            {
-                writer.WriteNull("CurrentPlayer");
-            }
-            else
-            {
-                writer.WriteString("CurrentPlayer", game.CurrentPlayer.ToString());
-            }
-
-            writer.WriteStartArray("Options");
-            for (int i = 0; i < sizeof(TaikyokuShogiOptions) * 8; ++i)
-            {
-                var flag = (TaikyokuShogiOptions)(1 << i);
-                if ((game.Options & flag) == flag)
-                {
-                    writer.WriteStringValue(flag.ToString());
-                }
-            }
-            writer.WriteEndArray();
+            writer.WriteNumber("Checksum", ComputeChecksum(game));
 
             writer.WriteEndObject();
         }

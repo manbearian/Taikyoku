@@ -81,7 +81,7 @@ namespace Oracle
             JsonSerializer.Deserialize<TaikyokuShogi>(serialBytes);
 
         public byte[] Serialize() =>
-            JsonSerializer.SerializeToUtf8Bytes(this, new JsonSerializerOptions { WriteIndented = true });
+            JsonSerializer.SerializeToUtf8Bytes(this, new JsonSerializerOptions());
 
         public delegate void PlayerChangeHandler(object sender, PlayerChangeEventArgs e);
         public event PlayerChangeHandler OnPlayerChange;
