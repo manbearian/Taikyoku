@@ -59,11 +59,11 @@ namespace Oracle
         }
         private Player OtherPlayer { get => CurrentPlayer.Value == Player.Black ? Player.White : Player.Black; }
 
-        public TaikyokuShogi()
+        public TaikyokuShogi(TaikyokuShogiOptions gameOptions = TaikyokuShogiOptions.None)
         {
             SetInitialBoard();
             CurrentPlayer = Player.Black;
-            Options = TaikyokuShogiOptions.None;
+            Options = gameOptions;
         }
 
         // Constructor for deserialization
