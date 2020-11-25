@@ -4,6 +4,17 @@
     <OutputType>WinExe</OutputType>
     <TargetFramework>netcoreapp3.1</TargetFramework>
     <UseWPF>true</UseWPF>
+    <Authors>ian Bearman</Authors>
+    <Company />
+    <Product>Taikyoku Shogi</Product>
+    <Description>Taikyoku Shogi player</Description>
+    <Copyright>ian Bearman 2020</Copyright>
+    <PackageProjectUrl>https://github.com/manbearian/Taikyoku</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/manbearian/Taikyoku</RepositoryUrl>
+    <AssemblyVersion>0.1.0.0</AssemblyVersion>
+    <FileVersion>0.1.0.0</FileVersion>
+    <Version>0.1.0</Version>
+    <AssemblyName>TaikyokuShogi</AssemblyName>
   </PropertyGroup>
 
   <ItemGroup>
