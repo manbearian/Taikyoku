@@ -175,6 +175,10 @@ namespace WPF_UI
             {
                 Close();
             }
+            else if (e.Source == rotateMenuItem)
+            {
+                gameBoard.IsRotated = rotateMenuItem.IsChecked;
+            }
             else if (e.Source == debugModeMenuItem)
             {
                 // nothing to do... "Debug" state is tracked through the "checked" property of this menu item

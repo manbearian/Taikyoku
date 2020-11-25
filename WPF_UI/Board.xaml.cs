@@ -31,7 +31,17 @@ namespace WPF_UI
 
         public (int X, int Y)? Selected2 { get; set; }
 
-        public bool DisplayFlipped { get => false; } //  get => Game.CurrentPlayer == Player.Black;  <-- this was disorienting, disabled
+        private bool _isRotated = false;
+
+        public bool IsRotated
+        {
+            get => _isRotated;
+            set
+            {
+                _isRotated = value;
+                InvalidateVisual();
+            }
+        }
 
         private Piece _addingPiece = null;
         private bool _removingPiece = false;
@@ -107,7 +117,7 @@ namespace WPF_UI
             if (p.X < 0 || p.Y < 0)
                 return null;
 
-            var (x, y) = DisplayFlipped ?
+            var (x, y) = IsRotated ?
                 (BoardWidth - 1 - (int)(p.X / SpaceWidth), BoardHeight - 1 - (int)(p.Y / SpaceHeight))
                     : ((int)(p.X / SpaceWidth), (int)(p.Y / SpaceHeight));
 
@@ -219,8 +229,7 @@ namespace WPF_UI
 
             if (Game != null)
             {
-                // flipping the board on turn exchange is disorienting
-                dc.PushTransform(new RotateTransform(DisplayFlipped ? 180 : 0, ActualWidth / 2, ActualHeight / 2));
+                dc.PushTransform(new RotateTransform(IsRotated ? 180 : 0, ActualWidth / 2, ActualHeight / 2));
 
                 // draw the background
                 dc.DrawRectangle(Brushes.AntiqueWhite, null, new Rect(0, 0, ActualWidth, ActualHeight));
