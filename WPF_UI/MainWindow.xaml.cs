@@ -35,6 +35,10 @@ namespace WPF_UI
         {
             InitializeComponent();
 
+#if !DEBUG
+            debugModeMenuItem.IsEnabled = false;
+#endif
+
             MouseMove += ShowPieceInfo;
             Closed += OnClose;
 
