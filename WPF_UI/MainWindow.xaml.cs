@@ -31,8 +31,6 @@ namespace WPF_UI
         TaikyokuShogi Game = null;
         PieceInfoWindow _pieceInfoWindow = null;
 
-        string ExitSaveFilePath { get => $"{Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData)}\\exit.shogi"; }
-
         public MainWindow()
         {
             InitializeComponent();
@@ -61,15 +59,18 @@ namespace WPF_UI
                 addWhitePieceMenuItem.Items.Add(whiteMenuItem);
             }
 
+            TaikyokuShogi savedGame = null;
+
             try
             {
-                LoadGame(ExitSaveFilePath);
+                savedGame = TaikyokuShogi.Deserlialize(Properties.Settings.Default.SavedGame);
             }
-            catch (FileNotFoundException)
+            catch (System.Text.Json.JsonException)
             {
-                // no problem, no save found or it couldn't be opened
-                NewGame();
+                // silently ignore failure to parse the game
             }
+
+            NewGame(savedGame);
         }
 
         private void NewGame(TaikyokuShogi game = null)
@@ -127,13 +128,9 @@ namespace WPF_UI
         {
             _pieceInfoWindow?.Close();
 
+            // save the game, and all other settings, on exit
+            Properties.Settings.Default.SavedGame = Game.Serialize();
             Properties.Settings.Default.Save();
-
-            // save the game state on exit; if the game is over, delete the game state so next time we get a new game
-            if (Game.CurrentPlayer != null)
-                SaveGame(ExitSaveFilePath);
-            else
-                File.Delete(ExitSaveFilePath);
         }
 
         private void MenuItem_Click(object sender, RoutedEventArgs e)

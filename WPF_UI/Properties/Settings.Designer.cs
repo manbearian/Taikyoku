@@ -37,10 +37,10 @@ namespace WPF_UI.Properties {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("null")]
-        public string SavedGame {
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public byte[] SavedGame {
             get {
-                return ((string)(this["SavedGame"]));
+                return ((byte[])(this["SavedGame"]));
             }
             set {
                 this["SavedGame"] = value;
