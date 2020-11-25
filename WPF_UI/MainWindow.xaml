@@ -37,6 +37,8 @@
                 <MenuItem x:Name="loadGameMenuItem" Header="Load Game" Click="MenuItem_Click" />
                 <MenuItem Header="-" IsEnabled="False"/>
                 <MenuItem x:Name="debugModeMenuItem" Header="Debug Mode" Click="MenuItem_Click" IsCheckable="True" IsChecked="False"/>
+                <MenuItem Header="-" IsEnabled="False"/>
+                <MenuItem x:Name="closeMenuItem" Header="Close" Click="MenuItem_Click" />
             </MenuItem>
             <MenuItem Header="Debug" x:Name="debugMenu" Visibility="{Binding IsChecked, Converter={StaticResource BooleanToVisibilityConverter}, ElementName=debugModeMenuItem}">
                 <MenuItem x:Name="addBlackPieceMenuItem" Header="Add Black Piece" Click="MenuItem_Click"/>

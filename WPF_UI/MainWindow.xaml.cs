@@ -31,12 +31,14 @@ namespace WPF_UI
         TaikyokuShogi Game = null;
         PieceInfoWindow _pieceInfoWindow = null;
 
+        string ExitSaveFilePath { get => $"{Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData)}\\exit.shogi"; }
+
         public MainWindow()
         {
             InitializeComponent();
 
             MouseMove += ShowPieceInfo;
-            Closed += (object sender, EventArgs e) => _pieceInfoWindow.Close();
+            Closed += OnClose;
 
             corners.Add(borderTopLeft);
             corners.Add(borderTopRight);
@@ -59,7 +61,15 @@ namespace WPF_UI
                 addWhitePieceMenuItem.Items.Add(whiteMenuItem);
             }
 
-            NewGame();
+            try
+            {
+                LoadGame(ExitSaveFilePath);
+            }
+            catch (FileNotFoundException)
+            {
+                // no problem, no save found or it couldn't be opened
+                NewGame();
+            }
         }
 
         private void NewGame(TaikyokuShogi game = null)
@@ -90,6 +100,20 @@ namespace WPF_UI
             InvalidateVisual();
         }
 
+        private void SaveGame(string path)
+        {
+            using var stream = File.OpenWrite(path);
+            stream.Write(Game.Serialize());
+        }
+
+        private void LoadGame(string path)
+        {
+            using var stream = File.OpenRead(path);
+            var buffer = new byte[stream.Length];
+            stream.Read(buffer);
+            NewGame(TaikyokuShogi.Deserlialize(buffer));
+        }
+
         private void OnPlayerChange(object sender, PlayerChangeEventArgs eventArgs) =>
             SetPlayer(eventArgs.NewPlayer);
 
@@ -97,6 +121,17 @@ namespace WPF_UI
         {
             var gameEndWindow = new GameEndWindow();
             gameEndWindow.ShowDialog(eventArgs.Ending, eventArgs.Winner);
+        }
+
+        private void OnClose(object Sender, EventArgs e)
+        {
+            _pieceInfoWindow?.Close();
+
+            // save the game state on exit; if the game is over, delete the game state so next time we get a new game
+            if (Game.CurrentPlayer != null)
+                SaveGame(ExitSaveFilePath);
+            else
+                File.Delete(ExitSaveFilePath);
         }
 
         private void MenuItem_Click(object sender, RoutedEventArgs e)
@@ -107,17 +142,38 @@ namespace WPF_UI
             }
             else if (e.Source == saveGameMenuItem)
             {
-                var path = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
-                using FileStream fs = File.Open($"{path}\\a.state", FileMode.OpenOrCreate);
-                fs.Write(Game.Serialize());
+                var saveDialog = new Microsoft.Win32.SaveFileDialog()
+                {
+                    InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.Personal),
+                    DefaultExt = "shogi",
+                    FileName = "save",
+                    Filter = "Shogi files (*.shogi)|*.shogi|All files (*.*)|*.*"
+                };
+
+                if (saveDialog.ShowDialog() ?? false)
+                {
+                    SaveGame(saveDialog.FileName);
+                }
             }
             else if (e.Source == loadGameMenuItem)
             {
-                var path = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
-                using FileStream fs = File.Open($"{path}\\a.state", FileMode.Open);
-                var buffer = new byte[fs.Length];
-                fs.Read(buffer);
-                NewGame(TaikyokuShogi.Deserlialize(buffer));
+                var loadDialog = new Microsoft.Win32.OpenFileDialog()
+                {
+                    InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.Personal),
+                    Multiselect = false,
+                    DefaultExt = "shogi",
+                    FileName = "",
+                    Filter = "Shogi files (*.shogi)|*.shogi|All files (*.*)|*.*"
+                };
+
+                if (loadDialog.ShowDialog() ?? false)
+                {
+                    LoadGame(loadDialog.FileName);
+                }
+            }
+            else if (e.Source == closeMenuItem)
+            {
+                Close();
             }
             else if (e.Source == debugModeMenuItem)
             {
