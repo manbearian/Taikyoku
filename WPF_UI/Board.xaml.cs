@@ -33,16 +33,6 @@ namespace WPF_UI
 
         private bool _isRotated = false;
 
-        public bool IsRotated
-        {
-            get => _isRotated;
-            set
-            {
-                _isRotated = value;
-                InvalidateVisual();
-            }
-        }
-
         private Piece _addingPiece = null;
         private bool _removingPiece = false;
 
@@ -377,6 +367,25 @@ namespace WPF_UI
                     }
                 }
             }
+        }
+
+        public static readonly DependencyProperty IsRotatedProperty =
+           DependencyProperty.Register("IsRotated", typeof(bool), typeof(Board), new
+              PropertyMetadata(false, new PropertyChangedCallback(OnIsRotatedChanged)));
+
+        public bool IsRotated
+        {
+            get => (bool)GetValue(IsRotatedProperty);
+            set => SetValue(IsRotatedProperty, value);
+        }
+
+        private static void OnIsRotatedChanged(DependencyObject d, DependencyPropertyChangedEventArgs e) =>
+             (d as Board)?.OnIsRotatedChanged(e);
+
+        private void OnIsRotatedChanged(DependencyPropertyChangedEventArgs e)
+        {
+            _isRotated = (bool)e.NewValue;
+            InvalidateVisual();
         }
     }
 }

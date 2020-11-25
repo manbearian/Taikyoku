@@ -4,6 +4,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:WPF_UI"
+        xmlns:p="clr-namespace:WPF_UI.Properties"
         mc:Ignorable="d"
         Title="Taiyoku Shogi" Height="450" Width="800">
     <Window.Resources>
@@ -21,7 +22,7 @@
             <ColumnDefinition Width="90*"/>
             <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
-        <local:Board x:Name="gameBoard" Grid.Row="2" Grid.Column="1" />
+        <local:Board x:Name="gameBoard" Grid.Row="2" Grid.Column="1" IsRotated="{Binding RotateBoard, Source={x:Static p:Settings.Default}, FallbackValue=False, Mode=TwoWay, UpdateSourceTrigger=Default}" />
         <local:NumberPanel x:Name="borderTop" Grid.Row="1" Grid.Column="1" Orientation="Horizontal"/>
         <local:NumberPanel x:Name="borderBottom" Grid.Row="3" Grid.Column="1" Orientation="Horizontal"/>
         <local:NumberPanel x:Name="borderLeft" Grid.Row="2" Grid.Column="0" Orientation="Vertical"/>
@@ -41,7 +42,7 @@
                 <MenuItem x:Name="closeMenuItem" Header="Close" Click="MenuItem_Click" />
             </MenuItem>
             <MenuItem Header="View" x:Name="viewMenu">
-                <MenuItem x:Name="rotateMenuItem" Header="Rotate Board" Click="MenuItem_Click" IsCheckable="True" IsChecked="False"/>
+                <MenuItem x:Name="rotateMenuItem" Header="Rotate Board" Click="MenuItem_Click" IsCheckable="True" IsChecked="{Binding RotateBoard, Source={x:Static p:Settings.Default}, FallbackValue=False, Mode=TwoWay, UpdateSourceTrigger=Default}"/>
             </MenuItem>
             <MenuItem Header="Debug" x:Name="debugMenu" Visibility="{Binding IsChecked, Converter={StaticResource BooleanToVisibilityConverter}, ElementName=debugModeMenuItem}">
                 <MenuItem x:Name="addBlackPieceMenuItem" Header="Add Black Piece" Click="MenuItem_Click"/>

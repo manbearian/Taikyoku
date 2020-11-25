@@ -127,6 +127,8 @@ namespace WPF_UI
         {
             _pieceInfoWindow?.Close();
 
+            Properties.Settings.Default.Save();
+
             // save the game state on exit; if the game is over, delete the game state so next time we get a new game
             if (Game.CurrentPlayer != null)
                 SaveGame(ExitSaveFilePath);
