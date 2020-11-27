@@ -270,6 +270,5 @@ namespace WPF_UI
 
             _pieceInfoWindow.Show();
         }
-
     }
 }

@@ -10,10 +10,10 @@ namespace WPF_UI
 {
     class LocalClient
     {
-        static HttpClient client = new HttpClient();
+        static readonly HttpClient client = new HttpClient();
         static string connectionString = "https://shogibackend20201126101522.azurewebsites.net/api/StartGameSession?name=ian";
 
-        public static async void Connect()
+        public static void Connect()
         {
             // Update port # in the following line.
 #if PRODUCTION
@@ -22,17 +22,20 @@ namespace WPF_UI
             client.BaseAddress = new Uri("http://localhost:7071/");
 #endif
             client.DefaultRequestHeaders.Accept.Clear();
-            client.DefaultRequestHeaders.Accept.Add(
-                new MediaTypeWithQualityHeaderValue("application/json"));
+            client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
 
+            StartGameSession().ContinueWith(res => OnGameStarted(res.Result));
+        }
+
+        static async Task<string> StartGameSession()
+        {
             try
             {
-                HttpResponseMessage response = await client.GetAsync(
-                    "api/StartGameSession");
+                HttpResponseMessage response = await client.GetAsync("api/StartGameSession");
 
                 if (response.IsSuccessStatusCode)
                 {
-                    var result = response.Content.ReadAsStringAsync().Result;
+                    return await response.Content.ReadAsStringAsync();
                 }
             }
             catch (HttpRequestException)
@@ -40,6 +43,12 @@ namespace WPF_UI
                 // report/log failure
             }
 
+            return "ERROR";
+        }
+
+        static void OnGameStarted(string text)
+        {
+            System.Windows.MessageBox.Show(text);
         }
     }
 }
