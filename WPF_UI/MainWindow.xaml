@@ -37,6 +37,8 @@
                 <MenuItem x:Name="saveGameMenuItem" Header="Save Game" Click="MenuItem_Click" />
                 <MenuItem x:Name="loadGameMenuItem" Header="Load Game" Click="MenuItem_Click" />
                 <MenuItem Header="-" IsEnabled="False"/>
+                <MenuItem x:Name="newOnlineGameMenuItem" Header="New Online Game" Click="MenuItem_Click" />
+                <MenuItem Header="-" IsEnabled="False"/>
                 <MenuItem x:Name="debugModeMenuItem" Header="Debug Mode" Click="MenuItem_Click" IsCheckable="True" IsChecked="False"/>
                 <MenuItem Header="-" IsEnabled="False"/>
                 <MenuItem x:Name="closeMenuItem" Header="Close" Click="MenuItem_Click" />

@@ -174,6 +174,10 @@ namespace WPF_UI
                     LoadGame(loadDialog.FileName);
                 }
             }
+            else if (e.Source == newOnlineGameMenuItem)
+            {
+                LocalClient.Connect();
+            }
             else if (e.Source == closeMenuItem)
             {
                 Close();
