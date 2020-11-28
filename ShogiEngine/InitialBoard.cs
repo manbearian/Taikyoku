@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 
 
-namespace Oracle
+namespace ShogiEngine
 {
 
     internal static class InititialBoard
