@@ -5,7 +5,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 
 
-namespace Oracle
+namespace ShogiEngine
 {
     internal class TaikyokuJsonConverter : JsonConverter<TaikyokuShogi>
     {

@@ -2,7 +2,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace Oracle
+namespace ShogiEngine
 {
     public enum PieceIdentity
     {
