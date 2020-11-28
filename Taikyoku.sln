@@ -9,7 +9,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Oracle", "Oracle\Oracle.csp
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EngineTest", "EngineTest\EngineTest.csproj", "{A3DFA40E-D491-4F95-A9E8-7BD678ABBD37}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ShogiBackend", "Backend\ShogiBackend.csproj", "{705683AC-618D-47D9-B438-9296F3BDBD39}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ShogiBackend", "Backend\ShogiBackend.csproj", "{705683AC-618D-47D9-B438-9296F3BDBD39}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

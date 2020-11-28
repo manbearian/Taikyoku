@@ -31,7 +31,8 @@ namespace WPF_UI
         {
             try
             {
-                HttpResponseMessage response = await client.GetAsync("api/StartGameSession");
+                //HttpResponseMessage response = await client.GetAsync("api/StartGameSession");
+                HttpResponseMessage response = await client.GetAsync("api/GameOrchestrator_HttpStart"); 
 
                 if (response.IsSuccessStatusCode)
                 {
