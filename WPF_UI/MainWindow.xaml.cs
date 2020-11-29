@@ -174,6 +174,15 @@ namespace WPF_UI
                     LoadGame(loadDialog.FileName);
                 }
             }
+            else if (e.Source == connectMenuItem)
+            {
+                var newg = new NewNetworkGameWindow();
+                var res = newg.ShowDialog();
+                if (res == true)
+                {
+                    NewGame(newg.Game);
+                }
+            }
             else if (e.Source == closeMenuItem)
             {
                 Close();

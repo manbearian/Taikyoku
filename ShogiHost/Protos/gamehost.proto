@@ -1,0 +1,34 @@
+syntax = "proto3";
+
+option csharp_namespace = "ShogiHost";
+
+package gamehost;
+
+
+service GameHost {
+  rpc StartGame (Nothing) returns (GameState);
+  rpc MakeMove (Move) returns (GameState);
+}
+
+message Location {
+  int32 x = 1;
+  int32 y = 2;
+}
+
+message OptionalLocation {
+  repeated Location loc = 1;
+}
+
+message Move {
+  Location start = 1;
+  Location end = 2;
+  OptionalLocation mid = 3;
+  bool promote = 4;
+}
+
+message GameState {
+  bytes state = 1;
+}
+
+message Nothing {
+}

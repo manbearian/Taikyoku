@@ -18,7 +18,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Oracle\Oracle.csproj" />
+    <ProjectReference Include="..\Oracle\ShogiEngine.csproj" />
+    <ProjectReference Include="..\ShogiClient\ShogiClient.csproj" />
+    <ProjectReference Include="..\ShogiHost\ShogiHost.csproj" />
   </ItemGroup>
 
   <ItemGroup>
