@@ -77,7 +77,7 @@ namespace ShogiEngine
             Options = options;
         }
 
-        public static TaikyokuShogi Deserlialize(byte [] serialBytes) =>
+        public static TaikyokuShogi Deserlialize(ReadOnlySpan<byte> serialBytes) =>
             JsonSerializer.Deserialize<TaikyokuShogi>(serialBytes);
 
         public byte[] Serialize() =>
@@ -256,6 +256,38 @@ namespace ShogiEngine
         // Public "debug" API: Set let the next player take a turn
         public void Debug_EndTurn() =>
             NextTurn();
+
+
+        // Comparison/Equality: value equality for games
+
+        public override bool Equals(object obj) =>
+            Equals(obj as TaikyokuShogi);
+
+        public bool Equals(TaikyokuShogi other)
+        {
+            if (other is null)
+                return false;
+
+            if ((_currentPlayer, Options) != (other._currentPlayer, other.Options))
+                return false;
+
+            for (int x = 0; x < _boardState.GetLength(0); ++x)
+            {
+                for (int y = 0; y < _boardState.GetLength(1);  ++y)
+                {
+                    if (_boardState[x, y] != other._boardState[x, y])
+                        return false;
+                }
+            }
+
+            return true;
+        }
+
+        public override int GetHashCode() => (_currentPlayer, Options, _boardState).GetHashCode();
+
+        public static bool operator ==(TaikyokuShogi lhs, TaikyokuShogi rhs) => lhs?.Equals(rhs) ?? rhs is null;
+
+        public static bool operator !=(TaikyokuShogi lhs, TaikyokuShogi rhs) => !(lhs == rhs);
     }
 
     public class PlayerChangeEventArgs : EventArgs
