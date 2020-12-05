@@ -18,6 +18,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\ShogiClient\ShogiClient.csproj" />
     <ProjectReference Include="..\ShogiEngine\ShogiEngine.csproj" />
   </ItemGroup>
 

@@ -9,6 +9,10 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EngineTest", "EngineTest\En
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ShogiEngine", "ShogiEngine\ShogiEngine.csproj", "{B525EF98-4C3F-4C5F-9E9B-B80ADD604141}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ShogiServer", "ShogiServer\ShogiServer.csproj", "{2E4C7852-3C53-4DFF-98EB-B2E5F40447A7}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ShogiClient", "ShogiClient\ShogiClient.csproj", "{528985BA-1511-4A1F-A1B8-F24E6EADA0F7}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -27,6 +31,14 @@ Global
 		{B525EF98-4C3F-4C5F-9E9B-B80ADD604141}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B525EF98-4C3F-4C5F-9E9B-B80ADD604141}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B525EF98-4C3F-4C5F-9E9B-B80ADD604141}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2E4C7852-3C53-4DFF-98EB-B2E5F40447A7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2E4C7852-3C53-4DFF-98EB-B2E5F40447A7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2E4C7852-3C53-4DFF-98EB-B2E5F40447A7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2E4C7852-3C53-4DFF-98EB-B2E5F40447A7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{528985BA-1511-4A1F-A1B8-F24E6EADA0F7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{528985BA-1511-4A1F-A1B8-F24E6EADA0F7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{528985BA-1511-4A1F-A1B8-F24E6EADA0F7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{528985BA-1511-4A1F-A1B8-F24E6EADA0F7}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
