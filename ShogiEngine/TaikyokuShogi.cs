@@ -7,13 +7,6 @@ using System.Text.Json.Serialization;
 
 namespace ShogiEngine
 {
-    public class GameListElement
-    {
-        public string Name { get; set; }
-
-        public Guid Id { get; set; }
-    }
-
     public enum Player
     {
         Black,

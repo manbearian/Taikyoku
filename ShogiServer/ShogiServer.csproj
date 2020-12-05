@@ -5,6 +5,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\ShogiComms\ShogiComms.csproj" />
     <ProjectReference Include="..\ShogiEngine\ShogiEngine.csproj" />
   </ItemGroup>
 

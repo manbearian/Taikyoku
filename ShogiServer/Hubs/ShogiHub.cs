@@ -8,6 +8,7 @@ using System.Linq;
 using Microsoft.AspNetCore.SignalR;
 
 using ShogiEngine;
+using ShogiComms;
 
 namespace ShogiServer.Hubs
 {
@@ -15,7 +16,9 @@ namespace ShogiServer.Hubs
     {
         Task ReceiveNewGame(TaikyokuShogi game, Guid id);
 
-        Task ReceiveGameList(List<GameListElement> list);
+        Task ReceiveGameList(List<NetworkGameInfo> list);
+
+        Task ReceiveGameStart(TaikyokuShogi game);
     }
 
     public class ShogiHub : Hub<IShogiClient>
@@ -28,27 +31,49 @@ namespace ShogiServer.Hubs
             public readonly IShogiClient WhitePlayer;
             public readonly IShogiClient BlackPlayer;
 
+            public bool Open() => WhitePlayer == null || BlackPlayer == null;
+
             public GameInfo(TaikyokuShogi game, Guid id, string name, IShogiClient blackPlayer, IShogiClient whitePlayer) =>
                 (Game, Id, Name, BlackPlayer, WhitePlayer) = (game, id, name, blackPlayer, whitePlayer); 
+        }
+
+        // add some dummy games to test out the serivce
+        static ShogiHub()
+        {
+            var id = Guid.NewGuid();
+            Games[id] = new GameInfo(new TaikyokuShogi(TaikyokuShogiOptions.None), id, "test1", null, null);
+            var id2 = Guid.NewGuid();
+            Games[id2] = new GameInfo(new TaikyokuShogi(TaikyokuShogiOptions.None), id2, "test2", null, null);
         }
 
         // database of running games, key is "gameId" which is a GUID
         private static readonly ConcurrentDictionary<Guid, GameInfo> Games = new ConcurrentDictionary<Guid, GameInfo>();
         private static readonly object gameJoinLock = new object();
 
-        public Task CreateGame(string gameName)
+        private static List<NetworkGameInfo> GamesList
         {
-            var game = new TaikyokuShogi();
+            get => Games.Values.Where(info => info.Open()).Select(info => new NetworkGameInfo() { Name = info.Name, Id = info.Id }).ToList();
+        }
+
+        public Task CreateGame(string gameName, TaikyokuShogiOptions gameOptions, bool asBlackPlayer)
+        {
+            var game = new TaikyokuShogi(gameOptions);
             var gameId = Guid.NewGuid();
-            GameInfo gameInfo = new GameInfo(game, gameId, gameName, Clients.Caller, null);
+            var blackPlayer = asBlackPlayer ? Clients.Caller : null;
+            var whitePlayer = asBlackPlayer ? null : Clients.Caller;
+            GameInfo gameInfo = new GameInfo(game, gameId, gameName, blackPlayer, whitePlayer);
             Games[gameId] = gameInfo;
-            return Clients.Caller.ReceiveNewGame(game, gameId);
+
+            return Task.Run(() =>
+            {
+                Clients.All.ReceiveGameList(GamesList);
+                Clients.Caller.ReceiveNewGame(game, gameId);
+            });
         }
 
         public Task GetGames()
         {
-            var list = Games.Values.Select(info => new GameListElement() { Name = info.Name, Id = info.Id }).ToList();
-            return Clients.Caller.ReceiveGameList(list);
+            return Clients.Caller.ReceiveGameList(GamesList);
         }
 
         public Task JoinGame(Guid gameId)
@@ -76,7 +101,12 @@ namespace ShogiServer.Hubs
                 gameInfo = new GameInfo(gameInfo.Game, gameInfo.Id, gameInfo.Name, blackPlayer, whitePlayer);
                 Games[gameId] = gameInfo;
 
-                return Clients.Caller.ReceiveNewGame(gameInfo.Game, gameId);
+                return Task.Run(() =>
+                {
+                    Clients.All.ReceiveGameList(GamesList);
+                    blackPlayer.ReceiveGameStart(gameInfo.Game);
+                    whitePlayer.ReceiveGameStart(gameInfo.Game);
+                });
             }
         }
 

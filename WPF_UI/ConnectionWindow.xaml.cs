@@ -14,6 +14,7 @@ using Microsoft.AspNetCore.SignalR.Client;
 
 using ShogiClient;
 using ShogiEngine;
+using ShogiComms;
 
 namespace WPF_UI
 {
@@ -22,75 +23,67 @@ namespace WPF_UI
     /// </summary>
     public partial class ConnectionWindow : Window
     {
-        readonly ShogiClient.ShogiClient client;
+        private readonly ShogiClient.ShogiClient _shogiClient;
+
+        private WaitingConnectionWindow _waitWindow;
 
         public ConnectionWindow()
         {
             InitializeComponent();
 
-            client = new ShogiClient.ShogiClient();
-        }
+            _shogiClient = new ShogiClient.ShogiClient();
 
-        private async void connectButton_Click(object sender, RoutedEventArgs e)
-        {
-            client.connection.On<TaikyokuShogi, Guid>("ReceiveNewGame", (gameObject, gameId) =>
+            _shogiClient.OnReceiveGameList += (sender, e) =>
             {
-                this.Dispatcher.Invoke(() =>
-                {
-                    var newMessage = $"Recived new game with id {gameId}";
-                    messagesList.Items.Add(newMessage);
-                });
-            });
-
-            client.connection.On<List<GameListElement>>("ReceiveGameList", (gameList) =>
-            {
-                this.Dispatcher.Invoke(() =>
+                Dispatcher.Invoke(() =>
                 {
                     gamesList.Items.Clear();
-                    gamesList.Items.Add("Games:");//{
-                    foreach (var game in gameList)
+                    foreach (var game in e.GameList)
                     {
                         gamesList.Items.Add(game.Name ?? "<<unknown game>>");
                     }
                 });
-            });
+            };
 
-            try
+            _shogiClient.OnReceiveGameStart += (sender, e) =>
             {
-                await client.connection.StartAsync();
-                messagesList.Items.Add("Connection started");
-                connectButton.IsEnabled = false;
-                sendButton.IsEnabled = true;
-                await client.connection.InvokeAsync("GetGames");
-            }
-            catch (Exception ex)
+                Dispatcher.Invoke(() =>
+                {
+                    _waitWindow?.Close();
+                    _waitWindow = null;
+                });
+            };
+        }
+
+        private async void NewGameButton_Click(object sender, RoutedEventArgs e)
+        {
+            var nameWindow = new GameNameWindow();
+            
+            if (nameWindow.ShowDialog() == true)
             {
-                messagesList.Items.Add(ex.Message);
+                await _shogiClient.RequestNewGame(nameWindow.GameName, TaikyokuShogiOptions.None, true);
+
+                _waitWindow = new WaitingConnectionWindow();
+                _waitWindow.ShowDialog();
             }
         }
 
-        private async void sendButton_Click(object sender, RoutedEventArgs e)
+        private async void Window_SourceInitialized(object sender, EventArgs e)
         {
             try
             {
-                await client.connection.InvokeAsync("CreateGame", "some game");
+                await _shogiClient.ConnectAsync();
+                await _shogiClient.RequestGamesList();
             }
-            catch (Exception ex)
+            catch (Exception _)
             {
-                messagesList.Items.Add(ex.Message);
+                // todo: where do i log this error?
             }
         }
 
-        private async void refreshButton_Click(object sender, RoutedEventArgs e)
+        private void gamesList_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            try
-            {
-                await client.connection.InvokeAsync("GetGames");
-            }
-            catch (Exception ex)
-            {
-                messagesList.Items.Add(ex.Message);
-            }
+            JoinGameButton.IsEnabled = e.AddedItems.Count > 0;
         }
     }
 }

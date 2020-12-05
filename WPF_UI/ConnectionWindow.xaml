@@ -5,22 +5,18 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:WPF_UI"
         mc:Ignorable="d"
-        Title="ConnectionWindow" Height="450" Width="800">
+        Title="ConnectionWindow" Height="450" Width="800" SourceInitialized="Window_SourceInitialized">
     <Grid>
         <Grid.RowDefinitions>
-            <RowDefinition/>
             <RowDefinition/>
             <RowDefinition/>
         </Grid.RowDefinitions>
         <Grid.ColumnDefinitions>
             <ColumnDefinition/>
             <ColumnDefinition/>
-            <ColumnDefinition/>
         </Grid.ColumnDefinitions>
-        <Button x:Name="connectButton" Grid.Row="2" Content="Connect" Click="connectButton_Click"/>
-        <Button x:Name="sendButton" Grid.Row="2" Grid.Column="1" Content="Send" Click="sendButton_Click"/>
-        <Button x:Name="refreshButton" Grid.Row="0" Grid.Column="1" Content="Refresh" Click="refreshButton_Click"/>
-        <ItemsControl x:Name="gamesList" Grid.Row="1" Grid.Column="1" IsEnabled="False"/>
-        <ItemsControl x:Name="messagesList" Grid.Row="1" Grid.Column="2" IsEnabled="False"/>
+        <Button x:Name="NewGameButton" Grid.Row="1" Grid.Column="1" Content="New Game" Click="NewGameButton_Click"/>
+        <Button x:Name="JoinGameButton" Grid.Row="1" Grid.Column="0" Content="Join Game" Click="NewGameButton_Click" IsEnabled="False"/>
+        <ListBox x:Name="gamesList" Grid.Row="0" Grid.Column="0" SelectionChanged="gamesList_SelectionChanged" />
     </Grid>
 </Window>
