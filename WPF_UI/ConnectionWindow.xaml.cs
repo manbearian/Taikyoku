@@ -40,8 +40,10 @@ namespace WPF_UI
                     gamesList.Items.Clear();
                     foreach (var game in e.GameList)
                     {
-                        gamesList.Items.Add(game.Name ?? "<<unknown game>>");
+                        gamesList.Items.Add(game);
                     }
+                    gamesList.DisplayMemberPath = "Name";
+                    gamesList.IsEnabled = true;
                 });
             };
 
@@ -68,6 +70,13 @@ namespace WPF_UI
             }
         }
 
+        private async void JoinGameButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (gamesList.SelectedIndex < 0)
+                return;
+            await _shogiClient.RequestJoinGame((gamesList.SelectedItem as NetworkGameInfo).Id);
+        }
+
         private async void Window_SourceInitialized(object sender, EventArgs e)
         {
             try
@@ -75,7 +84,7 @@ namespace WPF_UI
                 await _shogiClient.ConnectAsync();
                 await _shogiClient.RequestGamesList();
             }
-            catch (Exception _)
+            catch (Exception)
             {
                 // todo: where do i log this error?
             }
@@ -85,5 +94,13 @@ namespace WPF_UI
         {
             JoinGameButton.IsEnabled = e.AddedItems.Count > 0;
         }
+
+        private void gamesList_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            if (e.Handled)
+                return;
+            gamesList.SelectedIndex = -1;
+        }
+
     }
 }

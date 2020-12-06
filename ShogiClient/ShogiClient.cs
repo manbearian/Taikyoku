@@ -32,7 +32,6 @@ namespace ShogiClient
         public ReceiveGameStartEventArgs(TaikyokuShogi game) => Game = game;
     }
 
-
     public class ShogiClient
     {
         private readonly HubConnection Connection;
@@ -77,5 +76,8 @@ namespace ShogiClient
 
         public async Task RequestNewGame(string gameName, TaikyokuShogiOptions gameOptions, bool asBlackPlayer) =>
             await Connection.InvokeAsync("CreateGame", gameName, gameOptions, asBlackPlayer);
+
+        public async Task RequestJoinGame(Guid id) =>
+            await Connection.InvokeAsync("JoinGame", id);
     }
 }

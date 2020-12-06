@@ -4,6 +4,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:WPF_UI"
+        xmlns:System="clr-namespace:System;assembly=System.Runtime"
         mc:Ignorable="d"
         Title="ConnectionWindow" Height="450" Width="800" SourceInitialized="Window_SourceInitialized">
     <Grid>
@@ -16,7 +17,9 @@
             <ColumnDefinition/>
         </Grid.ColumnDefinitions>
         <Button x:Name="NewGameButton" Grid.Row="1" Grid.Column="1" Content="New Game" Click="NewGameButton_Click"/>
-        <Button x:Name="JoinGameButton" Grid.Row="1" Grid.Column="0" Content="Join Game" Click="NewGameButton_Click" IsEnabled="False"/>
-        <ListBox x:Name="gamesList" Grid.Row="0" Grid.Column="0" SelectionChanged="gamesList_SelectionChanged" />
+        <Button x:Name="JoinGameButton" Grid.Row="1" Grid.Column="0" Content="Join Game" IsEnabled="False" Click="JoinGameButton_Click"/>
+        <ListBox x:Name="gamesList" Grid.Row="0" Grid.Column="0" SelectionChanged="gamesList_SelectionChanged" MouseLeftButtonDown="gamesList_MouseLeftButtonDown" IsEnabled="False" >
+            <System:String>Connecting...</System:String>
+        </ListBox>
     </Grid>
 </Window>
