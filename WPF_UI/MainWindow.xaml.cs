@@ -16,6 +16,7 @@ using System.Windows.Navigation;
 using System.Windows.Shapes;
 
 using ShogiEngine;
+using ShogiClient;
 
 namespace WPF_UI
 {
@@ -30,6 +31,7 @@ namespace WPF_UI
 
         TaikyokuShogi Game = null;
         PieceInfoWindow _pieceInfoWindow = null;
+        (Connection Connection, Guid GameId) _networkInfo = (null, Guid.Empty);
 
         public MainWindow()
         {
@@ -178,6 +180,11 @@ namespace WPF_UI
             {
                 var win = new ConnectionWindow();
                 win.ShowDialog();
+                if (win.DialogResult == true)
+                {
+                    _networkInfo = (win.Connection, win.GameId);
+                    Game = win.Game;
+                }
             }
             else if (e.Source == closeMenuItem)
             {

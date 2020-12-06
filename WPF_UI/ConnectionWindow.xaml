@@ -6,18 +6,18 @@
         xmlns:local="clr-namespace:WPF_UI"
         xmlns:System="clr-namespace:System;assembly=System.Runtime"
         mc:Ignorable="d"
-        Title="ConnectionWindow" Height="450" Width="800" SourceInitialized="Window_SourceInitialized">
+        Title="ConnectionWindow" Height="278" Width="800" SourceInitialized="Window_SourceInitialized" Closing="Window_Closing">
     <Grid>
         <Grid.RowDefinitions>
-            <RowDefinition/>
-            <RowDefinition/>
+            <RowDefinition Height="200*"/>
+            <RowDefinition Height="80*"/>
         </Grid.RowDefinitions>
         <Grid.ColumnDefinitions>
             <ColumnDefinition/>
             <ColumnDefinition/>
         </Grid.ColumnDefinitions>
-        <Button x:Name="NewGameButton" Grid.Row="1" Grid.Column="1" Content="New Game" Click="NewGameButton_Click"/>
-        <Button x:Name="JoinGameButton" Grid.Row="1" Grid.Column="0" Content="Join Game" IsEnabled="False" Click="JoinGameButton_Click"/>
+        <Button x:Name="NewGameButton" Grid.Row="1" Grid.Column="1" Content="New Game" Click="NewGameButton_Click" />
+        <Button x:Name="JoinGameButton" Grid.Row="1" Grid.Column="0" Content="Join Game" IsEnabled="False" Click="JoinGameButton_Click" />
         <ListBox x:Name="gamesList" Grid.Row="0" Grid.Column="0" SelectionChanged="gamesList_SelectionChanged" MouseLeftButtonDown="gamesList_MouseLeftButtonDown" IsEnabled="False" >
             <System:String>Connecting...</System:String>
         </ListBox>

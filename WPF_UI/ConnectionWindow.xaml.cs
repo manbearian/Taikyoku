@@ -23,7 +23,11 @@ namespace WPF_UI
     /// </summary>
     public partial class ConnectionWindow : Window
     {
-        private readonly ShogiClient.ShogiClient _shogiClient;
+        public Connection Connection { get; }
+
+        public TaikyokuShogi Game{ get; private set; }
+
+        public Guid GameId { get; private set; }
 
         private WaitingConnectionWindow _waitWindow;
 
@@ -31,30 +35,35 @@ namespace WPF_UI
         {
             InitializeComponent();
 
-            _shogiClient = new ShogiClient.ShogiClient();
+            Connection = new Connection();
 
-            _shogiClient.OnReceiveGameList += (sender, e) =>
-            {
-                Dispatcher.Invoke(() =>
-                {
-                    gamesList.Items.Clear();
-                    foreach (var game in e.GameList)
-                    {
-                        gamesList.Items.Add(game);
-                    }
-                    gamesList.DisplayMemberPath = "Name";
-                    gamesList.IsEnabled = true;
-                });
-            };
+            Connection.OnReceiveGameList += RecieveGameList;
+            Connection.OnReceiveGameStart += RecieveGameStart;
+        }
 
-            _shogiClient.OnReceiveGameStart += (sender, e) =>
+        private void RecieveGameList(object sender, ReceiveGameListEventArgs e) =>
+            Dispatcher.Invoke(() => UpdateGameList(e.GameList));
+
+        private void RecieveGameStart(object sender, ReceiveGameUpdateEventArgs e) =>
+            Dispatcher.Invoke(() =>
             {
-                Dispatcher.Invoke(() =>
-                {
-                    _waitWindow?.Close();
-                    _waitWindow = null;
-                });
-            };
+                _waitWindow?.Close();
+                _waitWindow = null;
+                Game = e.Game;
+                GameId = e.GameId;
+                DialogResult = true;
+                Close();
+            });
+
+        private void UpdateGameList(List<NetworkGameInfo> gameList)
+        {
+            gamesList.Items.Clear();
+            foreach (var game in gameList)
+            {
+                gamesList.Items.Add(game);
+            }
+            gamesList.DisplayMemberPath = "Name";
+            gamesList.IsEnabled = true;
         }
 
         private async void NewGameButton_Click(object sender, RoutedEventArgs e)
@@ -63,10 +72,14 @@ namespace WPF_UI
             
             if (nameWindow.ShowDialog() == true)
             {
-                await _shogiClient.RequestNewGame(nameWindow.GameName, TaikyokuShogiOptions.None, true);
+                await Connection.RequestNewGame(nameWindow.GameName, TaikyokuShogiOptions.None, true);
 
                 _waitWindow = new WaitingConnectionWindow();
                 _waitWindow.ShowDialog();
+                if (_waitWindow.DialogResult == false)
+                {
+                    await Connection.RequestCancelGame(Guid.Empty);
+                }
             }
         }
 
@@ -74,15 +87,15 @@ namespace WPF_UI
         {
             if (gamesList.SelectedIndex < 0)
                 return;
-            await _shogiClient.RequestJoinGame((gamesList.SelectedItem as NetworkGameInfo).Id);
+            await Connection.RequestJoinGame((gamesList.SelectedItem as NetworkGameInfo).Id);
         }
 
         private async void Window_SourceInitialized(object sender, EventArgs e)
         {
             try
             {
-                await _shogiClient.ConnectAsync();
-                await _shogiClient.RequestGamesList();
+                await Connection.ConnectAsync();
+                await Connection.RequestGamesList();
             }
             catch (Exception)
             {
@@ -102,5 +115,10 @@ namespace WPF_UI
             gamesList.SelectedIndex = -1;
         }
 
+        private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
+        {
+            Connection.OnReceiveGameList -= RecieveGameList;
+            Connection.OnReceiveGameStart -= RecieveGameStart;
+        }
     }
 }

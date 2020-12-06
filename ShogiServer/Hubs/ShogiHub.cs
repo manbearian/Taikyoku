@@ -18,7 +18,9 @@ namespace ShogiServer.Hubs
 
         Task ReceiveGameList(List<NetworkGameInfo> list);
 
-        Task ReceiveGameStart(TaikyokuShogi game);
+        Task ReceiveGameStart(TaikyokuShogi game, Guid id);
+
+        Task ReceiveGameCancel(TaikyokuShogi game, Guid id);
     }
 
     public class ShogiHub : Hub<IShogiClient>
@@ -28,12 +30,12 @@ namespace ShogiServer.Hubs
             public readonly TaikyokuShogi Game;
             public readonly Guid Id;
             public readonly string Name;
-            public readonly IShogiClient WhitePlayer;
-            public readonly IShogiClient BlackPlayer;
+            public readonly (IShogiClient Client, string Id) WhitePlayer;
+            public readonly (IShogiClient Client, string Id) BlackPlayer;
 
-            public bool Open() => WhitePlayer == null || BlackPlayer == null;
+            public bool Open() => WhitePlayer == default|| BlackPlayer == default;
 
-            public GameInfo(TaikyokuShogi game, Guid id, string name, IShogiClient blackPlayer, IShogiClient whitePlayer) =>
+            public GameInfo(TaikyokuShogi game, Guid id, string name, (IShogiClient Client, string Id) blackPlayer, (IShogiClient Client, string Id) whitePlayer) =>
                 (Game, Id, Name, BlackPlayer, WhitePlayer) = (game, id, name, blackPlayer, whitePlayer); 
         }
 
@@ -41,14 +43,14 @@ namespace ShogiServer.Hubs
         static ShogiHub()
         {
             var id = Guid.NewGuid();
-            Games[id] = new GameInfo(new TaikyokuShogi(TaikyokuShogiOptions.None), id, "test1", null, null);
+            Games[id] = new GameInfo(new TaikyokuShogi(TaikyokuShogiOptions.None), id, "test1", default, default);
             var id2 = Guid.NewGuid();
-            Games[id2] = new GameInfo(new TaikyokuShogi(TaikyokuShogiOptions.None), id2, "test2", null, null);
+            Games[id2] = new GameInfo(new TaikyokuShogi(TaikyokuShogiOptions.None), id2, "test2", default, default);
         }
 
         // database of running games, key is "gameId" which is a GUID
         private static readonly ConcurrentDictionary<Guid, GameInfo> Games = new ConcurrentDictionary<Guid, GameInfo>();
-        private static readonly object gameJoinLock = new object();
+        private static readonly object gameUpdateLock = new object();
 
         private static List<NetworkGameInfo> GamesList
         {
@@ -59,8 +61,8 @@ namespace ShogiServer.Hubs
         {
             var game = new TaikyokuShogi(gameOptions);
             var gameId = Guid.NewGuid();
-            var blackPlayer = asBlackPlayer ? Clients.Caller : null;
-            var whitePlayer = asBlackPlayer ? null : Clients.Caller;
+            var blackPlayer = asBlackPlayer ? (Clients.Caller, Context.ConnectionId) : default;
+            var whitePlayer = asBlackPlayer ? default : (Clients.Caller, Context.ConnectionId);
             GameInfo gameInfo = new GameInfo(game, gameId, gameName, blackPlayer, whitePlayer);
             Games[gameId] = gameInfo;
 
@@ -78,36 +80,73 @@ namespace ShogiServer.Hubs
 
         public Task JoinGame(Guid gameId)
         {
-            lock (gameJoinLock)
+            GameInfo gameInfo;
+
+            lock (gameUpdateLock)
             {
-                if (!Games.TryGetValue(gameId, out var gameInfo))
+                if (!Games.TryGetValue(gameId, out gameInfo))
                 {
                     throw new HubException($"Failed to join game, game id not found: {gameId}");
                 }
                 
-                if (gameInfo.WhitePlayer != null && gameInfo.BlackPlayer != null)
+                if (gameInfo.WhitePlayer != default && gameInfo.BlackPlayer != default)
                 {
                     throw new HubException($"Failed to join game, game is full: {gameId}");
                 }
 
-                if (gameInfo.WhitePlayer == null && gameInfo.BlackPlayer == null)
+                if (gameInfo.WhitePlayer == default && gameInfo.BlackPlayer == default)
                 {
                     throw new HubException($"Failed to join game, game is abandoned: {gameId}");
                 }
 
-                var blackPlayer = gameInfo.BlackPlayer ?? Clients.Caller;
-                var whitePlayer = gameInfo.WhitePlayer ?? Clients.Caller;
+                var blackPlayer = gameInfo.BlackPlayer == default ? (Clients.Caller, Context.ConnectionId) : gameInfo.BlackPlayer;
+                var whitePlayer = gameInfo.WhitePlayer == default ? (Clients.Caller, Context.ConnectionId) : gameInfo.WhitePlayer;
 
                 gameInfo = new GameInfo(gameInfo.Game, gameInfo.Id, gameInfo.Name, blackPlayer, whitePlayer);
                 Games[gameId] = gameInfo;
-
-                return Task.Run(() =>
-                {
-                    Clients.All.ReceiveGameList(GamesList);
-                    blackPlayer.ReceiveGameStart(gameInfo.Game);
-                    whitePlayer.ReceiveGameStart(gameInfo.Game);
-                });
             }
+
+            return Task.Run(() =>
+            {
+                Clients.All.ReceiveGameList(GamesList);
+                gameInfo.BlackPlayer.Client.ReceiveGameStart(gameInfo.Game, gameInfo.Id);
+                gameInfo.WhitePlayer.Client.ReceiveGameStart(gameInfo.Game, gameInfo.Id);
+            });
+        }
+
+        public Task CancelGame(Guid gameId)
+        {
+            var canceledGames = new List<GameInfo>();
+
+            lock (gameUpdateLock)
+            {
+                if (gameId == Guid.Empty)
+                {
+                    // there should be one (and only one) such game, but better safe then sorry
+                    var clientsGames = Games.Values.Where(g => g.WhitePlayer.Id == Context.ConnectionId || g.BlackPlayer.Id == Context.ConnectionId);
+                    foreach (var clientGame in clientsGames)
+                    {
+                        if (Games.TryRemove(clientGame.Id, out var g))
+                        {
+                            canceledGames.Add(g);
+                        }
+                    }
+                }
+                else if (Games.TryRemove(gameId, out var g))
+                {
+                    canceledGames.Add(g);
+                }
+            }
+
+            return Task.Run(() =>
+            {
+                Clients.All.ReceiveGameList(GamesList);
+                foreach (var canceledGame in canceledGames)
+                {
+                    canceledGame.BlackPlayer.Client?.ReceiveGameCancel(canceledGame.Game, canceledGame.Id);
+                    canceledGame.WhitePlayer.Client?.ReceiveGameCancel(canceledGame.Game, canceledGame.Id);
+                }
+            });
         }
 
         #region ThrowHubException
