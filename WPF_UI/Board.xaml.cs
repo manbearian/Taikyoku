@@ -107,7 +107,7 @@ namespace WPF_UI
             if (p.X < 0 || p.Y < 0)
                 return null;
 
-            var (x, y) = IsRotated ?
+            var (x, y) = _isRotated ?
                 (BoardWidth - 1 - (int)(p.X / SpaceWidth), BoardHeight - 1 - (int)(p.Y / SpaceHeight))
                     : ((int)(p.X / SpaceWidth), (int)(p.Y / SpaceHeight));
 
@@ -219,7 +219,7 @@ namespace WPF_UI
 
             if (Game != null)
             {
-                dc.PushTransform(new RotateTransform(IsRotated ? 180 : 0, ActualWidth / 2, ActualHeight / 2));
+                dc.PushTransform(new RotateTransform(_isRotated ? 180 : 0, ActualWidth / 2, ActualHeight / 2));
 
                 // draw the background
                 dc.DrawRectangle(Brushes.AntiqueWhite, null, new Rect(0, 0, ActualWidth, ActualHeight));
@@ -231,6 +231,7 @@ namespace WPF_UI
             }
 
             base.OnRender(dc);
+
             void DrawBoard(DrawingContext dc)
             {
                 var pen = new Pen(new SolidColorBrush(Colors.Black), 1.0);
