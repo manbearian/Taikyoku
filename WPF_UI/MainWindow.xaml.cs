@@ -107,9 +107,6 @@ namespace WPF_UI
             corners.ForEach(corner => { corner.Fill = fillColor; });
             borders.ForEach(border => { border.FillColor = fillColor; border.TextColor = textColor; border.InvalidateVisual(); });
 
-            if (_networkInfo != default && _networkInfo.LocalPlayer != player)
-                gameBoard.IsEnabled = false;
-
             InvalidateVisual();
         }
 
@@ -186,12 +183,13 @@ namespace WPF_UI
             }
             else if (e.Source == connectMenuItem)
             {
-                var win = new ConnectionWindow();
-                win.ShowDialog();
-                if (win.DialogResult == true)
+                var connWindow = new ConnectionWindow();
+                connWindow.ShowDialog();
+                if (connWindow.DialogResult == true)
                 {
-                    _networkInfo = (win.Connection, win.GameId, win.LocalPlayer);
-                    Game = win.Game;
+                    _networkInfo = (connWindow.Connection, connWindow.GameId, connWindow.LocalPlayer);
+                    _networkInfo.Connection.OnReceiveGameUpdate += (sender, eventArgs) => Game = eventArgs.Game;
+                    Game = connWindow.Game;
                 }
             }
             else if (e.Source == closeMenuItem)
@@ -279,7 +277,6 @@ namespace WPF_UI
             }
 
             _pieceInfoWindow.Show();
-        }
-
+        } 
     }
 }

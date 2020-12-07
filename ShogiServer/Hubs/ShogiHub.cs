@@ -21,6 +21,8 @@ namespace ShogiServer.Hubs
         Task ReceiveGameStart(TaikyokuShogi game, Guid id);
 
         Task ReceiveGameCancel(TaikyokuShogi game, Guid id);
+
+        Task ReceiveGameUpdate(TaikyokuShogi game, Guid id);
     }
 
     public class ShogiHub : Hub<IShogiClient>
@@ -121,12 +123,15 @@ namespace ShogiServer.Hubs
 
         public Task CancelGame()
         {
-            GameInfo gameInfo;
+            GameInfo gameInfo = ClientGame;
             bool removed = false;
 
             lock (gameUpdateLock)
             {
-                removed = Games.TryRemove(ClientGame.Id, out gameInfo);
+                if (gameInfo.BlackPlayer != default && gameInfo.WhitePlayer != default)
+                    throw new HubException("game already in progres, cannot cancel");
+
+                removed = Games.TryRemove(gameInfo.Id, out gameInfo);
             }
 
             return Task.Run(() =>
@@ -140,7 +145,7 @@ namespace ShogiServer.Hubs
             });
         }
 
-        public Task MakeMove((int X, int Y) startLoc, (int X, int Y) endLoc, (int X, int Y)? midLoc, bool promote)
+        public Task MakeMove(Location startLoc, Location endLoc, Location midLoc, bool promote)
         {
             var gameInfo = ClientGame;
             Player? requestingPlayer = null;
@@ -152,14 +157,16 @@ namespace ShogiServer.Hubs
             if (requestingPlayer == null || gameInfo.Game.CurrentPlayer != requestingPlayer)
                 throw new HubException("illegal move: wrong client requested the move");
 
-#if coming_soon
-            var (completed, ended) = gameInfo.Game.MakeMove(startLoc, endLoc, midLoc, promote);
+            var (completed, ended) = gameInfo.Game.MakeMove(((int, int))startLoc, ((int, int))endLoc, ((int, int)?)midLoc, promote);
 
-            // send the result back to the client???
-            return xxx;
-#else
-            throw new NotImplementedException();
-#endif
+            if (!completed)
+                throw new HubException("invalid move: unable to complete move");
+
+            return Task.Run(() =>
+            {
+                gameInfo.BlackPlayer.Client.ReceiveGameUpdate(gameInfo.Game, gameInfo.Id);
+                gameInfo.WhitePlayer.Client.ReceiveGameUpdate(gameInfo.Game, gameInfo.Id);
+            });
         }
 
 #region ThrowHubException

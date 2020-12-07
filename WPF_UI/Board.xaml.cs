@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -73,15 +74,23 @@ namespace WPF_UI
         public void SetGame(TaikyokuShogi game, (Connection Connection, Guid GameId, Player? LocalPlayer) networkInfo = default)
         {
             Game = game;
+            _networkInfo = networkInfo;
 
             Selected = null;
             Selected2 = null;
 
-            IsEnabled = (Game.CurrentPlayer != null);
+            IsEnabled = Game.CurrentPlayer != null && (networkInfo == default || Game.CurrentPlayer == networkInfo.LocalPlayer);
+            IsRotated = networkInfo.LocalPlayer == Player.White;
 
             InvalidateVisual();
 
             OnPlayerChange?.Invoke(this, new PlayerChangeEventArgs(null, Game.CurrentPlayer));
+
+            // check if we loaded up a game that has ended
+            if (Game.Ending != null)
+            {
+                OnGameEnd?.Invoke(this, new GameEndEventArgs(Game.Ending.Value, Game.Winner));
+            }
         }
 
         public void ClearBoard()
@@ -188,6 +197,9 @@ namespace WPF_UI
                             }
 
                             MakeMove(Selected.Value, loc.Value, Selected2, promote);
+
+                            Selected = null;
+                            Selected2 = null;
                         }
                         else
                         {
@@ -205,6 +217,35 @@ namespace WPF_UI
 
             InvalidateVisual();
             e.Handled = true;
+
+            void MakeMove((int X, int Y) startLoc, (int X, int Y) endLoc, (int X, int Y)? midLoc = null, bool promote = false)
+            {
+                if (_networkInfo != default)
+                {
+                    Task.Run(() => _networkInfo.Connection.RequestMove(startLoc, endLoc, midLoc, promote));
+                    IsEnabled = false;
+                    return;
+                }
+
+                Player prevPlayer = Game.CurrentPlayer.Value;
+
+                var (moveCompleted, gameEnded) = Game.MakeMove(startLoc, endLoc, midLoc, promote);
+ 
+                if (!moveCompleted)
+                    throw new InvalidOperationException("Move unuspported with current game state");
+
+                if (gameEnded)
+                {
+                    IsEnabled = false;
+
+                    InvalidateVisual();
+
+                    OnGameEnd?.Invoke(this, new GameEndEventArgs(Game.Ending.Value, Game.Winner));
+                }
+
+                if (prevPlayer != Game.CurrentPlayer)
+                    OnPlayerChange?.Invoke(this, new PlayerChangeEventArgs(prevPlayer, Game.CurrentPlayer));
+            }
         }
 
         protected override void OnRender(DrawingContext dc)
@@ -366,47 +407,13 @@ namespace WPF_UI
             }
         }
 
-        private void MakeMove((int X, int Y) startLoc, (int X, int Y) endLoc, (int X, int Y)? midLoc = null, bool promote = false)
-        {
-            Player prevPlayer = Game.CurrentPlayer.Value;
-
-            bool moveCompleted = false;
-            bool gameEnded = false;
-            if (_networkInfo != default)
-            {
-                _networkInfo.Connection.RequestMove(startLoc, endLoc, midLoc, promote);
-
-                // process result
-            }
-            else
-            {
-                (moveCompleted, gameEnded) = Game.MakeMove(startLoc, endLoc, midLoc, promote);
-            }
-
-            if (!moveCompleted)
-                throw new InvalidOperationException("Move unuspported with current game state");
-
-            Selected = null;
-            Selected2 = null;
-
-            if (gameEnded)
-            {
-                IsEnabled = false;
-
-                InvalidateVisual();
-
-                OnGameEnd?.Invoke(this, new GameEndEventArgs(Game.Ending.Value, Game.Winner));
-            }
-
-            if (prevPlayer != Game.CurrentPlayer)
-                OnPlayerChange?.Invoke(this, new PlayerChangeEventArgs(prevPlayer, Game.CurrentPlayer));
-        }
-
         public delegate void PlayerChangeHandler(object sender, PlayerChangeEventArgs e);
         public event PlayerChangeHandler OnPlayerChange;
 
         public delegate void GameEndHandler(object sender, GameEndEventArgs e);
         public event GameEndHandler OnGameEnd;
+
+        // Xaml Properteries
 
         public static readonly DependencyProperty IsRotatedProperty =
            DependencyProperty.Register("IsRotated", typeof(bool), typeof(Board), new

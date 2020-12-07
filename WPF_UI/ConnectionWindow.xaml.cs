@@ -76,7 +76,7 @@ namespace WPF_UI
                 await Connection.RequestNewGame(nameWindow.GameName, TaikyokuShogiOptions.None, true);
 
                 _waitWindow = new WaitingConnectionWindow();
-                if (_waitWindow.ShowDialog() != true)
+                if (_waitWindow.ShowDialog() == true)
                 {
                     LocalPlayer = null;
                     await Connection.RequestCancelGame();

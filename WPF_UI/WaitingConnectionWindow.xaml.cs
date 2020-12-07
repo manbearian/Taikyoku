@@ -24,7 +24,7 @@ namespace WPF_UI
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
-            DialogResult = false;
+            DialogResult = true;
             Close();
         }
     }

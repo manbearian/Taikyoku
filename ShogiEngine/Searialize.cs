@@ -93,10 +93,12 @@ namespace ShogiEngine
 
                     case "CurrentPlayer":
                         reader.Read();
-                        if (reader.TokenType != JsonTokenType.String)
-                            throw new JsonException();
-                        if (Enum.TryParse<Player>(reader.GetString(), out var player))
-                            currentPlayer = player;
+                        currentPlayer = reader.TokenType switch
+                        {
+                            JsonTokenType.Null => null,
+                            JsonTokenType.String => reader.GetString().ToEnum<Player>(),
+                            _ => throw new JsonException()
+                        };
                         break;
 
                     case "Options":
@@ -177,6 +179,15 @@ namespace ShogiEngine
             writer.WriteNumber("Checksum", ComputeChecksum(game));
 
             writer.WriteEndObject();
+        }
+    }
+
+    static class EnumExtension
+    {
+        public static T ToEnum<T>(this string s) where T : struct
+        {
+            Enum.TryParse<T>(s, out var e);
+            return e;
         }
     }
 }
