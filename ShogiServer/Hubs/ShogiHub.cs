@@ -172,28 +172,5 @@ namespace ShogiServer.Hubs
                 gameInfo.WhitePlayer.Client.ReceiveGameUpdate(gameInfo.Game, gameInfo.Id);
             });
         }
-
-#region ThrowHubException
-        public Task ThrowException()
-        {
-            throw new HubException("This error will be sent to the client!");
-        }
-#endregion
-
-#region OnConnectedAsync
-        public override async Task OnConnectedAsync()
-        {
-            await Groups.AddToGroupAsync(Context.ConnectionId, "SignalR Users");
-            await base.OnConnectedAsync();
-        }
-#endregion
-
-#region OnDisconnectedAsync
-        public override async Task OnDisconnectedAsync(Exception exception)
-        {
-            await Groups.RemoveFromGroupAsync(Context.ConnectionId, "SignalR Users");
-            await base.OnDisconnectedAsync(exception);
-        }
-#endregion
     }
 }
