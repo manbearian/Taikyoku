@@ -157,10 +157,14 @@ namespace ShogiServer.Hubs
             if (requestingPlayer == null || gameInfo.Game.CurrentPlayer != requestingPlayer)
                 throw new HubException("illegal move: wrong client requested the move");
 
-            var (completed, ended) = gameInfo.Game.MakeMove(((int, int))startLoc, ((int, int))endLoc, ((int, int)?)midLoc, promote);
-
-            if (!completed)
-                throw new HubException("invalid move: unable to complete move");
+            try
+            {
+                gameInfo.Game.MakeMove(((int, int))startLoc, ((int, int))endLoc, ((int, int)?)midLoc, promote);
+            }
+            catch (InvalidOperationException e)
+            {
+                throw new HubException("invalid move: unable to complete move", e);
+            }
 
             return Task.Run(() =>
             {

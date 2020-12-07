@@ -16,7 +16,7 @@ namespace EngineTest
             var game = new TaikyokuShogi(); // empty board
             var loc = (17, 17);
             Assert.Null(game.GetPiece(loc));
-            Assert.Equal(game.MakeMove(loc, Movement.ComputeMove(loc, Movement.Up, 1).Value), (false, false));
+            Assert.Throws<InvalidOperationException>(() => game.MakeMove(loc, Movement.ComputeMove(loc, Movement.Up, 1).Value));
         }
 
         [Fact]
@@ -26,7 +26,7 @@ namespace EngineTest
             var testPiece = new Piece(Player.White, PieceIdentity.Queen);
             var startLoc = (17, 17);
             game.Debug_SetPiece(testPiece, startLoc);
-            Assert.Equal(game.MakeMove(startLoc, Movement.ComputeMove(startLoc, Movement.Up, 1).Value), (false, false));
+            Assert.Throws<InvalidOperationException>(() => game.MakeMove(startLoc, Movement.ComputeMove(startLoc, Movement.Up, 1).Value));
         }
 
         private void ValidateMoves(Piece testPiece, (int, int) startLoc, HashSet<(int, int)> validMoves, Dictionary<(int, int), Piece> otherPieces = null)
@@ -51,7 +51,7 @@ namespace EngineTest
 
                     if (validMoves.Contains(newLoc))
                     {
-                        Assert.Equal(game.MakeMove(startLoc, newLoc), (true, false));
+                        game.MakeMove(startLoc, newLoc);
                         Assert.Null(game.GetPiece(startLoc));
                         Assert.Equal(testPiece, game.GetPiece(newLoc));
 
@@ -65,7 +65,7 @@ namespace EngineTest
                     }
                     else
                     {
-                        Assert.Equal(game.MakeMove(startLoc, newLoc), (false, false));
+                        Assert.Throws<InvalidOperationException>(() => game.MakeMove(startLoc, newLoc));
                         Assert.Equal(testPiece, game.GetPiece(startLoc));
                         Assert.Equal(capturePiece, game.GetPiece(newLoc));
 

@@ -229,12 +229,9 @@ namespace WPF_UI
 
                 Player prevPlayer = Game.CurrentPlayer.Value;
 
-                var (moveCompleted, gameEnded) = Game.MakeMove(startLoc, endLoc, midLoc, promote);
+                Game.MakeMove(startLoc, endLoc, midLoc, promote);
  
-                if (!moveCompleted)
-                    throw new InvalidOperationException("Move unuspported with current game state");
-
-                if (gameEnded)
+                if (Game.Ending != null)
                 {
                     IsEnabled = false;
 

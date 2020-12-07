@@ -102,33 +102,40 @@ namespace ShogiEngine
 
         // Public API: move the piece at startLoc to endLoc
         //   CurrentPlayer is advanced
-        //   The optional parameter `midLoc` is used for area-moves (e..g lion move)
-        //   return value indicates if the move was valid. Note that illegal moves are concerned valid, but will end the game.
-        public virtual (bool Success, bool GameEnd) MakeMove((int X, int Y) startLoc, (int X, int Y) endLoc, (int X, int Y)? midLoc = null, bool promote = false)
+        //   The optional parameter `midLoc` is used for area-moves (e.g. lion move)
+        //   Caller should check `CurrentPlayer` or `Ending` property to determine if the game is over after the move
+        public virtual void MakeMove((int X, int Y) startLoc, (int X, int Y) endLoc, (int X, int Y)? midLoc = null, bool promote = false)
         {
             var piece = GetPiece(startLoc);
 
             // nonsencial moves are invalid
             if (CurrentPlayer == null || piece == null)
-            {
-                return InvalidMove();
-            }
+                throw new InvalidOperationException("invalid move requested");
 
             // moving your oppontents piece is illegal
             if (piece.Owner != CurrentPlayer)
-                return IllegalMove();
+            {
+                IllegalMove();
+                return;
+            }
 
             var moves = this.GetLegalMoves(piece, startLoc, midLoc).Where(move => move.Loc == endLoc);
 
             if (!moves.Any())
-                return IllegalMove();
+            {
+                IllegalMove();
+                return;
+            }
 
             var capturedPieces = new List<(int X, int Y)>();
 
             if (midLoc != null)
             {
                 if (!moves.Any(move => move.Type == MoveType.Area || move.Type == MoveType.Igui))
-                    return IllegalMove();
+                {
+                    IllegalMove();
+                    return;
+                }
 
                 // capture any piece that got run over by the area-move
                 if (_boardState[midLoc.Value.X, midLoc.Value.Y] != null)
@@ -144,7 +151,10 @@ namespace ShogiEngine
 
                 // orthoganal or diagonal only
                 if (xCount != 0 && yCount != 0 && Math.Abs(xCount) != Math.Abs(yCount))
-                    return IllegalMove();
+                {
+                    IllegalMove();
+                    return;
+                }
 
                 var xMultiplier = xCount == 0 ? 0 : (xCount > 0 ? -1 : 1);
                 var yMultiplier = yCount == 0 ? 0 : (yCount > 0 ? -1 : 1);
@@ -166,7 +176,10 @@ namespace ShogiEngine
 
             // validate promotion
             if (promote && Movement.CheckPromotion(piece, startLoc, endLoc, capturedPieces.Any()) == PromotionType.None)
-                return IllegalMove();
+            {
+                IllegalMove();
+                return;
+            }
 
             // to allow for testing without king/prince on the board, only check for mate on capture of king/prince
             var checkForCheckmate = capturedPieces.Select(loc => _boardState[loc.X, loc.Y]).Any(piece => IsRoyalty(piece.Id));
@@ -182,26 +195,16 @@ namespace ShogiEngine
             _boardState[endLoc.X, endLoc.Y] = promote ? piece.Promote() : piece;
 
             if (IsCheckmate())
-                return Checkmate();
+            {
+                Checkmate();
+                return;
+            }
 
             NextTurn();
-            return ValidMove();
+            return;
 
-            (bool, bool) Checkmate()
-            {
-                EndGame(GameEndType.Checkmate, CurrentPlayer);
-                return (true, true);
-            }
-
-            (bool, bool) IllegalMove()
-            {
-                EndGame(GameEndType.IllegalMove, OtherPlayer);
-                return (true, true);
-            }
-
-            (bool, bool) InvalidMove() => (false, false);
-
-            (bool, bool) ValidMove() => (true, false);
+            void Checkmate() => EndGame(GameEndType.Checkmate, CurrentPlayer);
+            void IllegalMove() => EndGame(GameEndType.IllegalMove, OtherPlayer);
 
             static bool IsRoyalty(PieceIdentity id) => id == PieceIdentity.Prince || id == PieceIdentity.King;
 
