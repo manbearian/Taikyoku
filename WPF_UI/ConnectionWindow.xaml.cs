@@ -29,6 +29,8 @@ namespace WPF_UI
 
         public Guid GameId { get; private set; }
 
+        public Player? LocalPlayer { get; private set; }
+
         private WaitingConnectionWindow _waitWindow;
 
         public ConnectionWindow()
@@ -48,7 +50,6 @@ namespace WPF_UI
             Dispatcher.Invoke(() =>
             {
                 _waitWindow?.Close();
-                _waitWindow = null;
                 Game = e.Game;
                 GameId = e.GameId;
                 DialogResult = true;
@@ -69,16 +70,16 @@ namespace WPF_UI
         private async void NewGameButton_Click(object sender, RoutedEventArgs e)
         {
             var nameWindow = new GameNameWindow();
-            
             if (nameWindow.ShowDialog() == true)
             {
+                LocalPlayer = Player.Black;
                 await Connection.RequestNewGame(nameWindow.GameName, TaikyokuShogiOptions.None, true);
 
                 _waitWindow = new WaitingConnectionWindow();
-                _waitWindow.ShowDialog();
-                if (_waitWindow.DialogResult == false)
+                if (_waitWindow.ShowDialog() != true)
                 {
-                    await Connection.RequestCancelGame(Guid.Empty);
+                    LocalPlayer = null;
+                    await Connection.RequestCancelGame();
                 }
             }
         }
@@ -87,6 +88,8 @@ namespace WPF_UI
         {
             if (gamesList.SelectedIndex < 0)
                 return;
+
+            LocalPlayer = Player.White;
             await Connection.RequestJoinGame((gamesList.SelectedItem as NetworkGameInfo).Id);
         }
 

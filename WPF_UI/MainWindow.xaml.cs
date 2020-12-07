@@ -29,9 +29,21 @@ namespace WPF_UI
         readonly List<NumberPanel> borders = new List<NumberPanel>();
         readonly Dictionary<MenuItem, Piece> pieceMenuItems = new Dictionary<MenuItem, Piece>();
 
-        TaikyokuShogi Game = null;
+        TaikyokuShogi _game = null;
         PieceInfoWindow _pieceInfoWindow = null;
-        (Connection Connection, Guid GameId) _networkInfo = (null, Guid.Empty);
+        (Connection Connection, Guid GameId, Player? LocalPlayer) _networkInfo = default;
+
+        private TaikyokuShogi Game
+        {
+            get => _game;
+
+            set
+            {
+                _game = value;
+                gameBoard.SetGame(_game, _networkInfo);
+                InvalidateVisual();
+            }
+        }
 
         public MainWindow()
         {
@@ -43,6 +55,9 @@ namespace WPF_UI
 
             MouseMove += ShowPieceInfo;
             Closed += OnClose;
+
+            gameBoard.OnPlayerChange += OnPlayerChange;
+            gameBoard.OnGameEnd += OnGameEnd;
 
             corners.Add(borderTopLeft);
             corners.Add(borderTopRight);
@@ -76,19 +91,7 @@ namespace WPF_UI
                 // silently ignore failure to parse the game
             }
 
-            NewGame(savedGame);
-        }
-
-        private void NewGame(TaikyokuShogi game = null)
-        {
-            Game = game ?? new TaikyokuShogi();
-            gameBoard.SetGame(Game);
-
-            Game.OnPlayerChange += OnPlayerChange;
-            Game.OnGameEnd += OnGameEnd;
-
-            SetPlayer(Game.CurrentPlayer);
-            InvalidateVisual();
+            Game = savedGame ?? new TaikyokuShogi();
         }
 
         private void SetPlayer(Player? player)
@@ -104,6 +107,9 @@ namespace WPF_UI
             corners.ForEach(corner => { corner.Fill = fillColor; });
             borders.ForEach(border => { border.FillColor = fillColor; border.TextColor = textColor; border.InvalidateVisual(); });
 
+            if (_networkInfo != default && _networkInfo.LocalPlayer != player)
+                gameBoard.IsEnabled = false;
+
             InvalidateVisual();
         }
 
@@ -118,7 +124,7 @@ namespace WPF_UI
             using var stream = File.OpenRead(path);
             var buffer = new byte[stream.Length];
             stream.Read(buffer);
-            NewGame(TaikyokuShogi.Deserlialize(buffer));
+            Game = TaikyokuShogi.Deserlialize(buffer);
         }
 
         private void OnPlayerChange(object sender, PlayerChangeEventArgs eventArgs) =>
@@ -143,7 +149,8 @@ namespace WPF_UI
         {
             if (e.Source == newGameMenuItem)
             {
-                NewGame();
+                _networkInfo = default;
+                Game = new TaikyokuShogi();
             }
             else if (e.Source == saveGameMenuItem)
             {
@@ -173,6 +180,7 @@ namespace WPF_UI
 
                 if (loadDialog.ShowDialog() ?? false)
                 {
+                    _networkInfo = default;
                     LoadGame(loadDialog.FileName);
                 }
             }
@@ -182,7 +190,7 @@ namespace WPF_UI
                 win.ShowDialog();
                 if (win.DialogResult == true)
                 {
-                    _networkInfo = (win.Connection, win.GameId);
+                    _networkInfo = (win.Connection, win.GameId, win.LocalPlayer);
                     Game = win.Game;
                 }
             }
@@ -208,13 +216,7 @@ namespace WPF_UI
             }
             else if (e.Source == clearBoardMenuItem)
             {
-                for (int i = 0; i < TaikyokuShogi.BoardHeight; ++i)
-                {
-                    for (int j = 0; j < TaikyokuShogi.BoardHeight; ++j)
-                    {
-                        Game.Debug_SetPiece(null, (i, j));
-                    }
-                }
+                gameBoard.ClearBoard();
             }
             else if (e.Source == switchTurnMenuItem)
             {

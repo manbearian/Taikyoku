@@ -9,13 +9,14 @@ namespace EngineTest
 {
     public class MoveValidation
     {
+
         [Fact]
         public void NoPiece()
         {
             var game = new TaikyokuShogi(); // empty board
             var loc = (17, 17);
             Assert.Null(game.GetPiece(loc));
-            Assert.False(game.MakeMove(loc, Movement.ComputeMove(loc, Movement.Up, 1).Value));
+            Assert.Equal(game.MakeMove(loc, Movement.ComputeMove(loc, Movement.Up, 1).Value), (false, false));
         }
 
         [Fact]
@@ -25,7 +26,7 @@ namespace EngineTest
             var testPiece = new Piece(Player.White, PieceIdentity.Queen);
             var startLoc = (17, 17);
             game.Debug_SetPiece(testPiece, startLoc);
-            Assert.False(game.MakeMove(startLoc, Movement.ComputeMove(startLoc, Movement.Up, 1).Value));
+            Assert.Equal(game.MakeMove(startLoc, Movement.ComputeMove(startLoc, Movement.Up, 1).Value), (false, false));
         }
 
         private void ValidateMoves(Piece testPiece, (int, int) startLoc, HashSet<(int, int)> validMoves, Dictionary<(int, int), Piece> otherPieces = null)
@@ -50,7 +51,7 @@ namespace EngineTest
 
                     if (validMoves.Contains(newLoc))
                     {
-                        Assert.True(game.MakeMove(startLoc, newLoc));
+                        Assert.Equal(game.MakeMove(startLoc, newLoc), (true, false));
                         Assert.Null(game.GetPiece(startLoc));
                         Assert.Equal(testPiece, game.GetPiece(newLoc));
 
@@ -64,7 +65,7 @@ namespace EngineTest
                     }
                     else
                     {
-                        Assert.False(game.MakeMove(startLoc, newLoc));
+                        Assert.Equal(game.MakeMove(startLoc, newLoc), (false, false));
                         Assert.Equal(testPiece, game.GetPiece(startLoc));
                         Assert.Equal(capturePiece, game.GetPiece(newLoc));
 

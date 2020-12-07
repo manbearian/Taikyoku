@@ -9,6 +9,7 @@ using System.Windows.Input;
 using System.Windows.Media;
 
 using ShogiEngine;
+using ShogiClient;
 
 namespace WPF_UI
 {
@@ -33,6 +34,9 @@ namespace WPF_UI
 
         private bool _isRotated = false;
 
+        private (Connection Connection, Guid GameId, Player? LocalPlayer) _networkInfo = default;
+
+        // debug functionality
         private Piece _addingPiece = null;
         private bool _removingPiece = false;
 
@@ -66,11 +70,9 @@ namespace WPF_UI
             MouseRightButtonUp += RightClickHandler;
         }
 
-        public void SetGame(TaikyokuShogi game)
+        public void SetGame(TaikyokuShogi game, (Connection Connection, Guid GameId, Player? LocalPlayer) networkInfo = default)
         {
             Game = game;
-            Game.OnBoardChange += OnBoardChange;
-            Game.OnGameEnd += OnGameEnd;
 
             Selected = null;
             Selected2 = null;
@@ -78,25 +80,22 @@ namespace WPF_UI
             IsEnabled = (Game.CurrentPlayer != null);
 
             InvalidateVisual();
+
+            OnPlayerChange?.Invoke(this, new PlayerChangeEventArgs(null, Game.CurrentPlayer));
         }
 
-        private void OnBoardChange(object sender, BoardChangeEventArgs eventArgs)
+        public void ClearBoard()
         {
-            if ((Selected != null && Game.GetPiece(Selected.Value) == null)
-                || (Selected2 != null && Game.GetPiece(Selected2.Value) == null))
+            for (int i = 0; i < TaikyokuShogi.BoardHeight; ++i)
             {
-                Selected = null;
-                Selected2 = null;
+                for (int j = 0; j < TaikyokuShogi.BoardHeight; ++j)
+                {
+                    Game.Debug_SetPiece(null, (i, j));
+                }
             }
 
-            InvalidateVisual();
-        }
-
-        private void OnGameEnd(object sender, GameEndEventArgs eventArgs)
-        {
             Selected = null;
             Selected2 = null;
-            IsEnabled = false;
 
             InvalidateVisual();
         }
@@ -188,10 +187,7 @@ namespace WPF_UI
                                 promote = x.ShowDialog(Game, selectedPiece.Id, selectedPiece.Id.PromotesTo().Value);
                             }
 
-                            bool moveCompleted = Game.MakeMove(Selected.Value, loc.Value, Selected2, promote);
-
-                            if (!moveCompleted)
-                                throw new InvalidOperationException("Move unuspported with current game state");
+                            MakeMove(Selected.Value, loc.Value, Selected2, promote);
                         }
                         else
                         {
@@ -370,6 +366,48 @@ namespace WPF_UI
             }
         }
 
+        private void MakeMove((int X, int Y) startLoc, (int X, int Y) endLoc, (int X, int Y)? midLoc = null, bool promote = false)
+        {
+            Player prevPlayer = Game.CurrentPlayer.Value;
+
+            bool moveCompleted = false;
+            bool gameEnded = false;
+            if (_networkInfo != default)
+            {
+                _networkInfo.Connection.RequestMove(startLoc, endLoc, midLoc, promote);
+
+                // process result
+            }
+            else
+            {
+                (moveCompleted, gameEnded) = Game.MakeMove(startLoc, endLoc, midLoc, promote);
+            }
+
+            if (!moveCompleted)
+                throw new InvalidOperationException("Move unuspported with current game state");
+
+            Selected = null;
+            Selected2 = null;
+
+            if (gameEnded)
+            {
+                IsEnabled = false;
+
+                InvalidateVisual();
+
+                OnGameEnd?.Invoke(this, new GameEndEventArgs(Game.Ending.Value, Game.Winner));
+            }
+
+            if (prevPlayer != Game.CurrentPlayer)
+                OnPlayerChange?.Invoke(this, new PlayerChangeEventArgs(prevPlayer, Game.CurrentPlayer));
+        }
+
+        public delegate void PlayerChangeHandler(object sender, PlayerChangeEventArgs e);
+        public event PlayerChangeHandler OnPlayerChange;
+
+        public delegate void GameEndHandler(object sender, GameEndEventArgs e);
+        public event GameEndHandler OnGameEnd;
+
         public static readonly DependencyProperty IsRotatedProperty =
            DependencyProperty.Register("IsRotated", typeof(bool), typeof(Board), new
               PropertyMetadata(false, new PropertyChangedCallback(OnIsRotatedChanged)));
@@ -389,4 +427,22 @@ namespace WPF_UI
             InvalidateVisual();
         }
     }
+
+    public class PlayerChangeEventArgs : EventArgs
+    {
+        public Player? OldPlayer { get; }
+
+        public Player? NewPlayer { get; }
+
+        public PlayerChangeEventArgs(Player? oldPlayer, Player? newPlayer) => (OldPlayer, NewPlayer) = (oldPlayer, newPlayer);
+    }
+    public class GameEndEventArgs : EventArgs
+    {
+        public GameEndType Ending { get; }
+
+        public Player? Winner { get; }
+
+        public GameEndEventArgs(GameEndType gameEnding, Player? winner) => (Ending, Winner) = (gameEnding, winner);
+    }
+
 }

@@ -57,6 +57,11 @@ namespace ShogiServer.Hubs
             get => Games.Values.Where(info => info.Open()).Select(info => new NetworkGameInfo() { Name = info.Name, Id = info.Id }).ToList();
         }
 
+        private GameInfo ClientGame
+        {
+            get => Games.Values.Where(g => g.WhitePlayer.Id == Context.ConnectionId || g.BlackPlayer.Id == Context.ConnectionId).SingleOrDefault();
+        }
+
         public Task CreateGame(string gameName, TaikyokuShogiOptions gameOptions, bool asBlackPlayer)
         {
             var game = new TaikyokuShogi(gameOptions);
@@ -114,62 +119,70 @@ namespace ShogiServer.Hubs
             });
         }
 
-        public Task CancelGame(Guid gameId)
+        public Task CancelGame()
         {
-            var canceledGames = new List<GameInfo>();
+            GameInfo gameInfo;
+            bool removed = false;
 
             lock (gameUpdateLock)
             {
-                if (gameId == Guid.Empty)
-                {
-                    // there should be one (and only one) such game, but better safe then sorry
-                    var clientsGames = Games.Values.Where(g => g.WhitePlayer.Id == Context.ConnectionId || g.BlackPlayer.Id == Context.ConnectionId);
-                    foreach (var clientGame in clientsGames)
-                    {
-                        if (Games.TryRemove(clientGame.Id, out var g))
-                        {
-                            canceledGames.Add(g);
-                        }
-                    }
-                }
-                else if (Games.TryRemove(gameId, out var g))
-                {
-                    canceledGames.Add(g);
-                }
+                removed = Games.TryRemove(ClientGame.Id, out gameInfo);
             }
 
             return Task.Run(() =>
             {
-                Clients.All.ReceiveGameList(GamesList);
-                foreach (var canceledGame in canceledGames)
+                if (removed)
                 {
-                    canceledGame.BlackPlayer.Client?.ReceiveGameCancel(canceledGame.Game, canceledGame.Id);
-                    canceledGame.WhitePlayer.Client?.ReceiveGameCancel(canceledGame.Game, canceledGame.Id);
+                    Clients.All.ReceiveGameList(GamesList);
+                    gameInfo.BlackPlayer.Client?.ReceiveGameCancel(gameInfo.Game, gameInfo.Id);
+                    gameInfo.WhitePlayer.Client?.ReceiveGameCancel(gameInfo.Game, gameInfo.Id);
                 }
             });
         }
 
-        #region ThrowHubException
+        public Task MakeMove((int X, int Y) startLoc, (int X, int Y) endLoc, (int X, int Y)? midLoc, bool promote)
+        {
+            var gameInfo = ClientGame;
+            Player? requestingPlayer = null;
+            if (gameInfo.BlackPlayer.Id == Context.ConnectionId)
+                requestingPlayer = Player.Black;
+            else if (gameInfo.WhitePlayer.Id == Context.ConnectionId)
+                requestingPlayer = Player.White;
+
+            if (requestingPlayer == null || gameInfo.Game.CurrentPlayer != requestingPlayer)
+                throw new HubException("illegal move: wrong client requested the move");
+
+#if coming_soon
+            var (completed, ended) = gameInfo.Game.MakeMove(startLoc, endLoc, midLoc, promote);
+
+            // send the result back to the client???
+            return xxx;
+#else
+            throw new NotImplementedException();
+#endif
+        }
+
+#region ThrowHubException
         public Task ThrowException()
         {
             throw new HubException("This error will be sent to the client!");
         }
-        #endregion
+#endregion
 
-        #region OnConnectedAsync
+#region OnConnectedAsync
         public override async Task OnConnectedAsync()
         {
             await Groups.AddToGroupAsync(Context.ConnectionId, "SignalR Users");
             await base.OnConnectedAsync();
         }
-        #endregion
+#endregion
 
-        #region OnDisconnectedAsync
+#region OnDisconnectedAsync
         public override async Task OnDisconnectedAsync(Exception exception)
         {
             await Groups.RemoveFromGroupAsync(Context.ConnectionId, "SignalR Users");
             await base.OnDisconnectedAsync(exception);
         }
-        #endregion
+#endregion
     }
 }

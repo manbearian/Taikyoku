@@ -41,6 +41,9 @@ namespace ShogiClient
         public delegate void ReceiveGameCancelHandler(object sender, ReceiveGameUpdateEventArgs e);
         public event ReceiveGameCancelHandler OnReceiveGameCancel;
 
+        public delegate void ReceiveGameUpdateHandler(object sender, ReceiveGameUpdateEventArgs e);
+        public event ReceiveGameUpdateHandler OnReceiveGameCanc;
+
         public Connection()
         {
             _connection = new HubConnectionBuilder().
@@ -79,7 +82,10 @@ namespace ShogiClient
         public async Task RequestJoinGame(Guid id) =>
             await _connection.InvokeAsync("JoinGame", id);
 
-        public async Task RequestCancelGame(Guid id) =>
-            await _connection.InvokeAsync("CancelGame", id);
+        public async Task RequestCancelGame() =>
+            await _connection.InvokeAsync("CancelGame");
+
+        public async Task RequestMove((int X, int Y) startLoc, (int X, int Y) endLoc, (int X, int Y)? midLoc, bool promote) =>
+            await _connection.InvokeAsync("MakeMove", startLoc, endLoc, midLoc, promote);
     }
 }

@@ -47,14 +47,7 @@ namespace ShogiEngine
 
             private set
             {
-                var prevPlayer = _currentPlayer;
                 _currentPlayer = value;
-
-                if (OnPlayerChange != null)
-                {
-                    PlayerChangeEventArgs args = new PlayerChangeEventArgs(prevPlayer, _currentPlayer);
-                    OnPlayerChange(this, args);
-                }
             }
         }
         private Player OtherPlayer { get => CurrentPlayer.Value == Player.Black ? Player.White : Player.Black; }
@@ -83,29 +76,18 @@ namespace ShogiEngine
         public byte[] Serialize() =>
             JsonSerializer.SerializeToUtf8Bytes(this, new JsonSerializerOptions());
 
-        public delegate void PlayerChangeHandler(object sender, PlayerChangeEventArgs e);
-        public event PlayerChangeHandler OnPlayerChange;
-
-        public delegate void BoardChangeHandler(object sender, BoardChangeEventArgs e);
-        public event BoardChangeHandler OnBoardChange;
-
-        public delegate void GameEndHandler(object sender, GameEndEventArgs e);
-        public event GameEndHandler OnGameEnd;
-
         public Piece GetPiece((int X, int Y) loc) => _boardState[loc.X, loc.Y];
 
         public TaikyokuShogiOptions Options { get; }
+
+        public GameEndType? Ending { get; private set; }
+
+        public Player? Winner { get; private set; }
 
         // Layout the pieces on the board in their starting position
         private void SetInitialBoard()
         {
             _boardState.SetInitialState();
-
-            if (OnBoardChange != null)
-            {
-                var args = new BoardChangeEventArgs();
-                OnBoardChange(this, args);
-            }
         }
 
         // Move the turn to the next player
@@ -114,24 +96,16 @@ namespace ShogiEngine
         private void EndGame(GameEndType gameEnding, Player? winner)
         {
             CurrentPlayer = null;
-            OnGameEnd?.Invoke(this, new GameEndEventArgs(gameEnding, winner));
+            Ending = gameEnding;
+            Winner = winner;
         }
 
         // Public API: move the piece at startLoc to endLoc
-        //   Raises "OnBoardChange" event if move completes (i.e. was legal)
         //   CurrentPlayer is advanced
         //   The optional parameter `midLoc` is used for area-moves (e..g lion move)
         //   return value indicates if the move was valid. Note that illegal moves are concerned valid, but will end the game.
-        public bool MakeMove((int X, int Y) startLoc, (int X, int Y) endLoc, (int X, int Y)? midLoc = null, bool promote = false)
+        public virtual (bool Success, bool GameEnd) MakeMove((int X, int Y) startLoc, (int X, int Y) endLoc, (int X, int Y)? midLoc = null, bool promote = false)
         {
-            bool IllegalMove()
-            {
-                EndGame(GameEndType.IllegalMove, OtherPlayer);
-                return true;
-            }
-
-            bool InvalidMove() => false;
-
             var piece = GetPiece(startLoc);
 
             // nonsencial moves are invalid
@@ -207,16 +181,27 @@ namespace ShogiEngine
             _boardState[startLoc.X, startLoc.Y] = null;
             _boardState[endLoc.X, endLoc.Y] = promote ? piece.Promote() : piece;
 
-            OnBoardChange?.Invoke(this, new BoardChangeEventArgs());
-
             if (IsCheckmate())
-            {
-                EndGame(GameEndType.Checkmate, CurrentPlayer);
-                return true;
-            }
+                return Checkmate();
 
             NextTurn();
-            return true;
+            return ValidMove();
+
+            (bool, bool) Checkmate()
+            {
+                EndGame(GameEndType.Checkmate, CurrentPlayer);
+                return (true, true);
+            }
+
+            (bool, bool) IllegalMove()
+            {
+                EndGame(GameEndType.IllegalMove, OtherPlayer);
+                return (true, true);
+            }
+
+            (bool, bool) InvalidMove() => (false, false);
+
+            (bool, bool) ValidMove() => (true, false);
 
             static bool IsRoyalty(PieceIdentity id) => id == PieceIdentity.Prince || id == PieceIdentity.King;
 
@@ -238,19 +223,12 @@ namespace ShogiEngine
         }
 
         // Public "debug" API: Set which piece (or no piece) at a board location.
-        //   Raises "OnBoardChange" event if board state changes
         public void Debug_SetPiece(Piece piece, (int X, int Y) loc)
         {
             if (_boardState[loc.X, loc.Y] == piece)
                 return;
 
             _boardState[loc.X, loc.Y] = piece;
-
-            if (OnBoardChange != null)
-            {
-                var args = new BoardChangeEventArgs();
-                OnBoardChange(this, args);
-            }
         }
 
         // Public "debug" API: Set let the next player take a turn
@@ -288,28 +266,5 @@ namespace ShogiEngine
         public static bool operator ==(TaikyokuShogi lhs, TaikyokuShogi rhs) => lhs?.Equals(rhs) ?? rhs is null;
 
         public static bool operator !=(TaikyokuShogi lhs, TaikyokuShogi rhs) => !(lhs == rhs);
-    }
-
-    public class PlayerChangeEventArgs : EventArgs
-    {
-        public Player? OldPlayer { get; }
-
-        public Player? NewPlayer { get; }
-
-        public PlayerChangeEventArgs(Player? oldPlayer, Player? newPlayer) => (OldPlayer, NewPlayer) = (oldPlayer, newPlayer);
-    }
-
-    public class BoardChangeEventArgs : EventArgs
-    {
-        public BoardChangeEventArgs() { }
-    }
-
-    public class GameEndEventArgs : EventArgs
-    {
-        public GameEndType Ending { get; }
-
-        public Player? Winner { get; }
-
-        public GameEndEventArgs(GameEndType gameEnding, Player? winner) => (Ending, Winner) = (gameEnding, winner);
     }
 }
