@@ -41,15 +41,6 @@ namespace ShogiServer.Hubs
                 (Game, Id, Name, BlackPlayer, WhitePlayer) = (game, id, name, blackPlayer, whitePlayer); 
         }
 
-        // add some dummy games to test out the serivce
-        static ShogiHub()
-        {
-            var id = Guid.NewGuid();
-            Games[id] = new GameInfo(new TaikyokuShogi(TaikyokuShogiOptions.None), id, "test1", default, default);
-            var id2 = Guid.NewGuid();
-            Games[id2] = new GameInfo(new TaikyokuShogi(TaikyokuShogiOptions.None), id2, "test2", default, default);
-        }
-
         // database of running games, key is "gameId" which is a GUID
         private static readonly ConcurrentDictionary<Guid, GameInfo> Games = new ConcurrentDictionary<Guid, GameInfo>();
         private static readonly object gameUpdateLock = new object();
