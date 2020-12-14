@@ -13,7 +13,7 @@
             <RowDefinition Height="30"/>
         </Grid.RowDefinitions>
         <Button x:Name="JoinGameButton" Content="Join Game" IsEnabled="False" Click="JoinGameButton_Click" Grid.Row="1"/>
-        <ListBox x:Name="gamesList" SelectionChanged="gamesList_SelectionChanged" MouseLeftButtonDown="gamesList_MouseLeftButtonDown" IsEnabled="False" >
+        <ListBox x:Name="GamesList" SelectionChanged="GamesList_SelectionChanged" MouseLeftButtonDown="GamesList_MouseLeftButtonDown" IsEnabled="False" >
             <System:String>Connecting...</System:String>
         </ListBox>
     </Grid>

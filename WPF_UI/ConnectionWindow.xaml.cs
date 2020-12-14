@@ -54,33 +54,33 @@ namespace WPF_UI
 
         private void UpdateGameList(List<NetworkGameInfo> gameList)
         {
-            gamesList.Items.Clear();
+            GamesList.Items.Clear();
 
             if (gameList.Count == 0)
             {
-                gamesList.Items.Add("No Games Available");
+                GamesList.Items.Add("No Games Available");
 
-                gamesList.DisplayMemberPath = null;
-                gamesList.IsEnabled = false;
+                GamesList.DisplayMemberPath = null;
+                GamesList.IsEnabled = false;
             }
             else
             {
                 foreach (var game in gameList)
                 {
-                    gamesList.Items.Add(game);
+                    GamesList.Items.Add(game);
                 }
 
-                gamesList.DisplayMemberPath = "Name";
-                gamesList.IsEnabled = true;
+                GamesList.DisplayMemberPath = "Name";
+                GamesList.IsEnabled = true;
             }
         }
 
         private async void JoinGameButton_Click(object sender, RoutedEventArgs e)
         {
-            if (gamesList.SelectedIndex < 0)
+            if (GamesList.SelectedIndex < 0)
                 return;
 
-            await Connection.RequestJoinGame((gamesList.SelectedItem as NetworkGameInfo).Id);
+            await Connection.RequestJoinGame((GamesList.SelectedItem as NetworkGameInfo).Id);
         }
 
         private async void Window_SourceInitialized(object sender, EventArgs e)
@@ -96,15 +96,15 @@ namespace WPF_UI
             }
         }
 
-        private void gamesList_SelectionChanged(object sender, SelectionChangedEventArgs e) =>
+        private void GamesList_SelectionChanged(object sender, SelectionChangedEventArgs e) =>
             JoinGameButton.IsEnabled = e.AddedItems.Count > 0;
 
-        private void gamesList_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        private void GamesList_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
             if (e.Handled)
                 return;
 
-            gamesList.SelectedIndex = -1;
+            GamesList.SelectedIndex = -1;
         }
 
         private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
