@@ -6,8 +6,8 @@
         xmlns:local="clr-namespace:WPF_UI"
         xmlns:System="clr-namespace:System;assembly=System.Runtime" x:Class="WPF_UI.NewGameWindow"
         mc:Ignorable="d"
-        Title="New Game" Height="230" Width="430" ResizeMode="NoResize" ShowInTaskbar="False" SizeToContent="Manual" SourceInitialized="Window_SourceInitialized" Closing="Window_Closing">
-    <Grid>
+        Title="New Game" ResizeMode="NoResize" ShowInTaskbar="False" SizeToContent="WidthAndHeight" SourceInitialized="Window_SourceInitialized" Closing="Window_Closing">
+    <Grid Height="195" Width="415">
         <Button x:Name="CancelButton" Content="Cancel" VerticalAlignment="Top" HorizontalAlignment="Left" Width="100" Height="30" Margin="310,160,0,0" IsCancel="True" Click="CancelButton_Click"/>
         <Button x:Name="NewGameButton" Content="New Game" VerticalAlignment="Top" HorizontalAlignment="Left" Width="100" Height="30" Margin="202,160,0,0" IsDefault="True" Click="NewGameButton_Click"/>
         <GroupBox  x:Name="GameTypeGroupBox" Header="Game Type" VerticalAlignment="Top" HorizontalAlignment="Left" Width="200" Height="150" Margin="5,5,0,0">
@@ -21,8 +21,8 @@
                     <System:String>Black</System:String>
                     <System:String>White</System:String>
                 </ComboBox>
-                <TextBlock Text="Password:" VerticalAlignment="Top" HorizontalAlignment="Left" Height="20" Margin="25,100,0,0"/>
-                <TextBox x:Name="PasswordBox" Text="" VerticalAlignment="Top" HorizontalAlignment="Left" Height="20" Width="94" Margin="85,100,0,0" IsEnabled="{Binding IsChecked, ElementName=NetworkRadioButton}" />
+                <TextBlock Text="Passkey:" VerticalAlignment="Top" HorizontalAlignment="Left" Height="20" Margin="25,100,0,0"/>
+                <TextBox x:Name="PasskeyBox" Text="" VerticalAlignment="Top" HorizontalAlignment="Left" Height="20" Width="94" Margin="85,100,0,0" IsEnabled="{Binding IsChecked, ElementName=NetworkRadioButton}" />
             </Grid>
         </GroupBox>
         <GroupBox x:Name="GameOptionGroupBox" Header="Game Options" VerticalAlignment="Top" HorizontalAlignment="Left" Width="200" Height="150" Margin="210,5,0,0">
