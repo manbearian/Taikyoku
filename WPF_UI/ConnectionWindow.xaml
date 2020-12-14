@@ -9,16 +9,18 @@
         Title="ConnectionWindow" Height="278" Width="800" SourceInitialized="Window_SourceInitialized" Closing="Window_Closing">
     <Grid>
         <Grid.RowDefinitions>
-            <RowDefinition Height="200*"/>
-            <RowDefinition Height="80*"/>
+            <RowDefinition Height="33*"/>
+            <RowDefinition Height="33*"/>
+            <RowDefinition Height="33*"/>
         </Grid.RowDefinitions>
         <Grid.ColumnDefinitions>
             <ColumnDefinition/>
             <ColumnDefinition/>
         </Grid.ColumnDefinitions>
-        <Button x:Name="NewGameButton" Grid.Row="1" Grid.Column="1" Content="New Game" Click="NewGameButton_Click" />
-        <Button x:Name="JoinGameButton" Grid.Row="1" Grid.Column="0" Content="Join Game" IsEnabled="False" Click="JoinGameButton_Click" />
-        <ListBox x:Name="gamesList" Grid.Row="0" Grid.Column="0" SelectionChanged="gamesList_SelectionChanged" MouseLeftButtonDown="gamesList_MouseLeftButtonDown" IsEnabled="False" >
+        <Button x:Name="NewGameButton" Grid.Row="0" Grid.Column="1" Content="New Game" Click="NewGameButton_Click" />
+        <Button x:Name="JoinGameButton" Grid.Row="1" Grid.Column="1" Content="Join Game" IsEnabled="False" Click="JoinGameButton_Click" />
+        <Button x:Name="AddPlayerButton" Grid.Row="2" Grid.Column="1" Content="Add Player" IsEnabled="False" Click="JoinGameButton_Click" />
+        <ListBox x:Name="gamesList" Grid.Row="0" Grid.Column="0" Grid.RowSpan="3" SelectionChanged="gamesList_SelectionChanged" MouseLeftButtonDown="gamesList_MouseLeftButtonDown" IsEnabled="False" >
             <System:String>Connecting...</System:String>
         </ListBox>
     </Grid>

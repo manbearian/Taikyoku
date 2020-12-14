@@ -10,8 +10,6 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
 
-using Microsoft.AspNetCore.SignalR.Client;
-
 using ShogiClient;
 using ShogiEngine;
 using ShogiComms;
@@ -59,12 +57,22 @@ namespace WPF_UI
         private void UpdateGameList(List<NetworkGameInfo> gameList)
         {
             gamesList.Items.Clear();
-            foreach (var game in gameList)
+
+            if (gameList.Count == 0)
             {
-                gamesList.Items.Add(game);
+                gamesList.Items.Add("No Games Available");
+                gamesList.IsEnabled = false;
             }
-            gamesList.DisplayMemberPath = "Name";
-            gamesList.IsEnabled = true;
+            else
+            {
+                foreach (var game in gameList)
+                {
+                    gamesList.Items.Add(game);
+                }
+
+                gamesList.DisplayMemberPath = "Name";
+                gamesList.IsEnabled = true;
+            }
         }
 
         private async void NewGameButton_Click(object sender, RoutedEventArgs e)
