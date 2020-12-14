@@ -127,11 +127,8 @@ namespace WPF_UI
         private void OnPlayerChange(object sender, PlayerChangeEventArgs eventArgs) =>
             SetPlayer(eventArgs.NewPlayer);
 
-        private void OnGameEnd(object sender, GameEndEventArgs eventArgs)
-        {
-            var gameEndWindow = new GameEndWindow();
-            gameEndWindow.ShowDialog(eventArgs.Ending, eventArgs.Winner);
-        }
+        private void OnGameEnd(object sender, GameEndEventArgs eventArgs) =>
+            new GameEndWindow().ShowDialog(eventArgs.Ending, eventArgs.Winner);
 
         private void OnClose(object Sender, EventArgs e)
         {
@@ -146,8 +143,19 @@ namespace WPF_UI
         {
             if (e.Source == newGameMenuItem)
             {
-                _networkInfo = default;
-                Game = new TaikyokuShogi();
+                var newGameWindow = new NewGameWindow();
+                var result = newGameWindow.ShowDialog();
+                if (result == true)
+                {
+                    _networkInfo = default;
+                    if (newGameWindow.NetworkGame)
+                    {
+                        _networkInfo = (newGameWindow.Connection, newGameWindow.GameId, newGameWindow.LocalPlayer);
+                        _networkInfo.Connection.OnReceiveGameUpdate += (sender, eventArgs) => Game = eventArgs.Game;
+                    }
+
+                    Game = newGameWindow.Game;
+                }
             }
             else if (e.Source == saveGameMenuItem)
             {
