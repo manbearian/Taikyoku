@@ -59,6 +59,8 @@ namespace WPF_UI
             if (gameList.Count == 0)
             {
                 gamesList.Items.Add("No Games Available");
+
+                gamesList.DisplayMemberPath = null;
                 gamesList.IsEnabled = false;
             }
             else
