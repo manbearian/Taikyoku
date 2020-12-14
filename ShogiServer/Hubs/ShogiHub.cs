@@ -152,5 +152,22 @@ namespace ShogiServer.Hubs
                 gameInfo.WhitePlayer.Client.ReceiveGameUpdate(gameInfo.Game, gameInfo.Id);
             });
         }
+
+        public override Task OnDisconnectedAsync(Exception exception)
+        {
+            GameInfo gameInfo = ClientGame;
+            var cleanupTask = base.OnDisconnectedAsync(exception);
+
+            if (gameInfo.Open())
+            {
+                cleanupTask = CancelGame().ContinueWith((t) => cleanupTask);
+            }
+            else
+            {
+                // todo: notify client that opponent has disconnected
+            }
+
+            return cleanupTask;
+        }
     }
 }
