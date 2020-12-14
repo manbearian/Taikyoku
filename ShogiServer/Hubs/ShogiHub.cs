@@ -18,7 +18,7 @@ namespace ShogiServer.Hubs
 
         Task ReceiveGameList(List<NetworkGameInfo> list);
 
-        Task ReceiveGameStart(TaikyokuShogi game, Guid id);
+        Task ReceiveGameStart(TaikyokuShogi game, Guid id, Player player);
 
         Task ReceiveGameCancel(TaikyokuShogi game, Guid id);
 
@@ -107,8 +107,8 @@ namespace ShogiServer.Hubs
             return Task.Run(() =>
             {
                 Clients.All.ReceiveGameList(GamesList);
-                gameInfo.BlackPlayer.Client.ReceiveGameStart(gameInfo.Game, gameInfo.Id);
-                gameInfo.WhitePlayer.Client.ReceiveGameStart(gameInfo.Game, gameInfo.Id);
+                gameInfo.BlackPlayer.Client.ReceiveGameStart(gameInfo.Game, gameInfo.Id, Player.Black);
+                gameInfo.WhitePlayer.Client.ReceiveGameStart(gameInfo.Game, gameInfo.Id, Player.White);
             });
         }
 

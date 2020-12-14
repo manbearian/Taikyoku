@@ -29,8 +29,6 @@ namespace WPF_UI
 
         public Player? LocalPlayer { get; private set; }
 
-        private WaitingConnectionWindow _waitWindow;
-
         public ConnectionWindow()
         {
             InitializeComponent();
@@ -44,12 +42,12 @@ namespace WPF_UI
         private void RecieveGameList(object sender, ReceiveGameListEventArgs e) =>
             Dispatcher.Invoke(() => UpdateGameList(e.GameList));
 
-        private void RecieveGameStart(object sender, ReceiveGameUpdateEventArgs e) =>
+        private void RecieveGameStart(object sender, ReceiveGameStartEventArgs e) =>
             Dispatcher.Invoke(() =>
             {
-                _waitWindow?.Close();
                 Game = e.Game;
                 GameId = e.GameId;
+                LocalPlayer = e.Player;
                 DialogResult = true;
                 Close();
             });
@@ -75,29 +73,11 @@ namespace WPF_UI
             }
         }
 
-        private async void NewGameButton_Click(object sender, RoutedEventArgs e)
-        {
-            var nameWindow = new GameNameWindow();
-            if (nameWindow.ShowDialog() == true)
-            {
-                LocalPlayer = Player.Black;
-                await Connection.RequestNewGame(nameWindow.GameName, TaikyokuShogiOptions.None, true);
-
-                _waitWindow = new WaitingConnectionWindow();
-                if (_waitWindow.ShowDialog() == true)
-                {
-                    LocalPlayer = null;
-                    await Connection.RequestCancelGame();
-                }
-            }
-        }
-
         private async void JoinGameButton_Click(object sender, RoutedEventArgs e)
         {
             if (gamesList.SelectedIndex < 0)
                 return;
 
-            LocalPlayer = Player.White;
             await Connection.RequestJoinGame((gamesList.SelectedItem as NetworkGameInfo).Id);
         }
 
@@ -114,20 +94,20 @@ namespace WPF_UI
             }
         }
 
-        private void gamesList_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
+        private void gamesList_SelectionChanged(object sender, SelectionChangedEventArgs e) =>
             JoinGameButton.IsEnabled = e.AddedItems.Count > 0;
-        }
 
         private void gamesList_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
             if (e.Handled)
                 return;
+
             gamesList.SelectedIndex = -1;
         }
 
         private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
         {
+            // disconnect network event handlers on close
             Connection.OnReceiveGameList -= RecieveGameList;
             Connection.OnReceiveGameStart -= RecieveGameStart;
         }

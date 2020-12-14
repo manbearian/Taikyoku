@@ -18,6 +18,17 @@ namespace ShogiClient
         public ReceiveGameUpdateEventArgs(TaikyokuShogi game, Guid gameId) => (Game, GameId) = (game, gameId);
     }
 
+    public class ReceiveGameStartEventArgs : EventArgs
+    {
+        public TaikyokuShogi Game { get; }
+
+        public Guid GameId { get; }
+
+        public Player Player { get; }
+
+        public ReceiveGameStartEventArgs(TaikyokuShogi game, Guid gameId, Player player) => (Game, GameId, Player) = (game, gameId, player);
+    }
+
     public class ReceiveGameListEventArgs : EventArgs
     {
         public List<NetworkGameInfo> GameList { get; }
@@ -35,7 +46,7 @@ namespace ShogiClient
         public delegate void ReceiveGameListHandler(object sender, ReceiveGameListEventArgs e);
         public event ReceiveGameListHandler OnReceiveGameList;
 
-        public delegate void ReceiveGameStartHandler(object sender, ReceiveGameUpdateEventArgs e);
+        public delegate void ReceiveGameStartHandler(object sender, ReceiveGameStartEventArgs e);
         public event ReceiveGameStartHandler OnReceiveGameStart;
 
         public delegate void ReceiveGameCancelHandler(object sender, ReceiveGameUpdateEventArgs e);
@@ -63,8 +74,8 @@ namespace ShogiClient
             _connection.On<List<NetworkGameInfo>>("ReceiveGameList", gameList =>
                 OnReceiveGameList?.Invoke(this, new ReceiveGameListEventArgs(gameList)));
 
-            _connection.On<TaikyokuShogi, Guid>("ReceiveGameStart", (gameObject, gameId) =>
-                OnReceiveGameStart?.Invoke(this, new ReceiveGameUpdateEventArgs(gameObject, gameId)));
+            _connection.On<TaikyokuShogi, Guid, Player>("ReceiveGameStart", (gameObject, gameId, player) =>
+                OnReceiveGameStart?.Invoke(this, new ReceiveGameStartEventArgs(gameObject, gameId, player)));
 
             _connection.On<TaikyokuShogi, Guid>("ReceiveGameCancel", (gameObject, gameId) =>
                 OnReceiveGameCancel?.Invoke(this, new ReceiveGameUpdateEventArgs(gameObject, gameId)));

@@ -63,12 +63,14 @@ namespace WPF_UI
             }
         }
 
-        private void RecieveGameStart(object sender, ReceiveGameUpdateEventArgs e) =>
+        private void RecieveGameStart(object sender, ReceiveGameStartEventArgs e) =>
             Dispatcher.Invoke(() =>
             {
                 Game = e.Game;
                 GameId = e.GameId;
+                LocalPlayer = e.Player;
                 DialogResult = true;
+                NetworkGame = true;
                 Close();
             });
 
@@ -82,8 +84,6 @@ namespace WPF_UI
             }
             else if (NetworkRadioButton.IsChecked == true)
             {
-                NetworkGame = true;
-                LocalPlayer = ColorBox.SelectedIndex == 0 ? Player.Black : Player.White;
                 await Connection.RequestNewGame(NameBox.Text, GameOptions, LocalPlayer == Player.Black);
 
                 // lock the UI and wait for a response
