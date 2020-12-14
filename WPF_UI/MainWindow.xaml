@@ -16,6 +16,7 @@
             <RowDefinition Height="*"/>
             <RowDefinition Height="60*"/>
             <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="*"/>
@@ -54,6 +55,11 @@
                 <MenuItem x:Name="switchTurnMenuItem" Header="Change Turn" Click="MenuItem_Click" />
             </MenuItem>
         </Menu>
+        <StatusBar Grid.ColumnSpan="3" Grid.Row="5" Height="Auto">
+            <StatusBarItem>
+                <TextBlock x:Name="StatusBarTextBlock" Text="Taikyouku Shogi"/>
+            </StatusBarItem>
+        </StatusBar>
     </Grid>
 
 </Window>

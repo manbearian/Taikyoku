@@ -107,6 +107,14 @@ namespace WPF_UI
             corners.ForEach(corner => { corner.Fill = fillColor; });
             borders.ForEach(border => { border.FillColor = fillColor; border.TextColor = textColor; border.InvalidateVisual(); });
 
+            if (_networkInfo != default)
+            {
+                if (_networkInfo.LocalPlayer == player)
+                    StatusBarTextBlock.Text = "Your move!";
+                else if (_networkInfo.LocalPlayer == player?.Opponent())
+                    StatusBarTextBlock.Text = "Waiting on opponent...";
+            }
+
             InvalidateVisual();
         }
 
