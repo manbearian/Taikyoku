@@ -49,9 +49,6 @@ namespace ShogiClient
         public delegate void ReceiveGameStartHandler(object sender, ReceiveGameStartEventArgs e);
         public event ReceiveGameStartHandler OnReceiveGameStart;
 
-        public delegate void ReceiveGameCancelHandler(object sender, ReceiveGameUpdateEventArgs e);
-        public event ReceiveGameCancelHandler OnReceiveGameCancel;
-
         public delegate void ReceiveGameUpdateHandler(object sender, ReceiveGameUpdateEventArgs e);
         public event ReceiveGameUpdateHandler OnReceiveGameUpdate;
 
@@ -76,9 +73,6 @@ namespace ShogiClient
 
             _connection.On<TaikyokuShogi, Guid, Player>("ReceiveGameStart", (gameObject, gameId, player) =>
                 OnReceiveGameStart?.Invoke(this, new ReceiveGameStartEventArgs(gameObject, gameId, player)));
-
-            _connection.On<TaikyokuShogi, Guid>("ReceiveGameCancel", (gameObject, gameId) =>
-                OnReceiveGameCancel?.Invoke(this, new ReceiveGameUpdateEventArgs(gameObject, gameId)));
 
             _connection.On<TaikyokuShogi, Guid>("ReceiveGameUpdate", (gameObject, gameId) =>
                 OnReceiveGameUpdate?.Invoke(this, new ReceiveGameUpdateEventArgs(gameObject, gameId)));

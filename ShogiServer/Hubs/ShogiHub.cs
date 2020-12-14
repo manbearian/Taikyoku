@@ -20,8 +20,6 @@ namespace ShogiServer.Hubs
 
         Task ReceiveGameStart(TaikyokuShogi game, Guid id, Player player);
 
-        Task ReceiveGameCancel(TaikyokuShogi game, Guid id);
-
         Task ReceiveGameUpdate(TaikyokuShogi game, Guid id);
     }
 
@@ -115,25 +113,16 @@ namespace ShogiServer.Hubs
         public Task CancelGame()
         {
             GameInfo gameInfo = ClientGame;
-            bool removed = false;
 
             lock (gameUpdateLock)
             {
                 if (gameInfo.BlackPlayer != default && gameInfo.WhitePlayer != default)
                     throw new HubException("game already in progres, cannot cancel");
 
-                removed = Games.TryRemove(gameInfo.Id, out gameInfo);
+                Games.TryRemove(gameInfo.Id, out gameInfo);
             }
 
-            return Task.Run(() =>
-            {
-                if (removed)
-                {
-                    Clients.All.ReceiveGameList(GamesList);
-                    gameInfo.BlackPlayer.Client?.ReceiveGameCancel(gameInfo.Game, gameInfo.Id);
-                    gameInfo.WhitePlayer.Client?.ReceiveGameCancel(gameInfo.Game, gameInfo.Id);
-                }
-            });
+            return Clients.All.ReceiveGameList(GamesList);
         }
 
         public Task MakeMove(Location startLoc, Location endLoc, Location midLoc, bool promote)

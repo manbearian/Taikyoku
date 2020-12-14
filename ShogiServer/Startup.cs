@@ -43,7 +43,7 @@ namespace ShogiServer
                        .AllowCredentials();
             }));
 
-            services.AddMvc(a => a.EnableEndpointRouting = false).SetCompatibilityVersion(CompatibilityVersion.Version_2_1);
+            services.AddMvc(a => a.EnableEndpointRouting = false);
 
             //  services.AddRazorPages();
             services.AddSignalR();
