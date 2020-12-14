@@ -13,6 +13,16 @@ namespace ShogiEngine
         White
     }
 
+    public static class PlayerExtension
+    {
+        public static Player Opponent(this Player p) => p switch
+            {
+                Player.Black => Player.White,
+                Player.White => Player.Black,
+                _ => throw new NotSupportedException()
+            };
+    }
+
     public enum GameEndType
     {
         Checkmate,
@@ -50,7 +60,6 @@ namespace ShogiEngine
                 _currentPlayer = value;
             }
         }
-        private Player OtherPlayer { get => CurrentPlayer.Value == Player.Black ? Player.White : Player.Black; }
 
         public TaikyokuShogi(TaikyokuShogiOptions gameOptions = TaikyokuShogiOptions.None)
         {
@@ -204,7 +213,7 @@ namespace ShogiEngine
             return;
 
             void Checkmate() => EndGame(GameEndType.Checkmate, CurrentPlayer);
-            void IllegalMove() => EndGame(GameEndType.IllegalMove, OtherPlayer);
+            void IllegalMove() => EndGame(GameEndType.IllegalMove, CurrentPlayer?.Opponent());
 
             static bool IsRoyalty(PieceIdentity id) => id == PieceIdentity.Prince || id == PieceIdentity.King;
 
@@ -215,7 +224,7 @@ namespace ShogiEngine
 
                 foreach (var p in _boardState)
                 {
-                    if (p?.Owner == OtherPlayer && IsRoyalty(p.Id))
+                    if (p?.Owner == CurrentPlayer?.Opponent() && IsRoyalty(p.Id))
                     {
                         return false;
                     }
