@@ -31,7 +31,7 @@ namespace WPF_UI
 
         TaikyokuShogi _game = null;
         PieceInfoWindow _pieceInfoWindow = null;
-        (Connection Connection, Guid GameId, Player? LocalPlayer) _networkInfo = default;
+        (Connection Connection, Guid GameId, Player? LocalPlayer)? _networkInfo = null;
 
         private TaikyokuShogi Game { get => _game; }
 
@@ -86,7 +86,7 @@ namespace WPF_UI
 
         private void StartGame(TaikyokuShogi game, (Connection Connection, Guid GameId, Player? LocalPlayer)? networkInfo = null)
         {
-            _networkInfo = networkInfo ?? default;
+            _networkInfo = networkInfo;
 
             if (networkInfo == null)
             {
@@ -99,8 +99,8 @@ namespace WPF_UI
             {
                 // todo: there's a race condition here as the other player could make a move and even disconnect before we set this event handler
                 //       perhaps we should poll the state after setting this up.
-                _networkInfo.Connection.OnReceiveGameUpdate += OnReceiveUpdate;
-                _networkInfo.Connection.OnReceiveGameDisconnect += OnReceiveGameDisconnect;
+                _networkInfo.Value.Connection.OnReceiveGameUpdate += OnReceiveUpdate;
+                _networkInfo.Value.Connection.OnReceiveGameDisconnect += OnReceiveGameDisconnect;
 
                 StatusBarTextBlock1.Text = "Network Game";
                 StatusBarTextBlock2.Text = "";
@@ -131,13 +131,10 @@ namespace WPF_UI
             corners.ForEach(corner => { corner.Fill = fillColor; });
             borders.ForEach(border => { border.FillColor = fillColor; border.TextColor = textColor; border.InvalidateVisual(); });
 
-            if (_networkInfo != default)
-            {
-                if (_networkInfo.LocalPlayer == player)
-                    StatusBarTextBlock2.Text = "Your move!";
-                else if (_networkInfo.LocalPlayer == player?.Opponent())
-                    StatusBarTextBlock2.Text = "Waiting on opponent...";
-            }
+            if (_networkInfo?.LocalPlayer == player)
+                StatusBarTextBlock2.Text = "Your move!";
+            else if (_networkInfo?.LocalPlayer == player?.Opponent())
+                StatusBarTextBlock2.Text = "Waiting on opponent...";
 
             InvalidateVisual();
         }
@@ -213,7 +210,7 @@ namespace WPF_UI
 
                 if (loadDialog.ShowDialog() ?? false)
                 {
-                    _networkInfo = default;
+                    _networkInfo = null;
                     LoadGame(loadDialog.FileName);
                 }
             }
@@ -263,7 +260,7 @@ namespace WPF_UI
         void OnReceiveUpdate(object sender, ReceiveGameUpdateEventArgs e)
         {
             // if we've disconnected our game ignore the update
-            if (_networkInfo == default || e.GameId != _networkInfo.GameId)
+            if (_networkInfo == null || e.GameId != _networkInfo.Value.GameId)
                 return;
 
             UpdateGame(e.Game);
@@ -272,7 +269,7 @@ namespace WPF_UI
         void OnReceiveGameDisconnect(object sender, ReceiveGameConnectionEventArgs e)
         {
             // if we've disconnected our game ignore the update
-            if (_networkInfo == default || e.GameId != _networkInfo.GameId)
+            if (_networkInfo == null || e.GameId != _networkInfo.Value.GameId)
                 return;
 
             StatusBarTextBlock1.Text = "Network Game (opponent disconnected)";
