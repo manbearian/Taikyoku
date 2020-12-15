@@ -40,9 +40,6 @@ namespace WPF_UI
             Connection.OnReceiveGameStart += RecieveGameStart;
         }
 
-        // tood: pick up game options from UI
-        private TaikyokuShogiOptions GameOptions { get => TaikyokuShogiOptions.None; }
-
         // Disable all UI elements except the cancel button
         private void WaitForConnection()
         {
@@ -76,15 +73,19 @@ namespace WPF_UI
 
         private async void NewGameButton_Click(object sender, RoutedEventArgs e)
         {
+            // tood: pick up game options from UI
+            var gameOptions = TaikyokuShogiOptions.None;
+
             if (LocalRadioButton.IsChecked == true)
             {
                 DialogResult = true;
-                Game = new TaikyokuShogi(GameOptions);
+                Game = new TaikyokuShogi(gameOptions);
                 Close();
             }
             else if (NetworkRadioButton.IsChecked == true)
             {
-                await Connection.RequestNewGame(NameBox.Text, GameOptions, LocalPlayer == Player.Black);
+                var localPlayerIsBlack = ColorBox.SelectedIndex == 0;
+                await Connection.RequestNewGame(NameBox.Text, gameOptions, localPlayerIsBlack);
 
                 // lock the UI and wait for a response
                 WaitForConnection();
