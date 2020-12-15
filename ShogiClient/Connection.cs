@@ -29,6 +29,13 @@ namespace ShogiClient
         public ReceiveGameStartEventArgs(TaikyokuShogi game, Guid gameId, Player player) => (Game, GameId, Player) = (game, gameId, player);
     }
 
+    public class ReceiveGameConnectionEventArgs : EventArgs
+    {
+        public Guid GameId { get; }
+
+        public ReceiveGameConnectionEventArgs(Guid gameId) => GameId = gameId;
+    }
+
     public class ReceiveGameListEventArgs : EventArgs
     {
         public List<NetworkGameInfo> GameList { get; }
@@ -51,6 +58,9 @@ namespace ShogiClient
 
         public delegate void ReceiveGameUpdateHandler(object sender, ReceiveGameUpdateEventArgs e);
         public event ReceiveGameUpdateHandler OnReceiveGameUpdate;
+
+        public delegate void ReceiveGameDisconnectHandler(object sender, ReceiveGameConnectionEventArgs e);
+        public event ReceiveGameDisconnectHandler OnReceiveGameDisconnect;
 
         public Connection()
         {
@@ -76,6 +86,9 @@ namespace ShogiClient
 
             _connection.On<TaikyokuShogi, Guid>("ReceiveGameUpdate", (gameObject, gameId) =>
                 OnReceiveGameUpdate?.Invoke(this, new ReceiveGameUpdateEventArgs(gameObject, gameId)));
+
+            _connection.On<Guid>("ReceiveGameDisconnect", (gameId) =>
+                OnReceiveGameDisconnect?.Invoke(this, new ReceiveGameConnectionEventArgs(gameId)));
         }
 
         public async Task ConnectAsync() =>

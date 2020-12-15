@@ -57,7 +57,11 @@
         </Menu>
         <StatusBar Grid.ColumnSpan="3" Grid.Row="5" Height="Auto">
             <StatusBarItem>
-                <TextBlock x:Name="StatusBarTextBlock" Text="Taikyouku Shogi"/>
+                <TextBlock x:Name="StatusBarTextBlock1" Text="Welcome!"/>
+            </StatusBarItem>
+            <Separator x:Name="StatusBarSeparator2" Visibility="Hidden"/>
+            <StatusBarItem>
+                <TextBlock x:Name="StatusBarTextBlock2" Text="" Visibility="Hidden"/>
             </StatusBarItem>
         </StatusBar>
     </Grid>

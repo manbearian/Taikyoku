@@ -33,17 +33,7 @@ namespace WPF_UI
         PieceInfoWindow _pieceInfoWindow = null;
         (Connection Connection, Guid GameId, Player? LocalPlayer) _networkInfo = default;
 
-        private TaikyokuShogi Game
-        {
-            get => _game;
-
-            set
-            {
-                _game = value;
-                gameBoard.SetGame(_game, _networkInfo);
-                InvalidateVisual();
-            }
-        }
+        private TaikyokuShogi Game { get => _game; }
 
         public MainWindow()
         {
@@ -91,7 +81,41 @@ namespace WPF_UI
                 // silently ignore failure to parse the game
             }
 
-            Game = savedGame ?? new TaikyokuShogi();
+            StartGame(savedGame ?? new TaikyokuShogi());
+        }
+
+        private void StartGame(TaikyokuShogi game, (Connection Connection, Guid GameId, Player? LocalPlayer)? networkInfo = null)
+        {
+            _networkInfo = networkInfo ?? default;
+
+            if (networkInfo == null)
+            {
+                StatusBarTextBlock1.Text = "Local Game";
+                StatusBarTextBlock2.Text = "";
+                StatusBarSeparator2.Visibility = Visibility.Hidden;
+                StatusBarTextBlock2.Visibility = Visibility.Hidden;
+            }
+            else
+            {
+                // todo: there's a race condition here as the other player could make a move and even disconnect before we set this event handler
+                //       perhaps we should poll the state after setting this up.
+                _networkInfo.Connection.OnReceiveGameUpdate += OnReceiveUpdate;
+                _networkInfo.Connection.OnReceiveGameDisconnect += OnReceiveGameDisconnect;
+
+                StatusBarTextBlock1.Text = "Network Game";
+                StatusBarTextBlock2.Text = "";
+                StatusBarSeparator2.Visibility = Visibility.Visible;
+                StatusBarTextBlock2.Visibility = Visibility.Visible;
+            }
+
+            UpdateGame(game);
+        }
+
+        private void UpdateGame(TaikyokuShogi game)
+        {
+            _game = game;
+            gameBoard.SetGame(_game, _networkInfo);
+            InvalidateVisual();
         }
 
         private void SetPlayer(Player? player)
@@ -110,9 +134,9 @@ namespace WPF_UI
             if (_networkInfo != default)
             {
                 if (_networkInfo.LocalPlayer == player)
-                    StatusBarTextBlock.Text = "Your move!";
+                    StatusBarTextBlock2.Text = "Your move!";
                 else if (_networkInfo.LocalPlayer == player?.Opponent())
-                    StatusBarTextBlock.Text = "Waiting on opponent...";
+                    StatusBarTextBlock2.Text = "Waiting on opponent...";
             }
 
             InvalidateVisual();
@@ -129,7 +153,7 @@ namespace WPF_UI
             using var stream = File.OpenRead(path);
             var buffer = new byte[stream.Length];
             stream.Read(buffer);
-            Game = TaikyokuShogi.Deserlialize(buffer);
+            StartGame(TaikyokuShogi.Deserlialize(buffer));
         }
 
         private void OnPlayerChange(object sender, PlayerChangeEventArgs eventArgs) =>
@@ -155,14 +179,10 @@ namespace WPF_UI
                 var result = newGameWindow.ShowDialog();
                 if (result == true)
                 {
-                    _networkInfo = default;
                     if (newGameWindow.NetworkGame)
-                    {
-                        _networkInfo = (newGameWindow.Connection, newGameWindow.GameId, newGameWindow.LocalPlayer);
-                        _networkInfo.Connection.OnReceiveGameUpdate += (sender, eventArgs) => Game = eventArgs.Game;
-                    }
-
-                    Game = newGameWindow.Game;
+                        StartGame(newGameWindow.Game, (newGameWindow.Connection, newGameWindow.GameId, newGameWindow.LocalPlayer));
+                    else
+                        StartGame(newGameWindow.Game);
                 }
             }
             else if (e.Source == saveGameMenuItem)
@@ -203,9 +223,7 @@ namespace WPF_UI
                 connWindow.ShowDialog();
                 if (connWindow.DialogResult == true)
                 {
-                    _networkInfo = (connWindow.Connection, connWindow.GameId, connWindow.LocalPlayer);
-                    _networkInfo.Connection.OnReceiveGameUpdate += (sender, eventArgs) => Game = eventArgs.Game;
-                    Game = connWindow.Game;
+                    StartGame(connWindow.Game, (connWindow.Connection, connWindow.GameId, connWindow.LocalPlayer));
                 }
             }
             else if (e.Source == closeMenuItem)
@@ -240,6 +258,24 @@ namespace WPF_UI
             {
                 throw new NotImplementedException();
             }
+        }
+
+        void OnReceiveUpdate(object sender, ReceiveGameUpdateEventArgs e)
+        {
+            // if we've disconnected our game ignore the update
+            if (_networkInfo == default || e.GameId != _networkInfo.GameId)
+                return;
+
+            UpdateGame(e.Game);
+        }
+
+        void OnReceiveGameDisconnect(object sender, ReceiveGameConnectionEventArgs e)
+        {
+            // if we've disconnected our game ignore the update
+            if (_networkInfo == default || e.GameId != _networkInfo.GameId)
+                return;
+
+            StatusBarTextBlock1.Text = "Network Game (opponent disconnected)";
         }
 
         void ShowPieceInfo(object sender, MouseEventArgs e)

@@ -21,6 +21,8 @@ namespace ShogiServer.Hubs
         Task ReceiveGameStart(TaikyokuShogi game, Guid id, Player player);
 
         Task ReceiveGameUpdate(TaikyokuShogi game, Guid id);
+
+        Task ReceiveGameDisconnect(Guid id);
     }
 
     public class ShogiHub : Hub<IShogiClient>
@@ -160,11 +162,19 @@ namespace ShogiServer.Hubs
 
             if (gameInfo.Open())
             {
-                cleanupTask = CancelGame().ContinueWith((t) => cleanupTask);
+                cleanupTask = CancelGame().ContinueWith(_ => cleanupTask);
             }
             else
             {
-                // todo: notify client that opponent has disconnected
+                IShogiClient otherClient = null;
+                if (gameInfo.BlackPlayer.Id == Context.ConnectionId)
+                    otherClient = gameInfo.WhitePlayer.Client;
+                else if (gameInfo.WhitePlayer.Id == Context.ConnectionId)
+                    otherClient = gameInfo.BlackPlayer.Client;
+                else
+                    throw new Exception("Unexpected client disconnection");
+
+                cleanupTask = otherClient.ReceiveGameDisconnect(gameInfo.Id).ContinueWith(_ => cleanupTask);
             }
 
             return cleanupTask;
