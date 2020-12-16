@@ -103,6 +103,7 @@ namespace WPF_UI
                 //       perhaps we should poll the state after setting this up.
                 _networkInfo.Value.Connection.OnReceiveGameUpdate += OnReceiveUpdate;
                 _networkInfo.Value.Connection.OnReceiveGameDisconnect += OnReceiveGameDisconnect;
+                _networkInfo.Value.Connection.OnReceiveGameReconnect += OnReceiveGameReconnect;
 
                 StatusBarTextBlock1.Text = "Network Game";
                 StatusBarTextBlock2.Text = "";
@@ -284,6 +285,15 @@ namespace WPF_UI
                 return;
 
             StatusBarTextBlock1.Text = "Network Game (opponent disconnected)";
+        }
+
+        void OnReceiveGameReconnect(object sender, ReceiveGameConnectionEventArgs e)
+        {
+            // if we've disconnected our game ignore the update
+            if (_networkInfo == null || e.GameId != _networkInfo.Value.GameId)
+                return;
+
+            StatusBarTextBlock1.Text = "Network Game";
         }
 
         void ShowPieceInfo(object sender, MouseEventArgs e)
