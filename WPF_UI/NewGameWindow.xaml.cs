@@ -48,18 +48,6 @@ namespace WPF_UI
             NewGameButton.IsEnabled = false;
         }
 
-        private async void Window_SourceInitialized(object sender, EventArgs e)
-        {
-            try
-            {
-                await Connection.ConnectAsync();
-            }
-            catch (Exception)
-            {
-                // todo: where do i log this error?
-            }
-        }
-
         private void RecieveGameStart(object sender, ReceiveGameStartEventArgs e) =>
             Dispatcher.Invoke(() =>
             {
@@ -73,29 +61,41 @@ namespace WPF_UI
 
         private async void NewGameButton_Click(object sender, RoutedEventArgs e)
         {
-            // tood: pick up game options from UI
+            // todo: pick up game options from UI
             var gameOptions = TaikyokuShogiOptions.None;
 
             if (LocalRadioButton.IsChecked == true)
             {
                 DialogResult = true;
                 Game = new TaikyokuShogi(gameOptions);
-                Close();
             }
             else if (NetworkRadioButton.IsChecked == true)
             {
                 var localPlayerIsBlack = ColorBox.SelectedIndex == 0;
-                await Connection.RequestNewGame(NameBox.Text, gameOptions, localPlayerIsBlack);
+                var gameName = NameBox.Text;
 
-                // lock the UI and wait for a response
-                WaitForConnection();
+                try
+                {
+                    // lock the UI while we wait for a response
+                    WaitForConnection();
+
+                    await Connection.ConnectAsync().
+                        ContinueWith(_ => Connection.RequestNewGame(gameName, gameOptions, localPlayerIsBlack));
+
+                    return;
+                }
+                catch (Exception)
+                {
+                    // todo: where do i log this error?
+                }
             }
             else
             {
                 // unexecpted state, treat as cancel
                 System.Diagnostics.Debug.Assert(false);
-                Close();
             }
+
+            Close();
         }
 
         private async void CancelButton_Click(object sender, RoutedEventArgs e)

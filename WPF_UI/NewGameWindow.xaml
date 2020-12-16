@@ -6,7 +6,7 @@
         xmlns:local="clr-namespace:WPF_UI"
         xmlns:System="clr-namespace:System;assembly=System.Runtime" x:Class="WPF_UI.NewGameWindow"
         mc:Ignorable="d"
-        Title="New Game" ResizeMode="NoResize" ShowInTaskbar="False" SizeToContent="WidthAndHeight" SourceInitialized="Window_SourceInitialized" Closing="Window_Closing">
+        Title="New Game" ResizeMode="NoResize" ShowInTaskbar="False" SizeToContent="WidthAndHeight" Closing="Window_Closing">
     <Grid Height="195" Width="415">
         <Button x:Name="CancelButton" Content="Cancel" VerticalAlignment="Top" HorizontalAlignment="Left" Width="100" Height="30" Margin="310,160,0,0" IsCancel="True" Click="CancelButton_Click"/>
         <Button x:Name="NewGameButton" Content="New Game" VerticalAlignment="Top" HorizontalAlignment="Left" Width="100" Height="30" Margin="202,160,0,0" IsDefault="True" Click="NewGameButton_Click"/>

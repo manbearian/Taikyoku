@@ -35,8 +35,8 @@
         <Menu Grid.ColumnSpan="99">
             <MenuItem Header="Game" x:Name="gameMenu">
                 <MenuItem x:Name="newGameMenuItem" Header="New Game..." Click="MenuItem_Click" />
-                <MenuItem x:Name="saveGameMenuItem" Header="Save Game" Click="MenuItem_Click" />
-                <MenuItem x:Name="loadGameMenuItem" Header="Load Game" Click="MenuItem_Click" />
+                <MenuItem x:Name="saveGameMenuItem" Header="Save Game..." Click="MenuItem_Click" />
+                <MenuItem x:Name="loadGameMenuItem" Header="Load Game..." Click="MenuItem_Click" />
                 <MenuItem Header="-" IsEnabled="False"/>
                 <MenuItem x:Name="connectMenuItem" Header="Connect..." Click="MenuItem_Click"/>
                 <MenuItem Header="-" IsEnabled="False"/>

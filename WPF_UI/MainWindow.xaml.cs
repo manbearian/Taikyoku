@@ -74,7 +74,7 @@ namespace WPF_UI
 
             try
             {
-                savedGame = TaikyokuShogi.Deserlialize(Properties.Settings.Default.SavedGame);
+                (savedGame, _, _) = GameSaver.Load(Properties.Settings.Default.SavedGame);
             }
             catch (System.Text.Json.JsonException)
             {
@@ -86,6 +86,8 @@ namespace WPF_UI
 
         private void StartGame(TaikyokuShogi game, (Connection Connection, Guid GameId, Player? LocalPlayer)? networkInfo = null)
         {
+            System.Diagnostics.Contracts.Contract.Requires(game != null);
+
             _networkInfo = networkInfo;
 
             if (networkInfo == null)
@@ -142,7 +144,7 @@ namespace WPF_UI
         private void SaveGame(string path)
         {
             using var stream = File.OpenWrite(path);
-            stream.Write(Game.Serialize());
+            stream.Write(GameSaver.Save(Game, _networkInfo?.GameId, _networkInfo?.LocalPlayer));
         }
 
         private void LoadGame(string path)
@@ -150,7 +152,16 @@ namespace WPF_UI
             using var stream = File.OpenRead(path);
             var buffer = new byte[stream.Length];
             stream.Read(buffer);
-            StartGame(TaikyokuShogi.Deserlialize(buffer));
+
+            try
+            {
+                var (game, _, _) = GameSaver.Load(buffer);
+                StartGame(game);
+            }
+            catch (System.Text.Json.JsonException)
+            {
+                MessageBox.Show("Cannot open save game file. It is either corrupt, invalid, or incorrect version.", "File Open Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
 
         private void OnPlayerChange(object sender, PlayerChangeEventArgs eventArgs) =>
@@ -164,7 +175,7 @@ namespace WPF_UI
             _pieceInfoWindow?.Close();
 
             // save the game, and all other settings, on exit
-            Properties.Settings.Default.SavedGame = Game.Serialize();
+            Properties.Settings.Default.SavedGame = GameSaver.Save(Game, _networkInfo?.GameId, _networkInfo?.LocalPlayer);
             Properties.Settings.Default.Save();
         }
 
