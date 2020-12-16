@@ -22,47 +22,60 @@ namespace ShogiServer.Hubs
 
         Task ReceiveGameUpdate(TaikyokuShogi game, Guid id);
 
+        // indicate the other player disconncted
         Task ReceiveGameDisconnect(Guid id);
+
+        // indicate that the other player reconnected
+        Task ReceiveGameReconnect(Guid id);
     }
 
     public class ShogiHub : Hub<IShogiClient>
     {
-        private struct GameInfo
+        private class GameInfo
         {
-            public readonly TaikyokuShogi Game;
-            public readonly Guid Id;
-            public readonly string Name;
-            public readonly (IShogiClient Client, string Id) WhitePlayer;
-            public readonly (IShogiClient Client, string Id) BlackPlayer;
+            public TaikyokuShogi Game { get; }
 
-            public bool Open() => WhitePlayer == default|| BlackPlayer == default;
+            public Guid Id { get; }
 
-            public GameInfo(TaikyokuShogi game, Guid id, string name, (IShogiClient Client, string Id) blackPlayer, (IShogiClient Client, string Id) whitePlayer) =>
-                (Game, Id, Name, BlackPlayer, WhitePlayer) = (game, id, name, blackPlayer, whitePlayer); 
+            public string Name { get; }
+
+            public (IShogiClient Client, string Id)? WhitePlayer { get; set; }
+
+            public (IShogiClient Client, string Id)? BlackPlayer { get; set; }
+
+            public GameInfo(TaikyokuShogi game, Guid id, string name) => (Game, Id, Name) = (game, id, name); 
         }
 
+        // database of games looking for players
+        private static readonly ConcurrentDictionary<Guid, GameInfo> OpenGames = new ConcurrentDictionary<Guid, GameInfo>();
+
         // database of running games, key is "gameId" which is a GUID
-        private static readonly ConcurrentDictionary<Guid, GameInfo> Games = new ConcurrentDictionary<Guid, GameInfo>();
+        private static readonly ConcurrentDictionary<Guid, GameInfo> RunningGames = new ConcurrentDictionary<Guid, GameInfo>();
+
         private static readonly object gameUpdateLock = new object();
 
         private static List<NetworkGameInfo> GamesList
         {
-            get => Games.Values.Where(info => info.Open()).Select(info => new NetworkGameInfo() { Name = info.Name, Id = info.Id }).ToList();
+            get => OpenGames.Values.Select(info => new NetworkGameInfo() { Name = info.Name, Id = info.Id }).ToList();
         }
 
-        private GameInfo ClientGame
-        {
-            get => Games.Values.Where(g => g.WhitePlayer.Id == Context.ConnectionId || g.BlackPlayer.Id == Context.ConnectionId).SingleOrDefault();
-        }
+        private GameInfo ClientGame { get => (GameInfo)Context.Items["ClientGame"]; set => Context.Items["ClientGame"] = value; }
 
         public Task CreateGame(string gameName, TaikyokuShogiOptions gameOptions, bool asBlackPlayer)
         {
             var game = new TaikyokuShogi(gameOptions);
             var gameId = Guid.NewGuid();
-            var blackPlayer = asBlackPlayer ? (Clients.Caller, Context.ConnectionId) : default;
-            var whitePlayer = asBlackPlayer ? default : (Clients.Caller, Context.ConnectionId);
-            GameInfo gameInfo = new GameInfo(game, gameId, gameName, blackPlayer, whitePlayer);
-            Games[gameId] = gameInfo;
+            var blackPlayer = asBlackPlayer ? (Clients.Caller, Context.ConnectionId) : null as (IShogiClient Client, string Id)?;
+            var whitePlayer = asBlackPlayer ? null as (IShogiClient Client, string Id)? : (Clients.Caller, Context.ConnectionId);
+            var gameInfo = new GameInfo(game, gameId, gameName);
+
+            if (asBlackPlayer)
+                gameInfo.BlackPlayer = (Clients.Caller, Context.ConnectionId);
+            else
+                gameInfo.WhitePlayer = (Clients.Caller, Context.ConnectionId);
+
+            OpenGames[gameId] = gameInfo;
+            ClientGame = gameInfo;
 
             return Task.Run(() =>
             {
@@ -82,34 +95,68 @@ namespace ShogiServer.Hubs
 
             lock (gameUpdateLock)
             {
-                if (!Games.TryGetValue(gameId, out gameInfo))
+                if (!OpenGames.TryRemove(gameId, out gameInfo))
                 {
                     throw new HubException($"Failed to join game, game id not found: {gameId}");
                 }
-                
-                if (gameInfo.WhitePlayer != default && gameInfo.BlackPlayer != default)
+
+                if (gameInfo.WhitePlayer != null && gameInfo.BlackPlayer != null)
                 {
                     throw new HubException($"Failed to join game, game is full: {gameId}");
                 }
 
-                if (gameInfo.WhitePlayer == default && gameInfo.BlackPlayer == default)
+                if (gameInfo.WhitePlayer == null && gameInfo.BlackPlayer == null)
                 {
                     throw new HubException($"Failed to join game, game is abandoned: {gameId}");
                 }
 
-                var blackPlayer = gameInfo.BlackPlayer == default ? (Clients.Caller, Context.ConnectionId) : gameInfo.BlackPlayer;
-                var whitePlayer = gameInfo.WhitePlayer == default ? (Clients.Caller, Context.ConnectionId) : gameInfo.WhitePlayer;
+                gameInfo.BlackPlayer ??= (Clients.Caller, Context.ConnectionId);
+                gameInfo.WhitePlayer ??= (Clients.Caller, Context.ConnectionId);
 
-                gameInfo = new GameInfo(gameInfo.Game, gameInfo.Id, gameInfo.Name, blackPlayer, whitePlayer);
-                Games[gameId] = gameInfo;
+                RunningGames[gameId] = gameInfo;
+                ClientGame = gameInfo;
             }
 
             return Task.Run(() =>
             {
                 Clients.All.ReceiveGameList(GamesList);
-                gameInfo.BlackPlayer.Client.ReceiveGameStart(gameInfo.Game, gameInfo.Id, Player.Black);
-                gameInfo.WhitePlayer.Client.ReceiveGameStart(gameInfo.Game, gameInfo.Id, Player.White);
+                gameInfo.BlackPlayer?.Client.ReceiveGameStart(gameInfo.Game, gameId, Player.Black);
+                gameInfo.WhitePlayer?.Client.ReceiveGameStart(gameInfo.Game, gameId, Player.White);
             });
+        }
+
+        public Task RejoinGame(Guid gameId, Player requestedPlayer)
+        {
+            IShogiClient otherClient = null;
+
+            lock (gameUpdateLock)
+            {
+                if (!RunningGames.TryGetValue(gameId, out var gameInfo))
+                {
+                    throw new HubException($"Failed to join game, game id not found: {gameId}");
+                }
+
+                if (requestedPlayer == Player.Black)
+                {
+                    if (gameInfo.BlackPlayer != null)
+                        throw new HubException($"Failed to join game, game is full: {gameId}");
+
+                    gameInfo.BlackPlayer = (Clients.Caller, Context.ConnectionId);
+                    otherClient = gameInfo.WhitePlayer?.Client;
+                }
+                else if (requestedPlayer == Player.White)
+                {
+                    if (gameInfo.WhitePlayer != null)
+                        throw new HubException($"Failed to join game, game is full: {gameId}");
+
+                    gameInfo.WhitePlayer = (Clients.Caller, Context.ConnectionId);
+                    otherClient = gameInfo.BlackPlayer?.Client;
+                }
+
+                ClientGame = gameInfo;
+            }
+
+            return otherClient?.ReceiveGameReconnect(gameId);
         }
 
         public Task CancelGame()
@@ -118,10 +165,10 @@ namespace ShogiServer.Hubs
 
             lock (gameUpdateLock)
             {
-                if (gameInfo.BlackPlayer != default && gameInfo.WhitePlayer != default)
-                    throw new HubException("game already in progres, cannot cancel");
+                if (RunningGames.ContainsKey(gameInfo.Id))
+                    throw new HubException("game already in progress, cannot cancel");
 
-                Games.TryRemove(gameInfo.Id, out gameInfo);
+                OpenGames.TryRemove(gameInfo.Id, out gameInfo);
             }
 
             return Clients.All.ReceiveGameList(GamesList);
@@ -131,9 +178,9 @@ namespace ShogiServer.Hubs
         {
             var gameInfo = ClientGame;
             Player? requestingPlayer = null;
-            if (gameInfo.BlackPlayer.Id == Context.ConnectionId)
+            if (gameInfo.BlackPlayer?.Id == Context.ConnectionId)
                 requestingPlayer = Player.Black;
-            else if (gameInfo.WhitePlayer.Id == Context.ConnectionId)
+            else if (gameInfo.WhitePlayer?.Id == Context.ConnectionId)
                 requestingPlayer = Player.White;
 
             if (requestingPlayer == null || gameInfo.Game.CurrentPlayer != requestingPlayer)
@@ -150,8 +197,8 @@ namespace ShogiServer.Hubs
 
             return Task.Run(() =>
             {
-                gameInfo.BlackPlayer.Client.ReceiveGameUpdate(gameInfo.Game, gameInfo.Id);
-                gameInfo.WhitePlayer.Client.ReceiveGameUpdate(gameInfo.Game, gameInfo.Id);
+                gameInfo.BlackPlayer?.Client.ReceiveGameUpdate(gameInfo.Game, gameInfo.Id);
+                gameInfo.WhitePlayer?.Client.ReceiveGameUpdate(gameInfo.Game, gameInfo.Id);
             });
         }
 
@@ -160,19 +207,27 @@ namespace ShogiServer.Hubs
             GameInfo gameInfo = ClientGame;
             var cleanupTask = base.OnDisconnectedAsync(exception);
 
-            if (gameInfo.Open())
+            if (OpenGames.ContainsKey(gameInfo.Id))
             {
                 cleanupTask = CancelGame().ContinueWith(_ => cleanupTask);
             }
             else
             {
                 IShogiClient otherClient = null;
-                if (gameInfo.BlackPlayer.Id == Context.ConnectionId)
-                    otherClient = gameInfo.WhitePlayer.Client;
-                else if (gameInfo.WhitePlayer.Id == Context.ConnectionId)
-                    otherClient = gameInfo.BlackPlayer.Client;
+                if (gameInfo.BlackPlayer?.Id == Context.ConnectionId)
+                {
+                    otherClient = gameInfo.WhitePlayer?.Client;
+                    gameInfo.BlackPlayer = null;
+                }
+                else if (gameInfo.WhitePlayer?.Id == Context.ConnectionId)
+                {
+                    otherClient = gameInfo.BlackPlayer?.Client;
+                    gameInfo.WhitePlayer = null;
+                }
                 else
+                {
                     throw new Exception("Unexpected client disconnection");
+                }
 
                 cleanupTask = otherClient.ReceiveGameDisconnect(gameInfo.Id).ContinueWith(_ => cleanupTask);
             }
