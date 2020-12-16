@@ -62,6 +62,9 @@ namespace ShogiClient
         public delegate void ReceiveGameDisconnectHandler(object sender, ReceiveGameConnectionEventArgs e);
         public event ReceiveGameDisconnectHandler OnReceiveGameDisconnect;
 
+        public delegate void ReceiveGameReconnectHandler(object sender, ReceiveGameConnectionEventArgs e);
+        public event ReceiveGameReconnectHandler OnReceiveGameReconnect;
+
         public Connection()
         {
             _connection = new HubConnectionBuilder().
@@ -89,6 +92,9 @@ namespace ShogiClient
 
             _connection.On<Guid>("ReceiveGameDisconnect", (gameId) =>
                 OnReceiveGameDisconnect?.Invoke(this, new ReceiveGameConnectionEventArgs(gameId)));
+
+            _connection.On<Guid>("ReceiveGameReconnect", (gameId) =>
+                OnReceiveGameDisconnect?.Invoke(this, new ReceiveGameConnectionEventArgs(gameId)));
         }
 
         public async Task ConnectAsync() =>
@@ -102,6 +108,9 @@ namespace ShogiClient
 
         public async Task RequestJoinGame(Guid id) =>
             await _connection.InvokeAsync("JoinGame", id);
+
+        public async Task RequestRejoinGame(Guid id, Player player) =>
+            await _connection.InvokeAsync("RejoinGame", id, player);
 
         public async Task RequestCancelGame() =>
             await _connection.InvokeAsync("CancelGame");
