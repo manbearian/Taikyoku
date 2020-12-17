@@ -94,7 +94,7 @@ namespace ShogiClient
                 OnReceiveGameDisconnect?.Invoke(this, new ReceiveGameConnectionEventArgs(gameId)));
 
             _connection.On<Guid>("ReceiveGameReconnect", (gameId) =>
-                OnReceiveGameDisconnect?.Invoke(this, new ReceiveGameConnectionEventArgs(gameId)));
+                OnReceiveGameReconnect?.Invoke(this, new ReceiveGameConnectionEventArgs(gameId)));
         }
 
         public async Task ConnectAsync() =>
