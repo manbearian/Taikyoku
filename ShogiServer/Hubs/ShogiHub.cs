@@ -237,7 +237,10 @@ namespace ShogiServer.Hubs
                         throw new Exception("Unexpected client disconnection");
                     }
 
-                    cleanupTask = otherClient.ReceiveGameDisconnect(gameInfo.Id).ContinueWith(_ => cleanupTask);
+                    if (otherClient != null)
+                    {
+                        cleanupTask = otherClient.ReceiveGameDisconnect(gameInfo.Id).ContinueWith(_ => cleanupTask);
+                    }
                 }
             }
 
