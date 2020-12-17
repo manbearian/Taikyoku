@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Diagnostics.Contracts;
 using System.IO;
 using System.Linq;
 using System.Linq.Expressions;
@@ -71,22 +73,43 @@ namespace WPF_UI
             }
 
             TaikyokuShogi savedGame = null;
+            Guid? networkGameId = null;
+            Player? localPlayer = null;
 
             try
             {
-                (savedGame, _, _) = GameSaver.Load(Properties.Settings.Default.SavedGame);
+                (savedGame, networkGameId, localPlayer) = GameSaver.Load(Properties.Settings.Default.SavedGame);
             }
             catch (System.Text.Json.JsonException)
             {
                 // silently ignore failure to parse the game
             }
 
-            StartGame(savedGame ?? new TaikyokuShogi());
+            if (networkGameId == null)
+            {
+                StartGame(savedGame ?? new TaikyokuShogi());
+            }
+            else
+            {
+                // todo: this prevents the main window from drawing while connection
+                // is in progress. I think it might be better to draw the window first?
+                var reconnectWindow = new ReconnectWindow(networkGameId.Value, localPlayer.Value);
+                if (reconnectWindow.ShowDialog() == true)
+                {
+                    StartGame(reconnectWindow.Game, (reconnectWindow.Connection, reconnectWindow.GameId, reconnectWindow.LocalPlayer));
+                }
+                else
+                {
+                    // failed to reconnect network game, create a new game
+                    MessageBox.Show("Failed to reconnect network game.", "Network Game", MessageBoxButton.OK, MessageBoxImage.Error);
+                    StartGame(new TaikyokuShogi());
+                }
+            }
         }
 
         private void StartGame(TaikyokuShogi game, (Connection Connection, Guid GameId, Player? LocalPlayer)? networkInfo = null)
         {
-            System.Diagnostics.Contracts.Contract.Requires(game != null);
+            Contract.Requires(game != null);
 
             _networkInfo = networkInfo;
 
@@ -347,6 +370,6 @@ namespace WPF_UI
             }
 
             _pieceInfoWindow.Show();
-        } 
+        }
     }
 }
