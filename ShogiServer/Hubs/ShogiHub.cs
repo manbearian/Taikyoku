@@ -127,11 +127,12 @@ namespace ShogiServer.Hubs
 
         public Task RejoinGame(Guid gameId, Player requestedPlayer)
         {
+            GameInfo gameInfo;
             IShogiClient otherClient = null;
 
             lock (gameUpdateLock)
             {
-                if (!RunningGames.TryGetValue(gameId, out var gameInfo))
+                if (!RunningGames.TryGetValue(gameId, out gameInfo))
                 {
                     throw new HubException($"Failed to join game, game id not found: {gameId}");
                 }
@@ -156,7 +157,12 @@ namespace ShogiServer.Hubs
                 ClientGame = gameInfo;
             }
 
-            return otherClient?.ReceiveGameReconnect(gameId);
+
+            return Task.Run(() =>
+            {
+                otherClient?.ReceiveGameReconnect(gameId);
+                Clients.Caller.ReceiveGameStart(gameInfo.Game, gameId, requestedPlayer);
+            });
         }
 
         public Task CancelGame()
@@ -204,32 +210,35 @@ namespace ShogiServer.Hubs
 
         public override Task OnDisconnectedAsync(Exception exception)
         {
-            GameInfo gameInfo = ClientGame;
             var cleanupTask = base.OnDisconnectedAsync(exception);
 
-            if (OpenGames.ContainsKey(gameInfo.Id))
+            GameInfo gameInfo = ClientGame;
+            if (gameInfo != null)
             {
-                cleanupTask = CancelGame().ContinueWith(_ => cleanupTask);
-            }
-            else
-            {
-                IShogiClient otherClient = null;
-                if (gameInfo.BlackPlayer?.Id == Context.ConnectionId)
+                if (OpenGames.ContainsKey(gameInfo.Id))
                 {
-                    otherClient = gameInfo.WhitePlayer?.Client;
-                    gameInfo.BlackPlayer = null;
-                }
-                else if (gameInfo.WhitePlayer?.Id == Context.ConnectionId)
-                {
-                    otherClient = gameInfo.BlackPlayer?.Client;
-                    gameInfo.WhitePlayer = null;
+                    cleanupTask = CancelGame().ContinueWith(_ => cleanupTask);
                 }
                 else
                 {
-                    throw new Exception("Unexpected client disconnection");
-                }
+                    IShogiClient otherClient = null;
+                    if (gameInfo.BlackPlayer?.Id == Context.ConnectionId)
+                    {
+                        otherClient = gameInfo.WhitePlayer?.Client;
+                        gameInfo.BlackPlayer = null;
+                    }
+                    else if (gameInfo.WhitePlayer?.Id == Context.ConnectionId)
+                    {
+                        otherClient = gameInfo.BlackPlayer?.Client;
+                        gameInfo.WhitePlayer = null;
+                    }
+                    else
+                    {
+                        throw new Exception("Unexpected client disconnection");
+                    }
 
-                cleanupTask = otherClient.ReceiveGameDisconnect(gameInfo.Id).ContinueWith(_ => cleanupTask);
+                    cleanupTask = otherClient.ReceiveGameDisconnect(gameInfo.Id).ContinueWith(_ => cleanupTask);
+                }
             }
 
             return cleanupTask;
