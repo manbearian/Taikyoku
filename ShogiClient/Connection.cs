@@ -73,7 +73,7 @@ namespace ShogiClient
 
             _connection.Closed += async (error) =>
             {
-                // manual reconnect on disco    nnect
+                // manual reconnect on disconnect
                 await Task.Delay(new Random().Next(0, 5) * 1000);
                 await _connection.StartAsync();
             };
