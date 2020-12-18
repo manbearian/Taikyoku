@@ -21,7 +21,7 @@ namespace WPF_UI
     /// </summary>
     public partial class NewGameWindow : Window
     {
-        public TaikyokuShogi Game { get; private set; }
+        public TaikyokuShogi Game { get; set; }
 
         public bool NetworkGame { get; private set; }
 
@@ -40,8 +40,18 @@ namespace WPF_UI
             Connection.OnReceiveGameStart += RecieveGameStart;
         }
 
+        private void SetUIForConnectExistingGame()
+        {
+            GameOptionGroupBox.IsEnabled = false;
+            LocalRadioButton.IsEnabled = false;
+            LocalRadioButton.IsChecked = false;
+            NetworkRadioButton.IsChecked = true;
+            NewGameButton.Content = "Connect";
+            Title = "Add Opponent";
+        }
+
         // Disable all UI elements except the cancel button
-        private void WaitForConnection()
+        private void SetUIForWaitForConnection()
         {
             GameTypeGroupBox.IsEnabled = false;
             GameOptionGroupBox.IsEnabled = false;
@@ -77,10 +87,10 @@ namespace WPF_UI
                 try
                 {
                     // lock the UI while we wait for a response
-                    WaitForConnection();
+                    SetUIForWaitForConnection();
 
                     await Connection.ConnectAsync().
-                        ContinueWith(_ => Connection.RequestNewGame(gameName, gameOptions, localPlayerIsBlack));
+                        ContinueWith(_ => Connection.RequestNewGame(gameName, gameOptions, localPlayerIsBlack, Game));
 
                     return;
                 }
@@ -104,9 +114,19 @@ namespace WPF_UI
             Close();
         }
 
+        private void Window_SourceInitialized(object sender, EventArgs e)
+        {
+            if (Game != null)
+            {
+                // if the window creator has set "Game" then we're connecting an existing game rather than creating a new one
+                SetUIForConnectExistingGame();
+            }
+        }
+
         private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
         {
             Connection.OnReceiveGameStart -= RecieveGameStart;
         }
+
     }
 }

@@ -6,7 +6,7 @@
         xmlns:local="clr-namespace:WPF_UI"
         xmlns:System="clr-namespace:System;assembly=System.Runtime" x:Class="WPF_UI.NewGameWindow"
         mc:Ignorable="d"
-        Title="New Game" ResizeMode="NoResize" ShowInTaskbar="False" SizeToContent="WidthAndHeight" Closing="Window_Closing">
+        Title="New Game" ResizeMode="NoResize" ShowInTaskbar="False" SizeToContent="WidthAndHeight" Closing="Window_Closing" SourceInitialized="Window_SourceInitialized">
     <Grid Height="195" Width="415">
         <Button x:Name="CancelButton" Content="Cancel" VerticalAlignment="Top" HorizontalAlignment="Left" Width="100" Height="30" Margin="310,160,0,0" IsCancel="True" Click="CancelButton_Click"/>
         <Button x:Name="NewGameButton" Content="New Game" VerticalAlignment="Top" HorizontalAlignment="Left" Width="100" Height="30" Margin="202,160,0,0" IsDefault="True" Click="NewGameButton_Click"/>
@@ -15,9 +15,9 @@
                 <RadioButton x:Name="LocalRadioButton" GroupName="GameTypeGroup" Content="Local" VerticalAlignment="Top" Margin="5,5,0,0" HorizontalAlignment="Left" Width="85" IsChecked="True"/>
                 <RadioButton x:Name="NetworkRadioButton" GroupName="GameTypeGroup" Content="Network" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="5,25,0,0"/>
                 <TextBlock Text="Name:" VerticalAlignment="Top" HorizontalAlignment="Left" Height="20" Margin="25,45,0,0"/>
-                <TextBox x:Name="NameBox" Text="myGame" VerticalAlignment="Top" HorizontalAlignment="Left" Height="20" Width="110" Margin="70,45,0,0" IsEnabled="{Binding IsChecked, ElementName=NetworkRadioButton}" />
-                <TextBlock Text="Color:" VerticalAlignment="Top" HorizontalAlignment="Left" Height="20" Margin="25,74,0,0"/>
-                <ComboBox x:Name="ColorBox" VerticalAlignment="Top" HorizontalAlignment="Left" Height="20" Width="110" Margin="70,74,0,0" IsEnabled="{Binding IsChecked, ElementName=NetworkRadioButton}" SelectedIndex="0">
+                <TextBox x:Name="NameBox" Text="myGame" VerticalAlignment="Top" HorizontalAlignment="Left" Height="20" Width="94" Margin="85,45,0,0" IsEnabled="{Binding IsChecked, ElementName=NetworkRadioButton}" />
+                <TextBlock Text="My Color:" VerticalAlignment="Top" HorizontalAlignment="Left" Height="20" Margin="25,73,0,0"/>
+                <ComboBox x:Name="ColorBox" VerticalAlignment="Top" HorizontalAlignment="Left" Height="20" Width="94" Margin="85,73,0,0" IsEnabled="{Binding IsChecked, ElementName=NetworkRadioButton}" SelectedIndex="0">
                     <System:String>Black</System:String>
                     <System:String>White</System:String>
                 </ComboBox>

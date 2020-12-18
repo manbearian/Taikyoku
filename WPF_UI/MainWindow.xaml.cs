@@ -252,10 +252,17 @@ namespace WPF_UI
             else if (e.Source == connectMenuItem)
             {
                 var connWindow = new ConnectionWindow();
-                connWindow.ShowDialog();
-                if (connWindow.DialogResult == true)
+                if (connWindow.ShowDialog() == true)
                 {
                     StartGame(connWindow.Game, (connWindow.Connection, connWindow.GameId, connWindow.LocalPlayer));
+                }
+            }
+            else if (e.Source == addOpponentMenuItem)
+            {
+                var newGameWindow = new NewGameWindow() { Game = Game };
+                if (newGameWindow.ShowDialog() == true)
+                {
+                    StartGame(newGameWindow.Game, (newGameWindow.Connection, newGameWindow.GameId, newGameWindow.LocalPlayer));
                 }
             }
             else if (e.Source == closeMenuItem)

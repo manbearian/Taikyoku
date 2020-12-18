@@ -112,12 +112,12 @@ namespace ShogiEngine
         // Public API: move the piece at startLoc to endLoc
         //   CurrentPlayer is advanced
         //   The optional parameter `midLoc` is used for area-moves (e.g. lion move)
-        //   Caller should check `CurrentPlayer` or `Ending` property to determine if the game is over after the move
+        //   Caller should check `CurrentPlayer` and/or `Ending` property to determine if the game is over after the move
         public virtual void MakeMove((int X, int Y) startLoc, (int X, int Y) endLoc, (int X, int Y)? midLoc = null, bool promote = false)
         {
             var piece = GetPiece(startLoc);
 
-            // nonsencial moves are invalid
+            // nonsensicial moves are invalid
             if (CurrentPlayer == null || piece == null)
                 throw new InvalidOperationException("invalid move requested");
 

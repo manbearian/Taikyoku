@@ -61,9 +61,9 @@ namespace ShogiServer.Hubs
 
         private GameInfo ClientGame { get => (GameInfo)Context.Items["ClientGame"]; set => Context.Items["ClientGame"] = value; }
 
-        public Task CreateGame(string gameName, TaikyokuShogiOptions gameOptions, bool asBlackPlayer)
+        public Task CreateGame(string gameName, TaikyokuShogiOptions gameOptions, bool asBlackPlayer, TaikyokuShogi existingGame)
         {
-            var game = new TaikyokuShogi(gameOptions);
+            var game = existingGame ?? new TaikyokuShogi(gameOptions);
             var gameId = Guid.NewGuid();
             var blackPlayer = asBlackPlayer ? (Clients.Caller, Context.ConnectionId) : null as (IShogiClient Client, string Id)?;
             var whitePlayer = asBlackPlayer ? null as (IShogiClient Client, string Id)? : (Clients.Caller, Context.ConnectionId);

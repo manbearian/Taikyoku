@@ -103,8 +103,8 @@ namespace ShogiClient
         public async Task RequestGamesList() =>
             await _connection.InvokeAsync("GetGames");
 
-        public async Task RequestNewGame(string gameName, TaikyokuShogiOptions gameOptions, bool asBlackPlayer) =>
-            await _connection.InvokeAsync("CreateGame", gameName, gameOptions, asBlackPlayer);
+        public async Task RequestNewGame(string gameName, TaikyokuShogiOptions gameOptions, bool asBlackPlayer, TaikyokuShogi existingGame = null) =>
+            await _connection.InvokeAsync("CreateGame", gameName, gameOptions, asBlackPlayer, existingGame);
 
         public async Task RequestJoinGame(Guid id) =>
             await _connection.InvokeAsync("JoinGame", id);
