@@ -101,7 +101,7 @@ namespace WPF_UI
             }
             else
             {
-                // unexecpted state, treat as cancel
+                // unexpected state, treat as cancel
                 System.Diagnostics.Debug.Assert(false);
             }
 
