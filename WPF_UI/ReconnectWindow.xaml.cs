@@ -21,7 +21,7 @@ namespace WPF_UI
     /// </summary>
     public partial class ReconnectWindow : Window
     {
-        public TaikyokuShogi Game { get; private set; }
+        public TaikyokuShogi? Game { get; private set; }
 
         public Connection Connection { get; }
 

@@ -31,11 +31,11 @@ namespace WPF_UI
         readonly List<NumberPanel> borders = new List<NumberPanel>();
         readonly Dictionary<MenuItem, Piece> pieceMenuItems = new Dictionary<MenuItem, Piece>();
 
-        TaikyokuShogi _game = null;
-        PieceInfoWindow _pieceInfoWindow = null;
+        TaikyokuShogi? _game = null;
+        PieceInfoWindow? _pieceInfoWindow = null;
         (Connection Connection, Guid GameId, Player? LocalPlayer)? _networkInfo = null;
 
-        private TaikyokuShogi Game { get => _game; }
+        private TaikyokuShogi? Game { get => _game; }
 
         public MainWindow()
         {
@@ -72,7 +72,7 @@ namespace WPF_UI
                 addWhitePieceMenuItem.Items.Add(whiteMenuItem);
             }
 
-            TaikyokuShogi savedGame = null;
+            TaikyokuShogi? savedGame = null;
             Guid? networkGameId = null;
             Player? localPlayer = null;
 
@@ -91,11 +91,15 @@ namespace WPF_UI
             }
             else
             {
+                Contract.Assume(localPlayer != null, "networkGameId != null => localPlayer.Game != null");
+
                 // todo: this prevents the main window from drawing while connection
                 // is in progress. I think it might be better to draw the window first?
                 var reconnectWindow = new ReconnectWindow(networkGameId.Value, localPlayer.Value);
                 if (reconnectWindow.ShowDialog() == true)
                 {
+                    Contract.Assume(reconnectWindow.Game != null, "DialogReult true => Game != null");
+
                     StartGame(reconnectWindow.Game, (reconnectWindow.Connection, reconnectWindow.GameId, reconnectWindow.LocalPlayer));
                 }
                 else
@@ -109,10 +113,6 @@ namespace WPF_UI
 
         private void StartGame(TaikyokuShogi game, (Connection Connection, Guid GameId, Player? LocalPlayer)? networkInfo = null)
         {
-            Contract.Requires(game != null);
-
-            _networkInfo = networkInfo;
-
             if (networkInfo == null)
             {
                 StatusBarTextBlock1.Text = "Local Game";
@@ -124,9 +124,9 @@ namespace WPF_UI
             {
                 // todo: there's a race condition here as the other player could make a move and even disconnect before we set this event handler
                 //       perhaps we should poll the state after setting this up.
-                _networkInfo.Value.Connection.OnReceiveGameUpdate += OnReceiveUpdate;
-                _networkInfo.Value.Connection.OnReceiveGameDisconnect += OnReceiveGameDisconnect;
-                _networkInfo.Value.Connection.OnReceiveGameReconnect += OnReceiveGameReconnect;
+                networkInfo.Value.Connection.OnReceiveGameUpdate += OnReceiveUpdate;
+                networkInfo.Value.Connection.OnReceiveGameDisconnect += OnReceiveGameDisconnect;
+                networkInfo.Value.Connection.OnReceiveGameReconnect += OnReceiveGameReconnect;
 
                 StatusBarTextBlock1.Text = "Network Game";
                 StatusBarTextBlock2.Text = "";
@@ -134,6 +134,7 @@ namespace WPF_UI
                 StatusBarTextBlock2.Visibility = Visibility.Visible;
             }
 
+            _networkInfo = networkInfo;
             UpdateGame(game);
         }
 
@@ -167,6 +168,9 @@ namespace WPF_UI
 
         private void SaveGame(string path)
         {
+            if (Game == null)
+                return;
+
             using var stream = File.OpenWrite(path);
             stream.Write(GameSaver.Save(Game, _networkInfo?.GameId, _networkInfo?.LocalPlayer));
         }
@@ -194,13 +198,16 @@ namespace WPF_UI
         private void OnGameEnd(object sender, GameEndEventArgs eventArgs) =>
             new GameEndWindow().ShowDialog(eventArgs.Ending, eventArgs.Winner);
 
-        private void OnClose(object Sender, EventArgs e)
+        private void OnClose(object? Sender, EventArgs e)
         {
             _pieceInfoWindow?.Close();
 
             // save the game, and all other settings, on exit
-            Properties.Settings.Default.SavedGame = GameSaver.Save(Game, _networkInfo?.GameId, _networkInfo?.LocalPlayer);
-            Properties.Settings.Default.Save();
+            if (Game != null)
+            {
+                Properties.Settings.Default.SavedGame = GameSaver.Save(Game, _networkInfo?.GameId, _networkInfo?.LocalPlayer);
+                Properties.Settings.Default.Save();
+            }
         }
 
         private void MenuItem_Click(object sender, RoutedEventArgs e)
@@ -208,9 +215,10 @@ namespace WPF_UI
             if (e.Source == newGameMenuItem)
             {
                 var newGameWindow = new NewGameWindow();
-                var result = newGameWindow.ShowDialog();
-                if (result == true)
+                if (newGameWindow.ShowDialog() == true)
                 {
+                    Contract.Assume(newGameWindow.Game != null, "DialogResult == true => Game !+ null");
+
                     if (newGameWindow.NetworkGame)
                         StartGame(newGameWindow.Game, (newGameWindow.Connection, newGameWindow.GameId, newGameWindow.LocalPlayer));
                     else
@@ -254,6 +262,7 @@ namespace WPF_UI
                 var connWindow = new ConnectionWindow();
                 if (connWindow.ShowDialog() == true)
                 {
+                    Contract.Assume(connWindow.Game != null, "DialogResult == true => Game !+ null");
                     StartGame(connWindow.Game, (connWindow.Connection, connWindow.GameId, connWindow.LocalPlayer));
                 }
             }
@@ -262,6 +271,7 @@ namespace WPF_UI
                 var newGameWindow = new NewGameWindow() { Game = Game };
                 if (newGameWindow.ShowDialog() == true)
                 {
+                    Contract.Assume(newGameWindow.Game != null, "DialogResult == true => Game !+ null");
                     StartGame(newGameWindow.Game, (newGameWindow.Connection, newGameWindow.GameId, newGameWindow.LocalPlayer));
                 }
             }
@@ -277,7 +287,7 @@ namespace WPF_UI
             {
                 // nothing to do... "Debug" state is tracked through the "checked" property of this menu item
             }
-            else if (pieceMenuItems.TryGetValue(e.Source as MenuItem, out var piece))
+            else if (pieceMenuItems.TryGetValue((MenuItem)e.Source, out var piece))
             {
                 gameBoard.AddingPiece = piece;
             }
@@ -291,7 +301,7 @@ namespace WPF_UI
             }
             else if (e.Source == switchTurnMenuItem)
             {
-                Game.Debug_EndTurn();
+                Game?.Debug_EndTurn();
             }
             else
             {
@@ -328,6 +338,9 @@ namespace WPF_UI
 
         void ShowPieceInfo(object sender, MouseEventArgs e)
         {
+            if (Game == null)
+                return;
+
             if (e.Source is MenuItem)
                 return;
 

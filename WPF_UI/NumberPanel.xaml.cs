@@ -23,9 +23,9 @@ namespace WPF_UI
     {
         public Orientation Orientation { get; set; }
 
-        public Brush TextColor { get; set; }
+        public Brush TextColor { get; set; } = Brushes.Black;
 
-        public Brush FillColor { get; set; }
+        public Brush FillColor { get; set; } = Brushes.White;
 
         public NumberPanel()
         {
@@ -51,8 +51,10 @@ namespace WPF_UI
                         new Typeface("MS Gothic"),
                         ActualHeight,
                         TextColor,
-                        1.25);
-                    text.TextAlignment = TextAlignment.Center;
+                        1.25)
+                    {
+                        TextAlignment = TextAlignment.Center
+                    };
 
                     dc.DrawText(text, new Point((i * spacing) + (spacing / 2), 0));
                 }
@@ -72,8 +74,10 @@ namespace WPF_UI
                         new Typeface("MS Gothic"),
                         ActualWidth * .8,
                         TextColor,
-                        1.25);
-                    text.TextAlignment = TextAlignment.Center;
+                        1.25)
+                    {
+                        TextAlignment = TextAlignment.Center
+                    };
 
                     dc.DrawText(text, new Point(spacing / 3, (i * spacing) + (spacing / 4)));
                 }

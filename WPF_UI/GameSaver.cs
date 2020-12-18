@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics.Contracts;
 using System.Text.Json;
 
 using ShogiEngine;
@@ -7,7 +8,7 @@ namespace WPF_UI
 {
     class GameSaver
     {
-        public TaikyokuShogi Game { get; set; }
+        public TaikyokuShogi? Game { get; set; }
 
         public Guid? GameId { get; set; }
 

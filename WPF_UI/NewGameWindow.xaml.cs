@@ -21,7 +21,7 @@ namespace WPF_UI
     /// </summary>
     public partial class NewGameWindow : Window
     {
-        public TaikyokuShogi Game { get; set; }
+        public TaikyokuShogi? Game { get; set; }
 
         public bool NetworkGame { get; private set; }
 

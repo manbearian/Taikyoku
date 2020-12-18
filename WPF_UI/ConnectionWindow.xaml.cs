@@ -23,7 +23,7 @@ namespace WPF_UI
     {
         public Connection Connection { get; }
 
-        public TaikyokuShogi Game{ get; private set; }
+        public TaikyokuShogi? Game{ get; private set; }
 
         public Guid GameId { get; private set; }
 
@@ -77,10 +77,12 @@ namespace WPF_UI
 
         private async void JoinGameButton_Click(object sender, RoutedEventArgs e)
         {
-            if (GamesList.SelectedIndex < 0)
+            var selectedItem = GamesList.SelectedItem;
+
+            if (selectedItem == null)
                 return;
 
-            await Connection.RequestJoinGame((GamesList.SelectedItem as NetworkGameInfo).Id);
+            await Connection.RequestJoinGame(((NetworkGameInfo)selectedItem).Id);
         }
 
         private async void Window_SourceInitialized(object sender, EventArgs e)

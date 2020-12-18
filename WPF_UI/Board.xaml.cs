@@ -19,7 +19,7 @@ namespace WPF_UI
     /// </summary>
     public partial class Board : UserControl
     {
-        private TaikyokuShogi Game;
+        private TaikyokuShogi? Game;
 
         public int BoardWidth { get => TaikyokuShogi.BoardWidth; }
 
@@ -38,10 +38,10 @@ namespace WPF_UI
         private (Connection Connection, Guid GameId, Player? LocalPlayer)? _networkInfo = null;
 
         // debug functionality
-        private Piece _addingPiece = null;
+        private Piece? _addingPiece = null;
         private bool _removingPiece = false;
 
-        public Piece AddingPiece
+        public Piece? AddingPiece
         {
             get => _addingPiece;
             set
@@ -95,6 +95,9 @@ namespace WPF_UI
 
         public void ClearBoard()
         {
+            if (Game == null)
+                return;
+
             for (int i = 0; i < TaikyokuShogi.BoardHeight; ++i)
             {
                 for (int j = 0; j < TaikyokuShogi.BoardHeight; ++j)
@@ -135,6 +138,9 @@ namespace WPF_UI
 
         private void LeftClickHandler(object sender, MouseButtonEventArgs e)
         {
+            if (Game == null)
+                return;
+
             var loc = GetBoardLoc(e.GetPosition(this));
 
             if (loc == null)
@@ -193,7 +199,7 @@ namespace WPF_UI
                             {
                                 // must ask the player...
                                 var x = new PromotionWindow();
-                                promote = x.ShowDialog(Game, selectedPiece.Id, selectedPiece.Id.PromotesTo().Value);
+                                promote = x.ShowDialog(Game, selectedPiece.Id, selectedPiece.Id.PromotesTo() ?? throw new Exception());
                             }
 
                             MakeMove(Selected.Value, loc.Value, Selected2, promote);
@@ -405,10 +411,10 @@ namespace WPF_UI
         }
 
         public delegate void PlayerChangeHandler(object sender, PlayerChangeEventArgs e);
-        public event PlayerChangeHandler OnPlayerChange;
+        public event PlayerChangeHandler? OnPlayerChange;
 
         public delegate void GameEndHandler(object sender, GameEndEventArgs e);
-        public event GameEndHandler OnGameEnd;
+        public event GameEndHandler? OnGameEnd;
 
         // Xaml Properteries
 
