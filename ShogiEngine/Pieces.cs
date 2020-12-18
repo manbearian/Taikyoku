@@ -311,7 +311,7 @@ namespace ShogiEngine
 
     public static class Pieces
     {
-        private static Dictionary<PieceIdentity, (string Name, string Kanji, string Romanji, PieceIdentity? promotesTo)> _PieceInfo = new Dictionary<PieceIdentity, (string Name, string Kanji, string Romanji, PieceIdentity? promotesTo)>
+        private static readonly Dictionary<PieceIdentity, (string Name, string Kanji, string Romanji, PieceIdentity? promotesTo)> _PieceInfo = new Dictionary<PieceIdentity, (string Name, string Kanji, string Romanji, PieceIdentity? promotesTo)>
         {
             { PieceIdentity.King,                   ("King",                    "玉将",     "gyokushō", null) },
             { PieceIdentity.Prince,                 ("Prince",                  "太子",     "taishi",   PieceIdentity.King) },
