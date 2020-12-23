@@ -257,6 +257,13 @@ namespace WPF_UI
                     LoadGame(loadDialog.FileName);
                 }
             }
+            else if (e.Source == myGamesMenuItem)
+            {
+                var window = new KnownGamesWindow();
+                if (window.ShowDialog() == true)
+                {
+                }
+            }
             else if (e.Source == connectMenuItem)
             {
                 var window = new ConnectionWindow();

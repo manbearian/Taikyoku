@@ -2,11 +2,22 @@
 
 namespace ShogiComms
 {
+    public enum GameStatus
+    {
+        BlackTurn, WhiteTurn, Expired
+    }
+
     public class NetworkGameInfo
     {
         public string Name { get; set; }
 
         public Guid Id { get; set; }
+
+        public DateTime Created { get; set; }
+
+        public DateTime LastPlayed { get; set; }
+
+        public GameStatus Status { get; set; }
     }
 
     public class Location
