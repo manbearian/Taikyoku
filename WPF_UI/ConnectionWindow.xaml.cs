@@ -27,6 +27,8 @@ namespace WPF_UI
 
         public Guid GameId { get; private set; }
 
+        public Guid PlayerId { get; private set; }
+
         public Player? LocalPlayer { get; private set; }
 
         public ConnectionWindow()
@@ -47,6 +49,7 @@ namespace WPF_UI
             {
                 Game = e.Game;
                 GameId = e.GameId;
+                PlayerId = e.PlayerId;
                 LocalPlayer = e.Player;
                 DialogResult = true;
                 Close();

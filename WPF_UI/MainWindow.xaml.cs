@@ -33,7 +33,7 @@ namespace WPF_UI
 
         TaikyokuShogi? _game = null;
         PieceInfoWindow? _pieceInfoWindow = null;
-        (Connection Connection, Guid GameId, Player? LocalPlayer)? _networkInfo = null;
+        (Connection Connection, Guid GameId, Guid PlayerId, Player? LocalPlayer)? _networkInfo = null;
 
         private TaikyokuShogi? Game { get => _game; }
 
@@ -73,34 +73,34 @@ namespace WPF_UI
             }
 
             TaikyokuShogi? savedGame = null;
-            Guid? networkGameId = null;
-            Player? localPlayer = null;
+            Guid networkGameId = Guid.Empty;
+            Guid playerId = Guid.Empty;
 
             try
             {
-                (savedGame, networkGameId, localPlayer) = GameSaver.Load(Properties.Settings.Default.SavedGame);
+                (savedGame, networkGameId, playerId) = GameSaver.Load(Properties.Settings.Default.SavedGame);
             }
             catch (System.Text.Json.JsonException)
             {
                 // silently ignore failure to parse the game
             }
 
-            if (networkGameId == null)
+            if (networkGameId == Guid.Empty)
             {
                 StartGame(savedGame ?? new TaikyokuShogi());
             }
             else
             {
-                Contract.Assume(localPlayer != null, "networkGameId != null => localPlayer.Game != null");
+                Contract.Assume(playerId != Guid.Empty, "networkGameId != null => localPlayer.Game != null");
 
                 // todo: this prevents the main window from drawing while connection
                 // is in progress. I think it might be better to draw the window first?
-                var reconnectWindow = new ReconnectWindow(networkGameId.Value, localPlayer.Value);
-                if (reconnectWindow.ShowDialog() == true)
+                var window = new ReconnectWindow(networkGameId, playerId);
+                if (window.ShowDialog() == true)
                 {
-                    Contract.Assume(reconnectWindow.Game != null, "DialogReult true => Game != null");
+                    Contract.Assume(window.Game != null, "DialogReult true => Game != null");
 
-                    StartGame(reconnectWindow.Game, (reconnectWindow.Connection, reconnectWindow.GameId, reconnectWindow.LocalPlayer));
+                    StartGame(window.Game, (window.Connection, window.GameId, window.PlayerId, window.LocalPlayer));
                 }
                 else
                 {
@@ -111,7 +111,7 @@ namespace WPF_UI
             }
         }
 
-        private void StartGame(TaikyokuShogi game, (Connection Connection, Guid GameId, Player? LocalPlayer)? networkInfo = null)
+        private void StartGame(TaikyokuShogi game, (Connection Connection, Guid GameId, Guid PlayerId, Player? LocalPlayer)? networkInfo = null)
         {
             if (networkInfo == null)
             {
@@ -172,7 +172,7 @@ namespace WPF_UI
                 return;
 
             using var stream = File.OpenWrite(path);
-            stream.Write(GameSaver.Save(Game, _networkInfo?.GameId, _networkInfo?.LocalPlayer));
+            stream.Write(GameSaver.Save(Game, _networkInfo?.GameId ?? Guid.Empty, _networkInfo?.PlayerId ?? Guid.Empty));
         }
 
         private void LoadGame(string path)
@@ -205,7 +205,7 @@ namespace WPF_UI
             // save the game, and all other settings, on exit
             if (Game != null)
             {
-                Properties.Settings.Default.SavedGame = GameSaver.Save(Game, _networkInfo?.GameId, _networkInfo?.LocalPlayer);
+                Properties.Settings.Default.SavedGame = GameSaver.Save(Game, _networkInfo?.GameId ?? Guid.Empty, _networkInfo?.PlayerId ?? Guid.Empty);
                 Properties.Settings.Default.Save();
             }
         }
@@ -214,15 +214,15 @@ namespace WPF_UI
         {
             if (e.Source == newGameMenuItem)
             {
-                var newGameWindow = new NewGameWindow();
-                if (newGameWindow.ShowDialog() == true)
+                var window = new NewGameWindow();
+                if (window.ShowDialog() == true)
                 {
-                    Contract.Assume(newGameWindow.Game != null, "DialogResult == true => Game !+ null");
+                    Contract.Assume(window.Game != null, "DialogResult == true => Game !+ null");
 
-                    if (newGameWindow.NetworkGame)
-                        StartGame(newGameWindow.Game, (newGameWindow.Connection, newGameWindow.GameId, newGameWindow.LocalPlayer));
+                    if (window.NetworkGame)
+                        StartGame(window.Game, (window.Connection, window.GameId, window.PlayerId, window.LocalPlayer));
                     else
-                        StartGame(newGameWindow.Game);
+                        StartGame(window.Game);
                 }
             }
             else if (e.Source == saveGameMenuItem)
@@ -259,20 +259,20 @@ namespace WPF_UI
             }
             else if (e.Source == connectMenuItem)
             {
-                var connWindow = new ConnectionWindow();
-                if (connWindow.ShowDialog() == true)
+                var window = new ConnectionWindow();
+                if (window.ShowDialog() == true)
                 {
-                    Contract.Assume(connWindow.Game != null, "DialogResult == true => Game !+ null");
-                    StartGame(connWindow.Game, (connWindow.Connection, connWindow.GameId, connWindow.LocalPlayer));
+                    Contract.Assume(window.Game != null, "DialogResult == true => Game !+ null");
+                    StartGame(window.Game, (window.Connection, window.GameId, window.PlayerId, window.LocalPlayer));
                 }
             }
             else if (e.Source == addOpponentMenuItem)
             {
-                var newGameWindow = new NewGameWindow() { Game = Game };
-                if (newGameWindow.ShowDialog() == true)
+                var window = new NewGameWindow() { Game = Game };
+                if (window.ShowDialog() == true)
                 {
-                    Contract.Assume(newGameWindow.Game != null, "DialogResult == true => Game !+ null");
-                    StartGame(newGameWindow.Game, (newGameWindow.Connection, newGameWindow.GameId, newGameWindow.LocalPlayer));
+                    Contract.Assume(window.Game != null, "DialogResult == true => Game !+ null");
+                    StartGame(window.Game, (window.Connection, window.GameId, window.PlayerId, window.LocalPlayer));
                 }
             }
             else if (e.Source == closeMenuItem)

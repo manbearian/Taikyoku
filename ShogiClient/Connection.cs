@@ -24,9 +24,11 @@ namespace ShogiClient
 
         public Guid GameId { get; }
 
+        public Guid PlayerId { get; }
+
         public Player Player { get; }
 
-        public ReceiveGameStartEventArgs(TaikyokuShogi game, Guid gameId, Player player) => (Game, GameId, Player) = (game, gameId, player);
+        public ReceiveGameStartEventArgs(TaikyokuShogi game, Guid gameId, Guid playerId, Player player) => (Game, GameId, PlayerId, Player) = (game, gameId, playerId, player);
     }
 
     public class ReceiveGameConnectionEventArgs : EventArgs
@@ -84,8 +86,8 @@ namespace ShogiClient
             _connection.On<List<NetworkGameInfo>>("ReceiveGameList", gameList =>
                 OnReceiveGameList?.Invoke(this, new ReceiveGameListEventArgs(gameList)));
 
-            _connection.On<TaikyokuShogi, Guid, Player>("ReceiveGameStart", (gameObject, gameId, player) =>
-                OnReceiveGameStart?.Invoke(this, new ReceiveGameStartEventArgs(gameObject, gameId, player)));
+            _connection.On<TaikyokuShogi, Guid, Guid, Player>("ReceiveGameStart", (gameObject, gameId, playerId, player) =>
+                OnReceiveGameStart?.Invoke(this, new ReceiveGameStartEventArgs(gameObject, gameId, playerId, player)));
 
             _connection.On<TaikyokuShogi, Guid>("ReceiveGameUpdate", (gameObject, gameId) =>
                 OnReceiveGameUpdate?.Invoke(this, new ReceiveGameUpdateEventArgs(gameObject, gameId)));
@@ -106,11 +108,11 @@ namespace ShogiClient
         public async Task RequestNewGame(string gameName, TaikyokuShogiOptions gameOptions, bool asBlackPlayer, TaikyokuShogi existingGame = null) =>
             await _connection.InvokeAsync("CreateGame", gameName, gameOptions, asBlackPlayer, existingGame);
 
-        public async Task RequestJoinGame(Guid id) =>
-            await _connection.InvokeAsync("JoinGame", id);
+        public async Task RequestJoinGame(Guid gameId) =>
+            await _connection.InvokeAsync("JoinGame", gameId);
 
-        public async Task RequestRejoinGame(Guid id, Player player) =>
-            await _connection.InvokeAsync("RejoinGame", id, player);
+        public async Task RequestRejoinGame(Guid gameId, Guid playerId) =>
+            await _connection.InvokeAsync("RejoinGame", gameId, playerId);
 
         public async Task RequestCancelGame() =>
             await _connection.InvokeAsync("CancelGame");

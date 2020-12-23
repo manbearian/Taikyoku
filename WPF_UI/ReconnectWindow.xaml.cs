@@ -27,14 +27,16 @@ namespace WPF_UI
 
         public Guid GameId { get; }
 
-        public Player LocalPlayer { get; }
+        public Guid PlayerId { get; }
 
-        public ReconnectWindow(Guid gameId, Player localPlayer)
+        public Player LocalPlayer { get; private set; }
+
+        public ReconnectWindow(Guid gameId, Guid playerId)
         {
             InitializeComponent();
 
             Connection = new Connection();
-            (GameId, LocalPlayer) = (gameId, localPlayer);
+            (GameId, PlayerId) = (gameId, playerId);
 
             Connection.OnReceiveGameStart += RecieveGameStart;
         }
@@ -43,10 +45,11 @@ namespace WPF_UI
             Dispatcher.Invoke(() =>
             {
                 // ignore spurious game events
-                if (e.GameId != GameId || e.Player != LocalPlayer)
+                if (e.GameId != GameId || e.PlayerId != PlayerId)
                     return;
 
                 Game = e.Game;
+                LocalPlayer = e.Player;
                 DialogResult = true;
                 Close();
             });
@@ -61,7 +64,7 @@ namespace WPF_UI
             try
             {
                 await Connection.ConnectAsync();
-                await Connection.RequestRejoinGame(GameId, LocalPlayer);
+                await Connection.RequestRejoinGame(GameId, PlayerId);
             }
             catch (System.Net.Sockets.SocketException)
             {

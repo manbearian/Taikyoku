@@ -35,7 +35,7 @@ namespace WPF_UI
 
         private bool _isRotated = false;
 
-        private (Connection Connection, Guid GameId, Player? LocalPlayer)? _networkInfo = null;
+        private (Connection Connection, Guid GameId, Guid PlayerId, Player? LocalPlayer)? _networkInfo = null;
 
         // debug functionality
         private Piece? _addingPiece = null;
@@ -71,7 +71,7 @@ namespace WPF_UI
             MouseRightButtonUp += RightClickHandler;
         }
 
-        public void SetGame(TaikyokuShogi game, (Connection Connection, Guid GameId, Player? LocalPlayer)? networkInfo = null)
+        public void SetGame(TaikyokuShogi game, (Connection Connection, Guid GameId, Guid PlayerId, Player? LocalPlayer)? networkInfo = null)
         {
             Game = game;
             _networkInfo = networkInfo;

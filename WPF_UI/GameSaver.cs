@@ -10,28 +10,28 @@ namespace WPF_UI
     {
         public TaikyokuShogi? Game { get; set; }
 
-        public Guid? GameId { get; set; }
+        public Guid GameId { get; set; }
 
-        public Player? LocalPlayer { get; set; }
+        public Guid PlayerId { get; set; }
 
-        public static byte[] Save(TaikyokuShogi game, Guid? gameId, Player? LocalPlayer) =>
-            JsonSerializer.SerializeToUtf8Bytes(new GameSaver() { Game = game, GameId = gameId, LocalPlayer = LocalPlayer }, new JsonSerializerOptions());
+        public static byte[] Save(TaikyokuShogi game, Guid gameId, Guid playerId) =>
+            JsonSerializer.SerializeToUtf8Bytes(new GameSaver() { Game = game, GameId = gameId, PlayerId = playerId }, new JsonSerializerOptions());
 
-        public static (TaikyokuShogi Game, Guid? GameId, Player? LocalPlayer) Load(ReadOnlySpan<byte> bytes)
+        public static (TaikyokuShogi Game, Guid GameId, Guid PlayerId) Load(ReadOnlySpan<byte> bytes)
         {
             var saveGame = JsonSerializer.Deserialize<GameSaver>(bytes);
 
             if (saveGame.Game == null)
                 throw new JsonException("Corrupted game information in saved game");
 
-            if (saveGame.GameId != null || saveGame.LocalPlayer != null)
+            if (saveGame.GameId != null || saveGame.PlayerId != null)
             {
                 // validate network information before returning the result
-                if (saveGame.GameId == null || saveGame.LocalPlayer == null)
+                if (saveGame.GameId == null || saveGame.PlayerId == null)
                     throw new JsonException("Corrupted network information in saved game");
             }
 
-            return (saveGame.Game, saveGame.GameId, saveGame.LocalPlayer);
+            return (saveGame.Game, saveGame.GameId, saveGame.PlayerId);
         }
     }
 }
