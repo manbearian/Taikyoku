@@ -37,13 +37,24 @@ namespace WPF_UI.Properties {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("")]
         public byte[] SavedGame {
             get {
                 return ((byte[])(this["SavedGame"]));
             }
             set {
                 this["SavedGame"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string PlayerName {
+            get {
+                return ((string)(this["PlayerName"]));
+            }
+            set {
+                this["PlayerName"] = value;
             }
         }
     }

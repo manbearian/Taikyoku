@@ -35,8 +35,10 @@ namespace WPF_UI
         {
             InitializeComponent();
 
-            Connection = new Connection();
+            var userName = Properties.Settings.Default.PlayerName;
+            NameBox.Text = userName == string.Empty ? Environment.UserName : userName;
 
+            Connection = new Connection();
             Connection.OnReceiveGameList += RecieveGameList;
             Connection.OnReceiveGameStart += RecieveGameStart;
         }
@@ -70,10 +72,10 @@ namespace WPF_UI
             {
                 foreach (var game in gameList)
                 {
-                    GamesList.Items.Add(game);
+                    GamesList.Items.Add(new NetworkGameInfoWrapper(game));
                 }
 
-                GamesList.DisplayMemberPath = "Name";
+                GamesList.DisplayMemberPath = "DisplayString";
                 GamesList.IsEnabled = true;
             }
         }
@@ -85,7 +87,8 @@ namespace WPF_UI
             if (selectedItem == null)
                 return;
 
-            await Connection.RequestJoinGame(((NetworkGameInfo)selectedItem).Id);
+            Properties.Settings.Default.PlayerName = NameBox.Text;
+            await Connection.RequestJoinGame(((NetworkGameInfo)(NetworkGameInfoWrapper)selectedItem).GameId, NameBox.Text);
         }
 
         private async void Window_SourceInitialized(object sender, EventArgs e)
@@ -118,5 +121,25 @@ namespace WPF_UI
             Connection.OnReceiveGameList -= RecieveGameList;
             Connection.OnReceiveGameStart -= RecieveGameStart;
         }
+    }
+
+    class NetworkGameInfoWrapper
+    {
+        private readonly NetworkGameInfo _info;
+
+        public NetworkGameInfoWrapper(NetworkGameInfo info) => _info = info;
+
+        public string DisplayString
+        {
+            get
+            {
+                string theirName = _info.BlackName != string.Empty ? _info.BlackName : _info.WhiteName;
+                string theirColor = _info.BlackName != string.Empty ? "black" : "white";
+                return $"{theirName} ({theirColor})\t{_info.Created}";
+            }
+        }
+
+        public static implicit operator NetworkGameInfo(NetworkGameInfoWrapper wrapper) =>
+            wrapper._info;
     }
 }

@@ -9,12 +9,15 @@
         Title="ConnectionWindow" SizeToContent="WidthAndHeight" SourceInitialized="Window_SourceInitialized" Closing="Window_Closing">
     <Grid Height="278" Width="400">
         <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
             <RowDefinition/>
             <RowDefinition Height="30"/>
         </Grid.RowDefinitions>
-        <ListBox x:Name="GamesList" SelectionChanged="GamesList_SelectionChanged" MouseLeftButtonDown="GamesList_MouseLeftButtonDown" IsEnabled="False" >
+        <ListBox x:Name="GamesList" SelectionChanged="GamesList_SelectionChanged" MouseLeftButtonDown="GamesList_MouseLeftButtonDown" IsEnabled="False"  Grid.Row="1">
             <System:String>Connecting...</System:String>
         </ListBox>
-        <Button x:Name="JoinGameButton" Content="Join Game" IsEnabled="False" Click="JoinGameButton_Click" Grid.Row="1"/>
+        <Button x:Name="JoinGameButton" Content="Join Game" IsEnabled="False" Click="JoinGameButton_Click" Grid.Row="2"/>
+        <TextBlock Text="Connect as:" VerticalAlignment="Top" HorizontalAlignment="Left" Grid.Row="0" />
+        <TextBox x:Name="NameBox" VerticalAlignment="Center" HorizontalAlignment="Left" Width="334" IsEnabled="{Binding IsChecked, ElementName=NetworkRadioButton}" Margin="66,0,0,0" />
     </Grid>
 </Window>

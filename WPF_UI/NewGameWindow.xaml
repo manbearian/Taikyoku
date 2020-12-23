@@ -14,8 +14,8 @@
             <Grid>
                 <RadioButton x:Name="LocalRadioButton" GroupName="GameTypeGroup" Content="Local" VerticalAlignment="Top" Margin="5,5,0,0" HorizontalAlignment="Left" Width="85" IsChecked="True"/>
                 <RadioButton x:Name="NetworkRadioButton" GroupName="GameTypeGroup" Content="Network" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="5,25,0,0"/>
-                <TextBlock Text="Name:" VerticalAlignment="Top" HorizontalAlignment="Left" Height="20" Margin="25,45,0,0"/>
-                <TextBox x:Name="NameBox" Text="myGame" VerticalAlignment="Top" HorizontalAlignment="Left" Height="20" Width="94" Margin="85,45,0,0" IsEnabled="{Binding IsChecked, ElementName=NetworkRadioButton}" />
+                <TextBlock Text="My Name:" VerticalAlignment="Top" HorizontalAlignment="Left" Height="20" Margin="25,45,0,0"/>
+                <TextBox x:Name="NameBox" VerticalAlignment="Top" HorizontalAlignment="Left" Height="20" Width="94" Margin="85,45,0,0" IsEnabled="{Binding IsChecked, ElementName=NetworkRadioButton}" />
                 <TextBlock Text="My Color:" VerticalAlignment="Top" HorizontalAlignment="Left" Height="20" Margin="25,73,0,0"/>
                 <ComboBox x:Name="ColorBox" VerticalAlignment="Top" HorizontalAlignment="Left" Height="20" Width="94" Margin="85,73,0,0" IsEnabled="{Binding IsChecked, ElementName=NetworkRadioButton}" SelectedIndex="0">
                     <System:String>Black</System:String>

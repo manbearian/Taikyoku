@@ -61,10 +61,6 @@ namespace WPF_UI
         {
             GameList.Items.Clear();
 
-            gameList.Add(new NetworkGameInfo() { Name = "foofoo", Created = DateTime.Now, LastPlayed = DateTime.Now, Id = Guid.Empty, Status = GameStatus.BlackTurn });
-            gameList.Add(new NetworkGameInfo() { Name = "hello", Created = DateTime.Now, LastPlayed = DateTime.Now, Id = Guid.Empty, Status = GameStatus.BlackTurn });
-
-
             foreach (var game in gameList)
             {
                 GameList.Items.Add(new MyNetworkGameInfo(game, Player.Black));

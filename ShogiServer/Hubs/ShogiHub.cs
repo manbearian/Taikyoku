@@ -37,13 +37,13 @@ namespace ShogiServer.Hubs
 
             public Guid Id { get; }
 
-            public string Name { get; }
+            public DateTime Created { get; }
 
-            public (IShogiClient Client, string ClientId, Guid PlayerId) WhitePlayer { get; set; }
+            public (IShogiClient Client, string ClientId, Guid PlayerId, string PlayerName) WhitePlayer { get; set; }
 
-            public (IShogiClient Client, string ClientId, Guid PlayerId) BlackPlayer { get; set; }
+            public (IShogiClient Client, string ClientId, Guid PlayerId, string PlayerName) BlackPlayer { get; set; }
 
-            public GameInfo(TaikyokuShogi game, Guid id, string name) => (Game, Id, Name) = (game, id, name); 
+            public GameInfo(TaikyokuShogi game, Guid id) => (Game, Id, Created) = (game, id, DateTime.UtcNow); 
         }
 
         // database of games looking for players
@@ -56,24 +56,30 @@ namespace ShogiServer.Hubs
 
         private static List<NetworkGameInfo> GamesList
         {
-            get => OpenGames.Values.Select(info => new NetworkGameInfo() { Name = info.Name, Id = info.Id }).ToList();
+            get => OpenGames.Values.Select(info => new NetworkGameInfo()
+            {
+                GameId = info.Id,
+                Created = info.Created,
+                BlackName = info.BlackPlayer.PlayerName,
+                WhiteName = info.WhitePlayer.PlayerName,
+            }).ToList();
         }
 
         private GameInfo ClientGame { get => (GameInfo)Context.Items["ClientGame"]; set => Context.Items["ClientGame"] = value; }
 
-        public Task CreateGame(string gameName, TaikyokuShogiOptions gameOptions, bool asBlackPlayer, TaikyokuShogi existingGame)
+        public Task CreateGame(string playerName, TaikyokuShogiOptions gameOptions, bool asBlackPlayer, TaikyokuShogi existingGame)
         {
             var game = existingGame ?? new TaikyokuShogi(gameOptions);
             var gameId = Guid.NewGuid();
             var playerId = Guid.NewGuid();
             var blackPlayer = asBlackPlayer ? (Clients.Caller, Context.ConnectionId) : null as (IShogiClient Client, string Id)?;
             var whitePlayer = asBlackPlayer ? null as (IShogiClient Client, string Id)? : (Clients.Caller, Context.ConnectionId);
-            var gameInfo = new GameInfo(game, gameId, gameName);
+            var gameInfo = new GameInfo(game, gameId);
 
             if (asBlackPlayer)
-                gameInfo.BlackPlayer = (Clients.Caller, Context.ConnectionId, playerId);
+                gameInfo.BlackPlayer = (Clients.Caller, Context.ConnectionId, playerId, playerName);
             else
-                gameInfo.WhitePlayer = (Clients.Caller, Context.ConnectionId, playerId);
+                gameInfo.WhitePlayer = (Clients.Caller, Context.ConnectionId, playerId, playerName);
 
             OpenGames[gameId] = gameInfo;
             ClientGame = gameInfo;
@@ -90,7 +96,7 @@ namespace ShogiServer.Hubs
             return Clients.Caller.ReceiveGameList(GamesList);
         }
 
-        public Task JoinGame(Guid gameId)
+        public Task JoinGame(Guid gameId, string playerName)
         {
             GameInfo gameInfo;
 
@@ -110,11 +116,11 @@ namespace ShogiServer.Hubs
                         throw new HubException($"Failed to join game, game is abandoned: {gameId}");
                     }
 
-                    gameInfo.BlackPlayer = (Clients.Caller, Context.ConnectionId, playerId);
+                    gameInfo.BlackPlayer = (Clients.Caller, Context.ConnectionId, playerId, playerName);
                 }
                 else if (gameInfo.WhitePlayer.Client == null)
                 {
-                    gameInfo.WhitePlayer = (Clients.Caller, Context.ConnectionId, playerId);
+                    gameInfo.WhitePlayer = (Clients.Caller, Context.ConnectionId, playerId, playerName);
                 }
                 else
                 {
@@ -151,7 +157,7 @@ namespace ShogiServer.Hubs
                     if (gameInfo.BlackPlayer.Client != null)
                         throw new HubException($"Failed to join game, game is full: {gameId}");
 
-                    gameInfo.BlackPlayer = (Clients.Caller, Context.ConnectionId, playerId);
+                    gameInfo.BlackPlayer = (Clients.Caller, Context.ConnectionId, playerId, gameInfo.BlackPlayer.PlayerName);
                     requestedPlayer = Player.Black;
                     otherClient = gameInfo.WhitePlayer.Client;
                 }
@@ -160,7 +166,7 @@ namespace ShogiServer.Hubs
                     if (gameInfo.WhitePlayer.Client != null)
                         throw new HubException($"Failed to join game, game is full: {gameId}");
 
-                    gameInfo.WhitePlayer = (Clients.Caller, Context.ConnectionId, playerId);
+                    gameInfo.WhitePlayer = (Clients.Caller, Context.ConnectionId, playerId, gameInfo.WhitePlayer.PlayerName);
                     requestedPlayer = Player.White;
                     otherClient = gameInfo.BlackPlayer.Client;
                 }
@@ -240,12 +246,12 @@ namespace ShogiServer.Hubs
                     if (gameInfo.BlackPlayer.ClientId == Context.ConnectionId)
                     {
                         otherClient = gameInfo.WhitePlayer.Client;
-                        gameInfo.BlackPlayer = (null, null, gameInfo.BlackPlayer.PlayerId);
+                        gameInfo.BlackPlayer = (null, null, gameInfo.BlackPlayer.PlayerId, gameInfo.BlackPlayer.PlayerName);
                     }
                     else if (gameInfo.WhitePlayer.ClientId == Context.ConnectionId)
                     {
                         otherClient = gameInfo.BlackPlayer.Client;
-                        gameInfo.WhitePlayer = (null, null, gameInfo.BlackPlayer.PlayerId);
+                        gameInfo.WhitePlayer = (null, null, gameInfo.WhitePlayer.PlayerId, gameInfo.WhitePlayer.PlayerName);
                     }
                     else
                     {

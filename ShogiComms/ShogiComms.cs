@@ -9,9 +9,11 @@ namespace ShogiComms
 
     public class NetworkGameInfo
     {
-        public string Name { get; set; }
+        public Guid GameId { get; set; }
 
-        public Guid Id { get; set; }
+        public string BlackName { get; set; }
+
+        public string WhiteName { get; set; }
 
         public DateTime Created { get; set; }
 

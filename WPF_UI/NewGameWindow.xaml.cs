@@ -37,8 +37,10 @@ namespace WPF_UI
         {
             InitializeComponent();
 
-            Connection = new Connection();
+            var userName = Properties.Settings.Default.PlayerName;
+            NameBox.Text = userName == string.Empty ? Environment.UserName : userName;
 
+            Connection = new Connection();
             Connection.OnReceiveGameStart += RecieveGameStart;
         }
 
@@ -84,8 +86,10 @@ namespace WPF_UI
             }
             else if (NetworkRadioButton.IsChecked == true)
             {
+                Properties.Settings.Default.PlayerName = NameBox.Text;
+
                 var localPlayerIsBlack = ColorBox.SelectedIndex == 0;
-                var gameName = NameBox.Text;
+                var playerName = NameBox.Text;
 
                 try
                 {
@@ -93,7 +97,7 @@ namespace WPF_UI
                     SetUIForWaitForConnection();
 
                     await Connection.ConnectAsync().
-                        ContinueWith(_ => Connection.RequestNewGame(gameName, gameOptions, localPlayerIsBlack, Game));
+                        ContinueWith(_ => Connection.RequestNewGame(playerName, gameOptions, localPlayerIsBlack, Game));
 
                     return;
                 }
