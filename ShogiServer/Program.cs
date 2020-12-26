@@ -11,6 +11,8 @@ namespace ShogiServer
 {
     public class Program
     {
+        internal static TableStorage TableStorage { get; } = new TableStorage();
+
         public static void Main(string[] args)
         {
             CreateHostBuilder(args).Build().Run();
