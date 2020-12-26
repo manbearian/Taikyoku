@@ -104,6 +104,7 @@ namespace WPF_UI
                 catch (Exception)
                 {
                     // todo: where do i log this error?
+                    // treat as cancel
                 }
             }
             else
@@ -117,7 +118,15 @@ namespace WPF_UI
 
         private async void CancelButton_Click(object sender, RoutedEventArgs e)
         {
-            await Connection.RequestCancelGame(); // cancel any games we started
+            try
+            {
+                await Connection.RequestCancelGame(); // cancel any games we started
+            }
+            catch(Exception)
+            {
+                // todo: where do i log this error?
+            }
+
             Close();
         }
 
