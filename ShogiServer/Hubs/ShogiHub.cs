@@ -103,10 +103,8 @@ namespace ShogiServer.Hubs
         // database of games looking for players
         private static readonly ConcurrentDictionary<Guid, GameInfo> OpenGames = new ConcurrentDictionary<Guid, GameInfo>();
 
+        // map players to their connections
         private static readonly ConcurrentDictionary<Guid, (IShogiClient Client, string ClientId)> ClientMap = new ConcurrentDictionary<Guid, (IShogiClient Client, string ClientId)>();
-
-        // database of running games, key is "gameId" which is a GUID
-        // private static readonly ConcurrentDictionary<Guid, GameInfo> RunningGames = new ConcurrentDictionary<Guid, GameInfo>();
 
         private static List<NetworkGameInfo> GamesList
         {
