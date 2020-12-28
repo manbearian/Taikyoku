@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using System.Windows;
 using System.Windows.Controls;
@@ -57,11 +58,11 @@ namespace WPF_UI
                 Close();
             });
 
-        private void UpdateGameList(List<NetworkGameInfo> gameList)
+        private void UpdateGameList(IEnumerable<NetworkGameInfo> gameList)
         {
             GamesList.Items.Clear();
 
-            if (gameList.Count == 0)
+            if (gameList.Count() == 0)
             {
                 GamesList.Items.Add("No Games Available");
 
@@ -96,7 +97,7 @@ namespace WPF_UI
             try
             {
                 await Connection.ConnectAsync();
-                await Connection.RequestGamesList();
+                await Connection.RequestAllOpenGameInfo();
             }
             catch (Exception)
             {

@@ -23,7 +23,7 @@ namespace ShogiServer.Hubs
     {
         Task ReceiveNewGame(TaikyokuShogi game, Guid id);
 
-        Task ReceiveGameList(List<NetworkGameInfo> list);
+        Task ReceiveGameList(IEnumerable<NetworkGameInfo> list);
 
         Task ReceiveGameStart(TaikyokuShogi game, Guid id, Guid playerId, Player player);
 
@@ -63,7 +63,20 @@ namespace ShogiServer.Hubs
                 (((ITableEntity)this).PartitionKey, ((ITableEntity)this).RowKey) = (string.Empty, id.ToString());
             }
 
-            // used for deserialization only
+            public NetworkGameInfo ToNetworkGameInfo() =>
+                new NetworkGameInfo()
+                {
+                    GameId = Id,
+                    Created = Created,
+                    BlackName = BlackPlayer.PlayerName,
+                    WhiteName = WhitePlayer.PlayerName,
+                };
+
+            //
+            // implmenting ITableEntity
+            //
+
+            // parameterlesss contructor requred for ITableEntry
             public GameInfo() { }
 
             public IDictionary<string, EntityProperty> WriteEntity(OperationContext operationContext)
@@ -106,15 +119,9 @@ namespace ShogiServer.Hubs
         // map players to their connections
         private static readonly ConcurrentDictionary<Guid, (IShogiClient Client, string ClientId)> ClientMap = new ConcurrentDictionary<Guid, (IShogiClient Client, string ClientId)>();
 
-        private static List<NetworkGameInfo> GamesList
+        private static IEnumerable<NetworkGameInfo> GamesList
         {
-            get => OpenGames.Values.Select(info => new NetworkGameInfo()
-            {
-                GameId = info.Id,
-                Created = info.Created,
-                BlackName = info.BlackPlayer.PlayerName,
-                WhiteName = info.WhitePlayer.PlayerName,
-            }).ToList();
+            get => OpenGames.Values.Select(info => info.ToNetworkGameInfo());
         }
 
         private GameInfo ClientGame { get => (GameInfo)Context.Items["ClientGame"]; set => Context.Items["ClientGame"] = value; }
@@ -137,9 +144,31 @@ namespace ShogiServer.Hubs
             await Clients.Caller.ReceiveNewGame(game, gameId);
         }
 
-        public async Task GetGames()
+        public async Task RequestAllOpenGameInfo()
         {
             await Clients.Caller.ReceiveGameList(GamesList);
+        }
+
+        public async Task RequestGameInfo(IEnumerable<NetworkGameRequest> requests)
+        {
+            var gamelist = new ConcurrentBag<NetworkGameInfo>();
+
+            // query the table storage for all the requested games
+            var tasks = new List<Task>();
+            foreach (var request in requests)
+            {
+                tasks.Add(Program.TableStorage.FindGame(request.GameId).
+                    ContinueWith(t =>
+                    {
+                        var gameInfo = t.Result;
+                        if (request.RequestingPlayerId != gameInfo.BlackPlayer.PlayerId && request.RequestingPlayerId != gameInfo.WhitePlayer.PlayerId)
+                            throw new HubException("No permission to request game information");
+                        gamelist.Add(gameInfo.ToNetworkGameInfo());
+                    }));
+            }
+
+            Task.WaitAll(tasks.ToArray());
+            await Clients.Caller.ReceiveGameList(gamelist);
         }
 
         public async Task JoinGame(Guid gameId, string playerName)

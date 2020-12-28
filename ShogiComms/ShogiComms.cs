@@ -7,6 +7,12 @@ namespace ShogiComms
         BlackTurn, WhiteTurn, Expired
     }
 
+    public class NetworkGameRequest
+    {
+        public Guid GameId { get; set; }
+        public Guid RequestingPlayerId { get; set; }
+    }
+
     public class NetworkGameInfo
     {
         public Guid GameId { get; set; }

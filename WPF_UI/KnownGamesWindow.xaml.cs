@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using System.Windows;
 using System.Windows.Controls;
@@ -57,32 +58,27 @@ namespace WPF_UI
                 Close();
             });
 
-        private void UpdateGameList(List<NetworkGameInfo> gameList)
+        private void UpdateGameList(IEnumerable<NetworkGameInfo> gameList)
         {
             GameList.Items.Clear();
 
-            foreach (var game in gameList)
+            if (gameList.Count() == 0)
             {
-                GameList.Items.Add(new MyNetworkGameInfo(game, Player.Black));
+                GameList.Items.Add("No Games Available");
+
+                GameList.DisplayMemberPath = null;
+                GameList.IsEnabled = false;
             }
+            else
+            {
+                foreach (var game in gameList)
+                {
+                    GameList.Items.Add(game);
+                }
 
-            //if (gameList.Count == 0)
-            //{
-            //    GameList.Items.Add("No Games Available");
-
-            //    GameList.DisplayMemberPath = null;
-            //    GameList.IsEnabled = false;
-            //}
-            //else
-            //{
-            //    foreach (var game in gameList)
-            //    {
-            //        GameList.Items.Add(game);
-            //    }
-
-            //    GameList.DisplayMemberPath = "Name";
-            //    GameList.IsEnabled = true;
-            //}
+                GameList.DisplayMemberPath = "Name";
+                GameList.IsEnabled = true;
+            }
         }
 
         private void CancelButton_Click(object sender, RoutedEventArgs e)
@@ -95,7 +91,7 @@ namespace WPF_UI
             try
             {
                 await Connection.ConnectAsync();
-               //  await Connection.RequestRejoinGame(GameId, LocalPlayer);
+                // await Connection.RequestGameInfo(GameId, LocalPlayer);
             }
             catch (System.Net.Sockets.SocketException)
             {

@@ -40,9 +40,9 @@ namespace ShogiClient
 
     public class ReceiveGameListEventArgs : EventArgs
     {
-        public List<NetworkGameInfo> GameList { get; }
+        public IEnumerable<NetworkGameInfo> GameList { get; }
 
-        public ReceiveGameListEventArgs(List<NetworkGameInfo> list) => GameList = list;
+        public ReceiveGameListEventArgs(IEnumerable<NetworkGameInfo> list) => GameList = list;
     }
 
     public class Connection
@@ -83,7 +83,7 @@ namespace ShogiClient
             _connection.On<TaikyokuShogi, Guid>("ReceiveNewGame", (gameObject, gameId) =>
                 OnReceiveNewGame?.Invoke(this, new ReceiveGameUpdateEventArgs(gameObject, gameId)));
 
-            _connection.On<List<NetworkGameInfo>>("ReceiveGameList", gameList =>
+            _connection.On<IEnumerable<NetworkGameInfo>>("ReceiveGameList", gameList =>
                 OnReceiveGameList?.Invoke(this, new ReceiveGameListEventArgs(gameList)));
 
             _connection.On<TaikyokuShogi, Guid, Guid, Player>("ReceiveGameStart", (gameObject, gameId, playerId, player) =>
@@ -102,8 +102,11 @@ namespace ShogiClient
         public async Task ConnectAsync() =>
             await _connection.StartAsync();
 
-        public async Task RequestGamesList() =>
-            await _connection.InvokeAsync("GetGames");
+        public async Task RequestAllOpenGameInfo() =>
+            await _connection.InvokeAsync("RequestAllOpenGameInfo");
+
+        public async Task RequestGameInfo(IEnumerable<NetworkGameRequest> requests) =>
+            await _connection.InvokeAsync("RequestGameInfo", requests);
 
         public async Task RequestNewGame(string playerName, TaikyokuShogiOptions gameOptions, bool asBlackPlayer, TaikyokuShogi existingGame = null) =>
             await _connection.InvokeAsync("CreateGame", playerName, gameOptions, asBlackPlayer, existingGame);
