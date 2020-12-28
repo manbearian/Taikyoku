@@ -35,7 +35,7 @@ namespace WPF_UI
 
         private bool _isRotated = false;
 
-        private (Connection Connection, Guid GameId, Guid PlayerId, Player? LocalPlayer)? _networkInfo = null;
+        private Connection? _networkConnection = null;
 
         // debug functionality
         private Piece? _addingPiece = null;
@@ -71,16 +71,16 @@ namespace WPF_UI
             MouseRightButtonUp += RightClickHandler;
         }
 
-        public void SetGame(TaikyokuShogi game, (Connection Connection, Guid GameId, Guid PlayerId, Player? LocalPlayer)? networkInfo = null)
+        public void SetGame(TaikyokuShogi game, Connection? networkConnection = null, Player? localPlayer = null)
         {
             Game = game;
-            _networkInfo = networkInfo;
+            _networkConnection = networkConnection;
 
             Selected = null;
             Selected2 = null;
 
-            IsEnabled = Game.CurrentPlayer != null && (networkInfo == null || Game.CurrentPlayer == networkInfo?.LocalPlayer);
-            IsRotated = networkInfo?.LocalPlayer == Player.White;
+            IsEnabled = Game.CurrentPlayer != null && (networkConnection == null || Game.CurrentPlayer == localPlayer);
+            IsRotated = localPlayer == Player.White;
 
             InvalidateVisual();
 
@@ -226,9 +226,9 @@ namespace WPF_UI
 
             void MakeMove((int X, int Y) startLoc, (int X, int Y) endLoc, (int X, int Y)? midLoc = null, bool promote = false)
             {
-                if (_networkInfo != null)
+                if (_networkConnection != null)
                 {
-                    Task.Run(() => _networkInfo?.Connection.RequestMove(startLoc, endLoc, midLoc, promote));
+                    Task.Run(() => _networkConnection.RequestMove(startLoc, endLoc, midLoc, promote));
                     IsEnabled = false;
                     return;
                 }

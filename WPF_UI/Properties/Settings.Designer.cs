@@ -37,17 +37,6 @@ namespace WPF_UI.Properties {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        public byte[] SavedGame {
-            get {
-                return ((byte[])(this["SavedGame"]));
-            }
-            set {
-                this["SavedGame"] = value;
-            }
-        }
-        
-        [global::System.Configuration.UserScopedSettingAttribute()]
-        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("")]
         public string PlayerName {
             get {
@@ -55,6 +44,29 @@ namespace WPF_UI.Properties {
             }
             set {
                 this["PlayerName"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        public global::System.Collections.Hashtable GameList {
+            get {
+                return ((global::System.Collections.Hashtable)(this["GameList"]));
+            }
+            set {
+                this["GameList"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("00000000-0000-0000-0000-000000000000")]
+        public global::System.Guid LastGame {
+            get {
+                return ((global::System.Guid)(this["LastGame"]));
+            }
+            set {
+                this["LastGame"] = value;
             }
         }
     }

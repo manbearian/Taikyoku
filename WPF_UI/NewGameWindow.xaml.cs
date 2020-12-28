@@ -33,6 +33,8 @@ namespace WPF_UI
 
         public Player? LocalPlayer { get; private set; }
 
+        private bool _waitingForConnection { get => !NewGameButton.IsEnabled; }
+
         public NewGameWindow()
         {
             InitializeComponent();
@@ -118,13 +120,16 @@ namespace WPF_UI
 
         private async void CancelButton_Click(object sender, RoutedEventArgs e)
         {
-            try
+            if (_waitingForConnection)
             {
-                await Connection.RequestCancelGame(); // cancel any games we started
-            }
-            catch(Exception)
-            {
-                // todo: where do i log this error?
+                try
+                {
+                    await Connection.RequestCancelGame(); // cancel any games we started
+                }
+                catch (Exception)
+                {
+                    // todo: where do i log this error?
+                }
             }
 
             Close();
@@ -143,6 +148,5 @@ namespace WPF_UI
         {
             Connection.OnReceiveGameStart -= RecieveGameStart;
         }
-
     }
 }
