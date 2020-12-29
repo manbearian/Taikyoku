@@ -205,8 +205,14 @@ namespace ShogiServer.Hubs
 
             await Program.TableStorage.AddGame(gameInfo);
             await Clients.All.ReceiveGameList(GamesList);
-            await ClientMap.GetValueOrDefault(gameInfo.BlackPlayer.PlayerId).Client?.ReceiveGameStart(gameInfo.Game, gameId, gameInfo.BlackPlayer.PlayerId, Player.Black);
-            await ClientMap.GetValueOrDefault(gameInfo.WhitePlayer.PlayerId).Client?.ReceiveGameStart(gameInfo.Game, gameId, gameInfo.WhitePlayer.PlayerId, Player.White);
+
+            var blackClient = ClientMap.GetValueOrDefault(gameInfo.WhitePlayer.PlayerId).Client;
+            if (blackClient != null)
+                await blackClient.ReceiveGameStart(gameInfo.Game, gameId, gameInfo.BlackPlayer.PlayerId, Player.Black);
+
+            var whiteClient = ClientMap.GetValueOrDefault(gameInfo.WhitePlayer.PlayerId).Client;
+            if (whiteClient != null)
+                await whiteClient.ReceiveGameStart(gameInfo.Game, gameId, gameInfo.WhitePlayer.PlayerId, Player.White);
         }
 
         public async Task RejoinGame(Guid gameId, Guid playerId)
@@ -245,7 +251,9 @@ namespace ShogiServer.Hubs
 
             ClientMap[playerInfo.PlayerId] = (Clients.Caller, Context.ConnectionId);
 
-            await ClientMap.GetValueOrDefault(otherPlayerInfo.PlayerId).Client?.ReceiveGameReconnect(gameId);
+            var otherClient = ClientMap.GetValueOrDefault(otherPlayerInfo.PlayerId).Client;
+            if (otherClient != null)
+                await otherClient.ReceiveGameReconnect(gameId);
             await Clients.Caller.ReceiveGameStart(gameInfo.Game, gameId, playerId, requestedPlayer);
         }
 
@@ -281,8 +289,14 @@ namespace ShogiServer.Hubs
                 throw new HubException("invalid move: unable to complete move", e);
             }
 
-            await ClientMap.GetValueOrDefault(gameInfo.BlackPlayer.PlayerId).Client?.ReceiveGameUpdate(gameInfo.Game, gameInfo.Id);
-            await ClientMap.GetValueOrDefault(gameInfo.WhitePlayer.PlayerId).Client?.ReceiveGameUpdate(gameInfo.Game, gameInfo.Id);
+
+            var blackClient = ClientMap.GetValueOrDefault(gameInfo.WhitePlayer.PlayerId).Client;
+            if (blackClient != null)
+                await blackClient.ReceiveGameUpdate(gameInfo.Game, gameInfo.Id);
+
+            var whiteClient = ClientMap.GetValueOrDefault(gameInfo.WhitePlayer.PlayerId).Client;
+            if (whiteClient != null)
+                await whiteClient.ReceiveGameUpdate(gameInfo.Game, gameInfo.Id);
         }
 
         public override async Task OnDisconnectedAsync(Exception exception)
@@ -323,7 +337,10 @@ namespace ShogiServer.Hubs
             }
 
             ClientMap.TryRemove(playerInfo.PlayerId, out _);
-            await ClientMap.GetValueOrDefault(otherPlayerInfo.PlayerId).Client?.ReceiveGameDisconnect(gameInfo.Id);
+
+            var otherClient = ClientMap.GetValueOrDefault(otherPlayerInfo.PlayerId).Client;
+            if (otherClient != null)
+                await otherClient.ReceiveGameDisconnect(gameInfo.Id);
         }
     }
 }
