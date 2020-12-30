@@ -32,8 +32,7 @@ namespace ShogiServer
                 var tableOp = TableOperation.InsertOrReplace(gameInfo);
 
                 // Execute the operation.
-                var result = await table.ExecuteAsync(tableOp);
-                var p = result.Result as ShogiHub.GameInfo; // test
+                await table.ExecuteAsync(tableOp);
             }
             catch (StorageException)
             {

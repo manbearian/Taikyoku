@@ -86,12 +86,11 @@ namespace WPF_UI
             borders.Add(borderRight);
 
             TaikyokuShogi? savedGame = null;
-            Guid gameId = Guid.Empty;
-            Guid playerId = Guid.Empty;
+            (Guid GameId, Guid PlayerId)? networkGameState = null;
 
             try
             {
-                (savedGame, gameId, playerId) = GameSaver.LoadMostRecent();
+                (savedGame, networkGameState) = GameSaver.LoadMostRecentGame();
             }
             catch (System.Text.Json.JsonException)
             {
@@ -99,13 +98,11 @@ namespace WPF_UI
             }
 
             // reconnect to the server for network games
-            if (savedGame != null && gameId != Guid.Empty)
+            if (networkGameState != null)
             {
-                Contract.Assert(playerId != Guid.Empty);
-
                 // todo: this prevents the main window from drawing while connection
                 // is in progress. I think it might be better to draw the window first?
-                var window = new ReconnectWindow(gameId, playerId);
+                var window = new ReconnectWindow(networkGameState.Value.GameId, networkGameState.Value.PlayerId);
                 if (window.ShowDialog() == true)
                 {
                     Contract.Assert(window.Game != null, "DialogReult true => Game != null");
@@ -123,7 +120,7 @@ namespace WPF_UI
                     MessageBox.Show("Failed to reconnect network game.", "Network Game", MessageBoxButton.OK, MessageBoxImage.Error);
                 }
             }
- 
+
             StartGame(savedGame ?? new TaikyokuShogi());
         }
 
@@ -135,6 +132,8 @@ namespace WPF_UI
                 Contract.Assert(LocalPlayer != null);
                 Contract.Assert(GameId != Guid.Empty);
                 Contract.Assert(PlayerId != Guid.Empty);
+
+                GameSaver.RecordNetworkGame(GameId, PlayerId);
 
                 // todo: there's a race condition here as the other player could make a move and even disconnect before we set this event handler
                 //       perhaps we should poll the state after setting this up.
@@ -226,11 +225,10 @@ namespace WPF_UI
         {
             _pieceInfoWindow?.Close();
 
-            // save the game, and all other settings, on exit
+            // save the game on exit
             if (Game != null)
             {
-                GameSaver.Save(Game, GameId, PlayerId);
-                Properties.Settings.Default.Save();
+                GameSaver.RecordGameState(Game, IsNetworkGame ? (GameId, PlayerId) : null as (Guid, Guid)?);
             }
         }
 
@@ -241,7 +239,7 @@ namespace WPF_UI
                 var window = new NewGameWindow();
                 if (window.ShowDialog() == true)
                 {
-                    Contract.Assume(window.Game != null, "DialogResult == true => Game !+ null");
+                    Contract.Assume(window.Game != null, "DialogResult == true => Game != null");
 
                     if (window.NetworkGame)
                     {
@@ -288,9 +286,16 @@ namespace WPF_UI
             }
             else if (e.Source == myGamesMenuItem)
             {
-                var window = new KnownGamesWindow();
+                var window = new ConnectionWindow() { KnownGames = GameSaver.GetNetworkGames().Where(elem => elem != (GameId, PlayerId)) };
                 if (window.ShowDialog() == true)
                 {
+                    Contract.Assert(window.Game != null, "DialogResult == true => Game != null");
+
+                    NetworkConnection = window.Connection;
+                    LocalPlayer = window.LocalPlayer;
+                    GameId = window.GameId;
+                    PlayerId = window.PlayerId;
+                    StartGame(window.Game);
                 }
             }
             else if (e.Source == connectMenuItem)
@@ -298,7 +303,7 @@ namespace WPF_UI
                 var window = new ConnectionWindow();
                 if (window.ShowDialog() == true)
                 {
-                    Contract.Assert(window.Game != null, "DialogResult == true => Game !+ null");
+                    Contract.Assert(window.Game != null, "DialogResult == true => Game != null");
 
                     NetworkConnection = window.Connection;
                     LocalPlayer = window.LocalPlayer;
@@ -312,7 +317,7 @@ namespace WPF_UI
                 var window = new NewGameWindow() { Game = Game };
                 if (window.ShowDialog() == true)
                 {
-                    Contract.Assert(window.Game != null, "DialogResult == true => Game !+ null");
+                    Contract.Assert(window.Game != null, "DialogResult == true => Game != null");
 
                     NetworkConnection = window.Connection;
                     LocalPlayer = window.LocalPlayer;
@@ -362,7 +367,6 @@ namespace WPF_UI
                 return;
 
             // update our saved games
-            GameSaver.Save(e.Game, GameId, PlayerId);
             ChangeGame(e.Game);
         }
 

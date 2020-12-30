@@ -23,7 +23,7 @@ namespace ShogiServer.Hubs
     {
         Task ReceiveNewGame(TaikyokuShogi game, Guid id);
 
-        Task ReceiveGameList(IEnumerable<NetworkGameInfo> list);
+        Task ReceiveGameList(IEnumerable<ClientGameInfo> list);
 
         Task ReceiveGameStart(TaikyokuShogi game, Guid id, Guid playerId, Player player);
 
@@ -63,11 +63,33 @@ namespace ShogiServer.Hubs
                 (((ITableEntity)this).PartitionKey, ((ITableEntity)this).RowKey) = (string.Empty, id.ToString());
             }
 
-            public NetworkGameInfo ToNetworkGameInfo() =>
-                new NetworkGameInfo()
+            public Player GetPlayerColor(Guid playerId) => 
+                playerId == BlackPlayer.PlayerId ? Player.Black :
+                    (playerId == WhitePlayer.PlayerId ? Player.White :
+                        throw new HubException("unknown player"));
+
+            public PlayerInfo GetPlayerInfo(Guid playerId) => GetPlayerInfo(GetPlayerColor(playerId));
+
+            public PlayerInfo GetOtherPlayerInfo(Guid playerId) => GetPlayerInfo(GetPlayerColor(playerId).Opponent());
+
+            public PlayerInfo GetPlayerInfo(Player player) =>
+                player switch
+                {
+                    Player.Black => BlackPlayer,
+                    Player.White => WhitePlayer,
+                    _ => throw new HubException("unknown player")
+                };
+
+
+            public ClientGameInfo ToClientGameInfo() => ToClientGameInfo(Guid.Empty);
+
+            public ClientGameInfo ToClientGameInfo(Guid requestingPlayerId) =>
+                new ClientGameInfo()
                 {
                     GameId = Id,
                     Created = Created,
+                    RequestingPlayerId = requestingPlayerId,
+                    ClientColor = GetPlayerColor(requestingPlayerId).ToString(),
                     BlackName = BlackPlayer.PlayerName,
                     WhiteName = WhitePlayer.PlayerName,
                 };
@@ -118,13 +140,16 @@ namespace ShogiServer.Hubs
 
         // map players to their connections
         private static readonly ConcurrentDictionary<Guid, (IShogiClient Client, string ClientId)> ClientMap = new ConcurrentDictionary<Guid, (IShogiClient Client, string ClientId)>();
+        private static readonly object ClientMapLock = new object();
 
-        private static IEnumerable<NetworkGameInfo> GamesList
+        private static IEnumerable<ClientGameInfo> GamesList
         {
-            get => OpenGames.Values.Select(info => info.ToNetworkGameInfo());
+            get => OpenGames.Values.Select(info => info.ToClientGameInfo());
         }
 
         private GameInfo ClientGame { get => (GameInfo)Context.Items["ClientGame"]; set => Context.Items["ClientGame"] = value; }
+
+        private Guid ClientPlayerId { get => Context.Items["ClientPlayerId"] as Guid? ?? Guid.Empty; set => Context.Items["ClientPlayerId"] = value; }
 
         public async Task CreateGame(string playerName, TaikyokuShogiOptions gameOptions, bool asBlackPlayer, TaikyokuShogi existingGame)
         {
@@ -139,6 +164,7 @@ namespace ShogiServer.Hubs
             ClientMap[playerId] = (Clients.Caller, Context.ConnectionId);
             OpenGames[gameId] = gameInfo;
             ClientGame = gameInfo;
+            ClientPlayerId = playerId;
 
             await Clients.All.ReceiveGameList(GamesList);
             await Clients.Caller.ReceiveNewGame(game, gameId);
@@ -151,7 +177,7 @@ namespace ShogiServer.Hubs
 
         public async Task RequestGameInfo(IEnumerable<NetworkGameRequest> requests)
         {
-            var gamelist = new ConcurrentBag<NetworkGameInfo>();
+            var gameList = new ConcurrentBag<ClientGameInfo>();
 
             // query the table storage for all the requested games
             var tasks = new List<Task>();
@@ -161,18 +187,20 @@ namespace ShogiServer.Hubs
                     ContinueWith(t =>
                     {
                         var gameInfo = t.Result;
-                        if (request.RequestingPlayerId != gameInfo.BlackPlayer.PlayerId && request.RequestingPlayerId != gameInfo.WhitePlayer.PlayerId)
-                            throw new HubException("No permission to request game information");
-                        gamelist.Add(gameInfo.ToNetworkGameInfo());
+                        if (gameInfo != null)
+                            gameList.Add(gameInfo.ToClientGameInfo(request.RequestingPlayerId));
                     }));
             }
 
             Task.WaitAll(tasks.ToArray());
-            await Clients.Caller.ReceiveGameList(gamelist);
+            await Clients.Caller.ReceiveGameList(gameList);
         }
 
         public async Task JoinGame(Guid gameId, string playerName)
         {
+            // first disconnect from any games we're currently connected to
+            await DisconnectClientGame();
+
             if (!OpenGames.TryRemove(gameId, out var gameInfo))
             {
                 throw new HubException($"Failed to join game, game id not found: {gameId}");
@@ -201,12 +229,13 @@ namespace ShogiServer.Hubs
             var playerId = Guid.NewGuid();
             (clientInfo.PlayerId, clientInfo.PlayerName) = (playerId, playerName);
             ClientMap[playerId] = (Clients.Caller, Context.ConnectionId);
+            ClientPlayerId = playerId;
             ClientGame = gameInfo;
 
             await Program.TableStorage.AddGame(gameInfo);
             await Clients.All.ReceiveGameList(GamesList);
 
-            var blackClient = ClientMap.GetValueOrDefault(gameInfo.WhitePlayer.PlayerId).Client;
+            var blackClient = ClientMap.GetValueOrDefault(gameInfo.BlackPlayer.PlayerId).Client;
             if (blackClient != null)
                 await blackClient.ReceiveGameStart(gameInfo.Game, gameId, gameInfo.BlackPlayer.PlayerId, Player.Black);
 
@@ -217,39 +246,21 @@ namespace ShogiServer.Hubs
 
         public async Task RejoinGame(Guid gameId, Guid playerId)
         {
+            // first disconnect from any games we're currently connected to
+            await DisconnectClientGame();
+
             var gameInfo = await Program.TableStorage.FindGame(gameId);
             ClientGame = gameInfo;
+            ClientPlayerId = playerId;
+            ClientMap[playerId] = (Clients.Caller, Context.ConnectionId);
 
             if (gameInfo == null)
             {
                 throw new HubException($"Failed to join game, game id not found: {gameId}");
             }
 
-            Player requestedPlayer;
-            GameInfo.PlayerInfo playerInfo;
-            GameInfo.PlayerInfo otherPlayerInfo;
-
-            if (playerId == gameInfo.BlackPlayer.PlayerId)
-            {
-                requestedPlayer = Player.Black;
-                playerInfo = gameInfo.BlackPlayer;
-                otherPlayerInfo = gameInfo.WhitePlayer;
-            }
-            else if (playerId == gameInfo.WhitePlayer.PlayerId)
-            {
-                requestedPlayer = Player.White;
-                playerInfo = gameInfo.WhitePlayer;
-                otherPlayerInfo = gameInfo.BlackPlayer;
-            }
-            else
-            {
-                throw new HubException($"Failed to join game, player id not found: {playerId}");
-            }
-
-            if (ClientMap.TryGetValue(playerInfo.PlayerId, out _))
-                throw new HubException($"Failed to join game, game is full: {gameId}");
-
-            ClientMap[playerInfo.PlayerId] = (Clients.Caller, Context.ConnectionId);
+            var requestedPlayer = gameInfo.GetPlayerColor(playerId);
+            var otherPlayerInfo = gameInfo.GetPlayerInfo(requestedPlayer.Opponent());
 
             var otherClient = ClientMap.GetValueOrDefault(otherPlayerInfo.PlayerId).Client;
             if (otherClient != null)
@@ -264,20 +275,15 @@ namespace ShogiServer.Hubs
             await Clients.All.ReceiveGameList(GamesList);
         }
 
-        public async Task MakeMove(Location startLoc, Location endLoc, Location midLoc, bool promote)
+        public async Task RequestMove(Location startLoc, Location endLoc, Location midLoc, bool promote)
         {
             var gameInfo = ClientGame;
+            var playerId = ClientPlayerId;
 
             if (gameInfo == null)
                 throw new HubException("illegal move: no game in progress");
 
-            Player? requestingPlayer = null;
-            if (ClientMap.GetValueOrDefault(gameInfo.BlackPlayer.PlayerId).ClientId == Context.ConnectionId)
-                requestingPlayer = Player.Black;
-            else if (ClientMap.GetValueOrDefault(gameInfo.WhitePlayer.PlayerId).ClientId == Context.ConnectionId)
-                requestingPlayer = Player.White;
-
-            if (requestingPlayer == null || gameInfo.Game.CurrentPlayer != requestingPlayer)
+            if (gameInfo.Game.CurrentPlayer != gameInfo.GetPlayerColor(playerId))
                 throw new HubException("illegal move: wrong client requested the move");
 
             try
@@ -289,8 +295,13 @@ namespace ShogiServer.Hubs
                 throw new HubException("invalid move: unable to complete move", e);
             }
 
+            // Record updated game state into persistant storage
+            // TODO: there maybe a a reace here where the next move could commit before this move
+            //       somewhere we need to ensure that only the latest game update is saved to the DB
+            //       to avoid appearing to travel backwards in time.
+            await Program.TableStorage.AddGame(gameInfo);
 
-            var blackClient = ClientMap.GetValueOrDefault(gameInfo.WhitePlayer.PlayerId).Client;
+            var blackClient = ClientMap.GetValueOrDefault(gameInfo.BlackPlayer.PlayerId).Client;
             if (blackClient != null)
                 await blackClient.ReceiveGameUpdate(gameInfo.Game, gameInfo.Id);
 
@@ -299,17 +310,13 @@ namespace ShogiServer.Hubs
                 await whiteClient.ReceiveGameUpdate(gameInfo.Game, gameInfo.Id);
         }
 
-        public override async Task OnDisconnectedAsync(Exception exception)
+        private async Task DisconnectClientGame()
         {
-            await base.OnDisconnectedAsync(exception);
-
-            GameInfo gameInfo = ClientGame;
+            var gameInfo = ClientGame;
+            var playerId = ClientPlayerId;
 
             if (gameInfo == null)
                 return;
-
-            GameInfo.PlayerInfo playerInfo;
-            GameInfo.PlayerInfo otherPlayerInfo;
 
             if (OpenGames.ContainsKey(gameInfo.Id))
             {
@@ -318,29 +325,25 @@ namespace ShogiServer.Hubs
                 return;
             }
 
-            // remove our client information (so it no longer gets game updates)
-            // signal the other client (if present) that there was a disconnect
-
-            if (ClientMap.GetValueOrDefault(gameInfo.BlackPlayer.PlayerId).ClientId == Context.ConnectionId)
+            // TODO: when upgrading to .net 5 we can use overload of TryRemove that takes a value and remove this lock
+            lock (ClientMapLock)
             {
-                playerInfo = gameInfo.BlackPlayer;
-                otherPlayerInfo = gameInfo.WhitePlayer;
-            }
-            else if (ClientMap.GetValueOrDefault(gameInfo.WhitePlayer.PlayerId).ClientId == Context.ConnectionId)
-            {
-                playerInfo = gameInfo.WhitePlayer;
-                otherPlayerInfo = gameInfo.BlackPlayer;
-            }
-            else
-            {
-                throw new Exception("Unexpected client disconnection");
+                // remove this client from the map if it is still relavant (see RACE below)
+                // RACE: a new client can connect as this player before the disconnection of the older client occurs
+                if (ClientMap[playerId] == (Clients.Caller, Context.ConnectionId))
+                    ClientMap.TryRemove(playerId, out _);
             }
 
-            ClientMap.TryRemove(playerInfo.PlayerId, out _);
-
+            var otherPlayerInfo = gameInfo.GetOtherPlayerInfo(playerId);
             var otherClient = ClientMap.GetValueOrDefault(otherPlayerInfo.PlayerId).Client;
             if (otherClient != null)
                 await otherClient.ReceiveGameDisconnect(gameInfo.Id);
+        }
+
+        public override async Task OnDisconnectedAsync(Exception exception)
+        {
+            await DisconnectClientGame();
+            await base.OnDisconnectedAsync(exception);
         }
     }
 }

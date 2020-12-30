@@ -9,53 +9,58 @@ using ShogiEngine;
 
 namespace WPF_UI
 {
-    class GameSaver
+    static class GameSaver
     {
-        public TaikyokuShogi? Game { get; set; }
+        private static System.Threading.Mutex gameSaverLock = new System.Threading.Mutex(false, "SHOGI_gameSaverLock");
 
-        public Guid GameId { get; set; }
-
-        public Guid PlayerId { get; set; }
-
-        public static void Save(TaikyokuShogi game, Guid gameId, Guid playerId)
+        // For network games, save enough information to query the server about the game
+        //  todo: should we cache other information?
+        public static void RecordNetworkGame(Guid gameId, Guid playerId)
         {
-            Contract.Requires((gameId == Guid.Empty && playerId == Guid.Empty) || (gameId != Guid.Empty && playerId != Guid.Empty));
+            Contract.Requires(gameId != Guid.Empty && playerId != Guid.Empty);
 
-            if (Properties.Settings.Default.GameList == null)
-                Properties.Settings.Default.GameList = new Hashtable();
+            // this reload/mutux is designed to allow multiple clients to interact with the settings simultaneously
+            //   (e.g. white and black players in same game on same machine, but differnet clients)
+            if (gameSaverLock.WaitOne(TimeSpan.FromSeconds(1)))
+            {
+                Properties.Settings.Default.Reload();
+                Properties.Settings.Default.NetworkGameList.Add((gameId, playerId));
+                Properties.Settings.Default.Save();
+                gameSaverLock.ReleaseMutex();
+            }
+            else
+            {
+                // we timed out trying to access the save-game file... TODO: what should we do?
+                throw new Exception("failed to acquire save game mutex");
+            }
+        }
 
-            Properties.Settings.Default.GameList[gameId] =
-                JsonSerializer.SerializeToUtf8Bytes(new GameSaver() { Game = game, GameId = gameId, PlayerId = playerId }, new JsonSerializerOptions());
-            Properties.Settings.Default.LastGame = gameId;
+        public static IEnumerable<(Guid GameId, Guid PlayerId)> GetNetworkGames()
+        {
+            // don't need the mutex here, just show whatever is available
+            Properties.Settings.Default.Reload();
+            return Properties.Settings.Default.NetworkGameList;
+        }
+
+        public static void RecordGameState(TaikyokuShogi game, (Guid gameId, Guid playerId)? networkGameInfo = null)
+        {
+            Properties.Settings.Default.LastGameState = networkGameInfo == null ? game.Serialize() : null;
+            Properties.Settings.Default.LastNetworkGameState = networkGameInfo;
             Properties.Settings.Default.Save();
         }
 
-        public static Dictionary<Guid, byte[]> AllGames()
-            => Properties.Settings.Default.GameList.Cast<(Guid, byte[])>().ToDictionary(p => p.Item1, p => p.Item2);
-
-        public static (TaikyokuShogi Game, Guid GameId, Guid PlayerId) LoadMostRecent() =>
-            Load(Properties.Settings.Default.LastGame);
-
-        public static (TaikyokuShogi Game, Guid GameId, Guid PlayerId) Load(Guid gameId)
+        public static (TaikyokuShogi? GameState, (Guid gameId, Guid playerId)? NetworkGameInfo) LoadMostRecentGame()
         {
-            var gameList = Properties.Settings.Default.GameList;
-            if (gameList == null)
-                throw new JsonException("Unable to load save game information");
+            var lastGameState = Properties.Settings.Default.LastGameState;
+            var lastNetworkGameState = Properties.Settings.Default.LastNetworkGameState;
 
-            var gameState = Properties.Settings.Default.GameList[gameId] as byte[];
-            var saveGame = JsonSerializer.Deserialize<GameSaver>(gameState);
+            if (lastNetworkGameState != null)
+                return (null, lastNetworkGameState);
 
-            if (saveGame.Game == null)
-                throw new JsonException("Corrupted game information in saved game");
+            if (lastGameState != null)
+                return (TaikyokuShogi.Deserlialize(lastGameState), null);
 
-            // validate network information before returning the result
-            if ((saveGame.GameId != Guid.Empty || saveGame.PlayerId != Guid.Empty)
-                && (saveGame.GameId == Guid.Empty || saveGame.PlayerId == Guid.Empty))
-            {
-                throw new JsonException("Corrupted network information in saved game");
-            }
-
-            return (saveGame.Game, saveGame.GameId, saveGame.PlayerId);
+            return (null, null);
         }
     }
 }

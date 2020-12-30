@@ -10,16 +10,26 @@ namespace ShogiComms
     public class NetworkGameRequest
     {
         public Guid GameId { get; set; }
+
         public Guid RequestingPlayerId { get; set; }
+
+        public NetworkGameRequest() { }
+
+        public NetworkGameRequest(Guid gameId, Guid requestingPlayerId) =>
+            (GameId, RequestingPlayerId) = (gameId, requestingPlayerId);
     }
 
-    public class NetworkGameInfo
+    public class ClientGameInfo
     {
         public Guid GameId { get; set; }
 
-        public string BlackName { get; set; }
+        public string ClientColor { get; set; } = string.Empty;
 
-        public string WhiteName { get; set; }
+        public Guid RequestingPlayerId { get; set; }
+
+        public string BlackName { get; set; } = string.Empty;
+
+        public string WhiteName { get; set; } = string.Empty;
 
         public DateTime Created { get; set; }
 

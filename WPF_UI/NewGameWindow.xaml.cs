@@ -33,7 +33,7 @@ namespace WPF_UI
 
         public Player? LocalPlayer { get; private set; }
 
-        private bool _waitingForConnection { get => !NewGameButton.IsEnabled; }
+        private bool WaitingForConnection { get => !NewGameButton.IsEnabled; }
 
         public NewGameWindow()
         {
@@ -56,9 +56,9 @@ namespace WPF_UI
             Title = "Add Opponent";
         }
 
-        // Disable all UI elements except the cancel button
         private void SetUIForWaitForConnection()
         {
+            // Disable all UI elements except the cancel button
             GameTypeGroupBox.IsEnabled = false;
             GameOptionGroupBox.IsEnabled = false;
             NewGameButton.IsEnabled = false;
@@ -89,6 +89,7 @@ namespace WPF_UI
             else if (NetworkRadioButton.IsChecked == true)
             {
                 Properties.Settings.Default.PlayerName = NameBox.Text;
+                Properties.Settings.Default.Save();
 
                 var localPlayerIsBlack = ColorBox.SelectedIndex == 0;
                 var playerName = NameBox.Text;
@@ -120,7 +121,7 @@ namespace WPF_UI
 
         private async void CancelButton_Click(object sender, RoutedEventArgs e)
         {
-            if (_waitingForConnection)
+            if (WaitingForConnection)
             {
                 try
                 {

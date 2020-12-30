@@ -8,7 +8,7 @@
     <Setting Name="PlayerName" Type="System.String" Scope="User">
       <Value Profile="(Default)" />
     </Setting>
-    <Setting Name="GameList" Type="System.Collections.Hashtable" Scope="User">
+    <Setting Name="NetworkGameList" Type="System.Collections.Hashtable" Scope="User">
       <Value Profile="(Default)" />
     </Setting>
     <Setting Name="LastGame" Type="System.Guid" Scope="User">

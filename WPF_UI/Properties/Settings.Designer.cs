@@ -49,24 +49,38 @@ namespace WPF_UI.Properties {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        public global::System.Collections.Hashtable GameList {
+        public global::System.Collections.Generic.HashSet<(global::System.Guid GameId, global::System.Guid PlayerId)> NetworkGameList {
             get {
-                return ((global::System.Collections.Hashtable)(this["GameList"]));
+                return ((global::System.Collections.Generic.HashSet<(global::System.Guid GameId, global::System.Guid PlayerId)>)(this["NetworkGameList"]));
             }
             set {
-                this["GameList"] = value;
+                this["NetworkGameList"] = value;
             }
         }
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("00000000-0000-0000-0000-000000000000")]
-        public global::System.Guid LastGame {
+        public byte[] LastGameState {
             get {
-                return ((global::System.Guid)(this["LastGame"]));
+                return ((byte[])this["LastGameState"]);
             }
             set {
-                this["LastGame"] = value;
+                this["LastGameState"] = value;
+            }
+        }
+
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        public (global::System.Guid GameId, global::System.Guid PlayerId)? LastNetworkGameState
+        {
+            get
+            {
+                return (((global::System.Guid GameId, global::System.Guid PlayerId)?)this["LastNetworkGameState"]);
+            }
+            set
+            {
+                this["LastNetworkGameState"] = value;
             }
         }
     }

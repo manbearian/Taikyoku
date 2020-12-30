@@ -40,9 +40,9 @@ namespace ShogiClient
 
     public class ReceiveGameListEventArgs : EventArgs
     {
-        public IEnumerable<NetworkGameInfo> GameList { get; }
+        public IEnumerable<ClientGameInfo> GameList { get; }
 
-        public ReceiveGameListEventArgs(IEnumerable<NetworkGameInfo> list) => GameList = list;
+        public ReceiveGameListEventArgs(IEnumerable<ClientGameInfo> list) => GameList = list;
     }
 
     public class Connection
@@ -71,19 +71,13 @@ namespace ShogiClient
         {
             _connection = new HubConnectionBuilder().
                 WithUrl("https://localhost:44352/ShogiHub").
+                WithAutomaticReconnect().
                 Build();
-
-            _connection.Closed += async (error) =>
-            {
-                // manual reconnect on disconnect
-                await Task.Delay(new Random().Next(0, 5) * 1000);
-                await _connection.StartAsync();
-            };
 
             _connection.On<TaikyokuShogi, Guid>("ReceiveNewGame", (gameObject, gameId) =>
                 OnReceiveNewGame?.Invoke(this, new ReceiveGameUpdateEventArgs(gameObject, gameId)));
 
-            _connection.On<IEnumerable<NetworkGameInfo>>("ReceiveGameList", gameList =>
+            _connection.On<IEnumerable<ClientGameInfo>>("ReceiveGameList", gameList =>
                 OnReceiveGameList?.Invoke(this, new ReceiveGameListEventArgs(gameList)));
 
             _connection.On<TaikyokuShogi, Guid, Guid, Player>("ReceiveGameStart", (gameObject, gameId, playerId, player) =>
@@ -121,6 +115,24 @@ namespace ShogiClient
             await _connection.InvokeAsync("CancelGame");
 
         public async Task RequestMove((int X, int Y) startLoc, (int X, int Y) endLoc, (int X, int Y)? midLoc, bool promote) =>
-            await _connection.InvokeAsync("MakeMove", (Location)startLoc, (Location)endLoc, (Location)midLoc, promote);
+            await _connection.InvokeAsync("RequestMove", (Location)startLoc, (Location)endLoc, (Location)midLoc, promote);
+    }
+
+    public static class ClientGameInfoExtension
+    {
+        public static Player PlayerColor(this ClientGameInfo gameInfo) => Enum.TryParse<Player>(gameInfo.ClientColor, out var player) ? player : throw new NotSupportedException();
+
+        public static string PlayerName(this ClientGameInfo gameInfo, Player? player = null) =>
+            player switch
+            {
+                Player.Black => gameInfo.BlackName,
+                Player.White => gameInfo.WhiteName,
+                null => gameInfo.PlayerName(gameInfo.PlayerColor()),
+                _ => throw new NotSupportedException()
+            };
+
+        public static Player OpponentColor(this ClientGameInfo gameInfo) => gameInfo.PlayerColor().Opponent();
+
+        public static string OpponentName(this ClientGameInfo gameInfo) => gameInfo.PlayerName(gameInfo.OpponentColor());
     }
 }

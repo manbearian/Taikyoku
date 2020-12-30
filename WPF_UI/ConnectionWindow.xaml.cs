@@ -32,6 +32,8 @@ namespace WPF_UI
 
         public Player? LocalPlayer { get; private set; }
 
+        public IEnumerable<(Guid GameId, Guid PlayerId)>? KnownGames { get; set; }
+
         public ConnectionWindow()
         {
             InitializeComponent();
@@ -42,6 +44,12 @@ namespace WPF_UI
             Connection = new Connection();
             Connection.OnReceiveGameList += RecieveGameList;
             Connection.OnReceiveGameStart += RecieveGameStart;
+        }
+
+        private void SetUIForConnectExistingGame()
+        {
+            NameBox.IsEnabled = false;
+            NameBox.Text = string.Empty;
         }
 
         private void RecieveGameList(object sender, ReceiveGameListEventArgs e) =>
@@ -58,7 +66,7 @@ namespace WPF_UI
                 Close();
             });
 
-        private void UpdateGameList(IEnumerable<NetworkGameInfo> gameList)
+        private void UpdateGameList(IEnumerable<ClientGameInfo> gameList)
         {
             GamesList.Items.Clear();
 
@@ -71,9 +79,11 @@ namespace WPF_UI
             }
             else
             {
-                foreach (var game in gameList)
+                var orderedList = gameList.OrderByDescending(elem => elem.LastPlayed).ThenByDescending(elem => elem.Created).ThenBy(elem => elem.ClientColor);
+
+                foreach (var game in orderedList)
                 {
-                    GamesList.Items.Add(new NetworkGameInfoWrapper(game));
+                    GamesList.Items.Add(new ClientGameInfoWrapper(game));
                 }
 
                 GamesList.DisplayMemberPath = "DisplayString";
@@ -89,7 +99,18 @@ namespace WPF_UI
                 return;
 
             Properties.Settings.Default.PlayerName = NameBox.Text;
-            await Connection.RequestJoinGame(((NetworkGameInfo)(NetworkGameInfoWrapper)selectedItem).GameId, NameBox.Text);
+            Properties.Settings.Default.Save();
+
+            var gameInfo = ((ClientGameInfo)(ClientGameInfoWrapper)selectedItem);
+
+            if (KnownGames == null)
+            {
+                await Connection.RequestJoinGame(gameInfo.GameId, NameBox.Text);
+            }
+            else
+            {
+                await Connection.RequestRejoinGame(gameInfo.GameId, gameInfo.RequestingPlayerId);
+            }
         }
 
         private async void Window_SourceInitialized(object sender, EventArgs e)
@@ -97,16 +118,52 @@ namespace WPF_UI
             try
             {
                 await Connection.ConnectAsync();
-                await Connection.RequestAllOpenGameInfo();
+
+                if (KnownGames == null)
+                {
+                    // Window opened in mode where user wants to search for a game
+                    await Connection.RequestAllOpenGameInfo();
+                }
+                else
+                {
+                    // Window opened in a mode where user will select a game they've played before
+                    SetUIForConnectExistingGame();
+                    await Connection.RequestGameInfo(KnownGames.Select(p => new NetworkGameRequest(p.GameId, p.PlayerId)));
+                }
             }
-            catch (Exception)
+            catch (System.Net.Sockets.SocketException)
             {
-                // todo: where do i log this error?
+                // bad connection, timeout, etc.
+                // TODO: log error? report to uesr?
+                Close();
+            }
+            catch (Microsoft.AspNetCore.SignalR.HubException)
+            {
+                // server couldn't find/load game
+                // TODO: log error? report to uesr?
+                Close();
             }
         }
 
-        private void GamesList_SelectionChanged(object sender, SelectionChangedEventArgs e) =>
+        private void GamesList_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
             JoinGameButton.IsEnabled = e.AddedItems.Count > 0;
+
+            if (KnownGames != null)
+            {
+                // mode were UI is selecting an existing game
+                // update 'our' name to be the name that we registered when we joined the game
+                if (e.AddedItems.Count == 0)
+                {
+                    NameBox.Text = string.Empty;
+                }
+                else
+                {
+                    var gameInfo = (ClientGameInfo)(ClientGameInfoWrapper)GamesList.SelectedItem;
+                    NameBox.Text = gameInfo.PlayerName();
+                }
+            }
+        }
 
         private void GamesList_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
@@ -122,25 +179,20 @@ namespace WPF_UI
             Connection.OnReceiveGameList -= RecieveGameList;
             Connection.OnReceiveGameStart -= RecieveGameStart;
         }
-    }
 
-    class NetworkGameInfoWrapper
-    {
-        private readonly NetworkGameInfo _info;
-
-        public NetworkGameInfoWrapper(NetworkGameInfo info) => _info = info;
-
-        public string DisplayString
+        class ClientGameInfoWrapper
         {
-            get
-            {
-                string theirName = _info.BlackName != string.Empty ? _info.BlackName : _info.WhiteName;
-                string theirColor = _info.BlackName != string.Empty ? "black" : "white";
-                return $"{theirName} ({theirColor})\t{_info.Created}";
-            }
-        }
+            private readonly ClientGameInfo _info;
 
-        public static implicit operator NetworkGameInfo(NetworkGameInfoWrapper wrapper) =>
-            wrapper._info;
+            public ClientGameInfoWrapper(ClientGameInfo info) => _info = info;
+
+            public string DisplayString
+            {
+                get => $"vs {_info.OpponentName()} ({_info.OpponentColor()})\t{_info.Created}";
+            }
+
+            public static implicit operator ClientGameInfo(ClientGameInfoWrapper wrapper) =>
+                wrapper._info;
+        }
     }
 }
