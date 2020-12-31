@@ -17,7 +17,7 @@ namespace WPF_UI
         //  todo: should we cache other information?
         public static void RecordNetworkGame(Guid gameId, Guid playerId)
         {
-            Contract.Requires(gameId != Guid.Empty && playerId != Guid.Empty);
+            Contract.Assert(gameId != Guid.Empty && playerId != Guid.Empty);
 
             // this reload/mutux is designed to allow multiple clients to interact with the settings simultaneously
             //   (e.g. white and black players in same game on same machine, but differnet clients)
@@ -27,6 +27,29 @@ namespace WPF_UI
                 Properties.Settings.Default.NetworkGameList.Add((gameId, playerId));
                 Properties.Settings.Default.Save();
                 gameSaverLock.ReleaseMutex();
+            }
+            else
+            {
+                // we timed out trying to access the save-game file... TODO: what should we do?
+                throw new Exception("failed to acquire save game mutex");
+            }
+        }
+
+        public static void RemoveNetworkGame(Guid gameId, Guid playerId)
+        {
+            // this reload/mutux is designed to allow multiple clients to interact with the settings simultaneously
+            //   (e.g. white and black players in same game on same machine, but differnet clients)
+            if (gameSaverLock.WaitOne(TimeSpan.FromSeconds(1)))
+            {
+                Properties.Settings.Default.Reload();
+                Properties.Settings.Default.NetworkGameList.Remove((gameId, playerId));
+                Properties.Settings.Default.Save();
+                gameSaverLock.ReleaseMutex();
+
+                if (Properties.Settings.Default.LastNetworkGameState == (gameId, playerId))
+                {
+                    ClearMostRecentGame();
+                }
             }
             else
             {
@@ -62,5 +85,12 @@ namespace WPF_UI
 
             return (null, null);
         }
+
+        public static void ClearMostRecentGame()
+        {
+            Properties.Settings.Default.LastNetworkGameState = null;
+            Properties.Settings.Default.LastGameState = null;
+        }
     }
+
 }
