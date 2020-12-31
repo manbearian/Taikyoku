@@ -118,6 +118,7 @@ namespace WPF_UI
                 {
                     // failed to reconnect network game, create a new game
                     MessageBox.Show("Failed to reconnect network game.", "Network Game", MessageBoxButton.OK, MessageBoxImage.Error);
+                    GameSaver.ClearMostRecentGame();
                 }
             }
 
@@ -239,7 +240,7 @@ namespace WPF_UI
                 var window = new NewGameWindow();
                 if (window.ShowDialog() == true)
                 {
-                    Contract.Assume(window.Game != null, "DialogResult == true => Game != null");
+                    Contract.Assert(window.Game != null, "DialogResult == true => Game != null");
 
                     if (window.NetworkGame)
                     {
@@ -287,6 +288,7 @@ namespace WPF_UI
             else if (e.Source == myGamesMenuItem)
             {
                 var window = new ConnectionWindow() { KnownGames = GameSaver.GetNetworkGames().Where(elem => elem != (GameId, PlayerId)) };
+
                 if (window.ShowDialog() == true)
                 {
                     Contract.Assert(window.Game != null, "DialogResult == true => Game != null");
@@ -296,6 +298,12 @@ namespace WPF_UI
                     GameId = window.GameId;
                     PlayerId = window.PlayerId;
                     StartGame(window.Game);
+                }
+
+                // remove games the server was unaware of from our known game list
+                foreach (var game in window.DeadGames)
+                {
+                    GameSaver.RemoveNetworkGame(game.GameId, game.PlayerId);
                 }
             }
             else if (e.Source == connectMenuItem)
