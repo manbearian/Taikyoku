@@ -53,13 +53,15 @@ namespace ShogiServer.Hubs
 
             public DateTime Created { get; private set; }
 
+            public DateTime LastPlayed { get; set; }
+
             public PlayerInfo BlackPlayer { get; } = new PlayerInfo();
 
             public PlayerInfo WhitePlayer { get; } = new PlayerInfo();
 
             public GameInfo(TaikyokuShogi game, Guid id)
             {
-                (Game, Id, Created) = (game, id, DateTime.UtcNow);
+                (Game, Id, Created, LastPlayed) = (game, id, DateTime.UtcNow, DateTime.Now);
                 (((ITableEntity)this).PartitionKey, ((ITableEntity)this).RowKey) = (string.Empty, id.ToString());
             }
 
@@ -80,18 +82,28 @@ namespace ShogiServer.Hubs
                     _ => throw new HubException("unknown player")
                 };
 
-
             public ClientGameInfo ToClientGameInfo() => ToClientGameInfo(Guid.Empty);
 
+            // Convert the saved state of this game into information that the client can comsume
             public ClientGameInfo ToClientGameInfo(Guid requestingPlayerId) =>
                 new ClientGameInfo()
                 {
                     GameId = Id,
                     Created = Created,
-                    RequestingPlayerId = requestingPlayerId,
+                    LastPlayed = LastPlayed,
                     ClientColor = GetPlayerColor(requestingPlayerId).ToString(),
                     BlackName = BlackPlayer.PlayerName,
                     WhiteName = WhitePlayer.PlayerName,
+
+                    // we don't generally want to send the client-ids off of the server to avoid
+                    // leaking these (having someone else's client-id would allow spoofing) but
+                    // we need to send back the requesting client's player-id so it can map back
+                    // to its  game request in the case where it has recorded both players in the
+                    // game within the same client.
+                    //  e.g. client requests game status as a set of (game-id, player-id) pairs,
+                    //  so it might request both (3, 0) and (3, 1) we must send it back the
+                    //  player-id  so it can differentiate the results.
+                    RequestingPlayerId = requestingPlayerId,
                 };
 
             //
@@ -108,6 +120,7 @@ namespace ShogiServer.Hubs
                     ["Game"] = new EntityProperty(Game.Serialize()),
                     ["Id"] = new EntityProperty(Id),
                     ["Created"] = new EntityProperty(Created),
+                    ["LastPlayed"] = new EntityProperty(LastPlayed),
                     ["BlackPlayer_PlayerId"] = new EntityProperty(BlackPlayer.PlayerId),
                     ["BlackPlayer_PlayerName"] = new EntityProperty(BlackPlayer.PlayerName),
                     ["WhitePlayer_PlayerId"] = new EntityProperty(WhitePlayer.PlayerId),
@@ -120,6 +133,7 @@ namespace ShogiServer.Hubs
                 Game = TaikyokuShogi.Deserlialize(properties["Game"].BinaryValue);
                 Id = properties["Id"].GuidValue ?? throw new Exception("Cannot deserialize");
                 Created = properties["Created"].DateTime ?? throw new Exception("Cannot deserialize");
+                LastPlayed = properties["LastPlayed"].DateTime ?? throw new Exception("Cannot deserialize");
                 BlackPlayer.PlayerId = properties["BlackPlayer_PlayerId"].GuidValue ?? throw new Exception("Cannot deserialize");
                 BlackPlayer.PlayerName = properties["BlackPlayer_PlayerName"].StringValue;
                 WhitePlayer.PlayerId = properties["WhitePlayer_PlayerId"].GuidValue ?? throw new Exception("Cannot deserialize");
@@ -289,6 +303,7 @@ namespace ShogiServer.Hubs
             try
             {
                 gameInfo.Game.MakeMove(((int, int))startLoc, ((int, int))endLoc, ((int, int)?)midLoc, promote);
+                gameInfo.LastPlayed = DateTime.Now;
             }
             catch (InvalidOperationException e)
             {
