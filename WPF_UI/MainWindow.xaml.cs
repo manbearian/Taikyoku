@@ -69,6 +69,8 @@ namespace WPF_UI
             }
 #endif
 
+            gameBoard.IsRotated = Properties.Settings.Default.RotateBoard;
+
             MouseMove += ShowPieceInfo;
             Closed += OnClose;
 
@@ -146,6 +148,8 @@ namespace WPF_UI
                 StatusBarTextBlock2.Text = "";
                 StatusBarSeparator2.Visibility = Visibility.Visible;
                 StatusBarTextBlock2.Visibility = Visibility.Visible;
+
+                rotateMenuItem.IsEnabled = false;
             }
             else
             {
@@ -153,6 +157,8 @@ namespace WPF_UI
                 StatusBarTextBlock2.Text = "";
                 StatusBarSeparator2.Visibility = Visibility.Hidden;
                 StatusBarTextBlock2.Visibility = Visibility.Hidden;
+
+                rotateMenuItem.IsEnabled = true;
             }
 
             ChangeGame(game);
@@ -341,6 +347,8 @@ namespace WPF_UI
             else if (e.Source == rotateMenuItem)
             {
                 gameBoard.IsRotated = rotateMenuItem.IsChecked;
+                Properties.Settings.Default.RotateBoard = rotateMenuItem.IsChecked;
+                Properties.Settings.Default.Save();
             }
             else if (e.Source == debugModeMenuItem)
             {
