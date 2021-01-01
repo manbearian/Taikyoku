@@ -1,51 +1,28 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-
 namespace ShogiEngine
 {
     internal class TaikyokuJsonConverter : JsonConverter<TaikyokuShogi>
     {
-        private int ComputeChecksum(TaikyokuShogi game)
-        {
-            int checksum = 0;
-            for (int x = 0; x < TaikyokuShogi.BoardWidth; ++x)
-            {
-                for (int y = 0; y < TaikyokuShogi.BoardWidth; ++y)
-                {
-                    var piece = game.GetPiece((x, y));
-                    checksum += piece != null ? (x + 1) * (y + 1) * ((int)piece.Id + 1) * ((int)piece.Owner + 1) * (piece.Promoted ? 1 : 2) : 0;
-                }
-            }
-            return checksum;
-        }
-
         public override TaikyokuShogi Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
             if (reader.TokenType != JsonTokenType.StartObject)
                 throw new JsonException();
 
             Piece[,] pieces = new Piece[TaikyokuShogi.BoardWidth, TaikyokuShogi.BoardHeight];
+            MoveRecorder moveRecorder = new MoveRecorder();
             Player? currentPlayer = null;
             TaikyokuShogiOptions gameOptions = TaikyokuShogiOptions.None;
-            int checksum = 0;
 
             while (reader.Read())
             {
                 if (reader.TokenType == JsonTokenType.EndObject)
-                {
-                    var game = new TaikyokuShogi(pieces, currentPlayer, gameOptions);
-
-                    var computedChecksum = ComputeChecksum(game);
-
-                    if (computedChecksum != checksum)
-                        throw new JsonException("Unable to validate checksum");
-
-                    return game;
-                }
+                    return new TaikyokuShogi(gameOptions, pieces, currentPlayer, moveRecorder);
 
                 if (reader.TokenType != JsonTokenType.PropertyName)
                     throw new JsonException();
@@ -57,32 +34,12 @@ namespace ShogiEngine
                         if (reader.TokenType != JsonTokenType.StartArray)
                             throw new JsonException();
 
-                        for (int x = 0; x < TaikyokuShogi.BoardWidth; ++x)
+                        for (int y = 0; y < TaikyokuShogi.BoardWidth; ++y)
                         {
-                            for (int y = 0; y < TaikyokuShogi.BoardWidth; ++y)
+                            for (int x = 0; x < TaikyokuShogi.BoardWidth; ++x)
                             {
                                 reader.Read();
-                                if (reader.TokenType == JsonTokenType.Null)
-                                    continue;
-
-                                if (reader.TokenType != JsonTokenType.StartArray)
-                                    throw new JsonException();
-
-                                reader.Read();
-                                var owner = Enum.Parse<Player>(reader.GetString());
-                                reader.Read();
-                                var pieceId = Enum.Parse<PieceIdentity>(reader.GetString());
-                                reader.Read();
-                                bool promoted = false;
-                                if (reader.TokenType == JsonTokenType.String && reader.GetString() == "promoted")
-                                {
-                                    promoted = true;
-                                    reader.Read();
-                                }
-                                if (reader.TokenType != JsonTokenType.EndArray)
-                                    throw new JsonException();
-
-                                pieces[x, y] = new Piece(owner, pieceId, promoted);
+                                pieces[x, y] = reader.GetPiece();
                             }
                         }
 
@@ -114,11 +71,10 @@ namespace ShogiEngine
                         }
                         break;
 
-                    case "Checksum":
+                    case "Moves":
                         reader.Read();
-                        if (reader.TokenType != JsonTokenType.Number)
-                            throw new JsonException();
-                        checksum = reader.GetInt32();
+                        foreach (var move in reader.GetMoves())
+                            moveRecorder.PushMove(move);
                         break;
 
                     default:
@@ -133,14 +89,7 @@ namespace ShogiEngine
         {
             writer.WriteStartObject();
 
-            if (game.CurrentPlayer == null)
-            {
-                writer.WriteNull("CurrentPlayer");
-            }
-            else
-            {
-                writer.WriteString("CurrentPlayer", game.CurrentPlayer.ToString());
-            }
+            writer.WriteString("CurrentPlayer", game.CurrentPlayer?.ToString());
 
             writer.WriteStartArray("Options");
             for (int i = 0; i < sizeof(TaikyokuShogiOptions) * 8; ++i)
@@ -154,33 +103,269 @@ namespace ShogiEngine
             writer.WriteEndArray();
 
             writer.WriteStartArray("_boardState");
-            for (int x = 0; x < TaikyokuShogi.BoardWidth; ++x)
+            for (int y = 0; y < TaikyokuShogi.BoardWidth; ++y)
             {
-                for (int y = 0; y < TaikyokuShogi.BoardWidth; ++y)
+                for (int x = 0; x < TaikyokuShogi.BoardWidth; ++x)
                 {
                     var piece = game.GetPiece((x, y));
-                    if (piece == null)
-                    {
-                        writer.WriteNullValue();
-                    }
-                    else
-                    {
-                        writer.WriteStartArray();
-                        writer.WriteStringValue(piece.Owner.ToString());
-                        writer.WriteStringValue(piece.Id.ToString());
-                        if (piece.Promoted)
-                            writer.WriteStringValue("promoted");
-                        writer.WriteEndArray();
-                    }
+                    writer.WriteValue(piece);
                 }
             }
             writer.WriteEndArray();
 
-            writer.WriteNumber("Checksum", ComputeChecksum(game));
+            writer.Write("Moves", game.Moves);
 
             writer.WriteEndObject();
         }
     }
+
+    static class JsonReadHelpers
+    {
+        public static (int X, int Y)? GetLocation(this ref Utf8JsonReader reader)
+        {
+            if (reader.TokenType == JsonTokenType.Null)
+                return null;
+
+            if (reader.TokenType != JsonTokenType.StartArray)
+                throw new JsonException();
+
+            reader.Read();
+            var x = reader.GetInt32();
+            reader.Read();
+            var y = reader.GetInt32();
+
+            reader.Read();
+            if (reader.TokenType != JsonTokenType.EndArray)
+                throw new JsonException();
+
+            return (x, y);
+        }
+
+        public static Piece? GetPiece(this ref Utf8JsonReader reader)
+        {
+            if (reader.TokenType == JsonTokenType.Null)
+                return null;
+
+            if (reader.TokenType != JsonTokenType.StartArray)
+                throw new JsonException();
+
+            reader.Read();
+            var owner = Enum.Parse<Player>(reader.GetString());
+
+            reader.Read();
+            var pieceId = reader.GetPieceIdentity().Value;
+
+            reader.Read();
+            var promoted = false;
+            if (reader.TokenType == JsonTokenType.String)
+            {
+                if (reader.GetString() != "promoted")
+                    throw new JsonException();
+                promoted = true;
+                reader.Read();
+            }
+
+            if (reader.TokenType != JsonTokenType.EndArray)
+                throw new JsonException();
+
+            return new Piece(owner, pieceId, promoted);
+        }
+
+        public static PieceIdentity? GetPieceIdentity(this ref Utf8JsonReader reader)
+        {
+            if (reader.TokenType == JsonTokenType.Null)
+                return null;
+
+            if (reader.TokenType != JsonTokenType.String)
+                throw new JsonException();
+
+            return Enum.Parse<PieceIdentity>(reader.GetString());
+        }
+
+        // { { }, { }, { } }
+        public static IEnumerable<MoveRecorder.MoveDescription> GetMoves(this ref Utf8JsonReader reader)
+        {
+            var moves = new List<MoveRecorder.MoveDescription>();
+
+            if (reader.TokenType != JsonTokenType.StartArray)
+                throw new JsonException();
+
+            while (reader.Read())
+            {
+                if (reader.TokenType == JsonTokenType.EndArray)
+                    return moves;
+
+                if (reader.TokenType != JsonTokenType.StartArray)
+                    throw new JsonException();
+
+                reader.Read();
+                var startLoc = reader.GetLocation().Value;
+                reader.Read();
+                var endLoc = reader.GetLocation().Value;
+                reader.Read();
+                var midLoc = reader.GetLocation();
+                reader.Read();
+                var promotedFrom = reader.GetPieceIdentity();
+
+                var captures = new List<(Piece piece, (int X, int Y) Location)>();
+
+                reader.Read();
+                if (reader.TokenType != JsonTokenType.StartArray)
+                    throw new JsonException();
+
+                while (reader.Read())
+                {
+                    if (reader.TokenType == JsonTokenType.EndArray)
+                        break;
+
+                    if (reader.TokenType != JsonTokenType.StartArray)
+                        throw new JsonException();
+
+                    reader.Read();
+                    var piece = reader.GetPiece();
+                    reader.Read();
+                    var loc = reader.GetLocation().Value;
+
+                    captures.Add((piece, loc));
+
+                    reader.Read();
+                    if (reader.TokenType != JsonTokenType.EndArray)
+                        throw new JsonException();
+                }
+
+                moves.Add(new MoveRecorder.MoveDescription(startLoc, endLoc, midLoc, promotedFrom, captures));
+
+                reader.Read();
+                if (reader.TokenType != JsonTokenType.EndArray)
+                    throw new JsonException();
+            }
+
+            throw new JsonException();
+        }
+    }
+
+    static class JsonWriteHelpers
+    {
+        public static void Write(this Utf8JsonWriter writer, string name, Piece? piece) =>
+            Write_Internal(writer, name, piece);
+
+        public static void Write(this Utf8JsonWriter writer, string name, (int X, int Y)? loc) =>
+            Write_Internal(writer, name, loc);
+
+        public static void Write(this Utf8JsonWriter writer, string name, IEnumerable<MoveRecorder.MoveDescription> moves) =>
+            Write_Internal(writer, name, moves);
+
+        public static void WriteValue(this Utf8JsonWriter writer, Piece? piece) =>
+            Write_Internal(writer, null, piece);
+
+        public static void WriteValue(this Utf8JsonWriter writer, (int X, int Y)? loc) =>
+            Write_Internal(writer, null, loc);
+
+        public static void WriteValue(this Utf8JsonWriter writer, PieceIdentity? piece) =>
+            Write_Internal(writer, null, piece);
+
+        public static void WriteValue(this Utf8JsonWriter writer, IEnumerable<MoveRecorder.MoveDescription> moves) =>
+            Write_Internal(writer, null, moves);
+
+        public static void Write_Internal(this Utf8JsonWriter writer, string? name, PieceIdentity? piece)
+        {
+            if (piece == null)
+            {
+                writer.WriteNull_Internal(name);
+                return;
+            }
+
+            if (name == null)
+                writer.WriteStringValue(piece.Value.ToString());
+            else
+                writer.WriteString(name, piece.Value.ToString());
+        }
+
+        private static void Write_Internal(this Utf8JsonWriter writer, string? name, Piece? piece)
+        {
+            if (piece == null)
+            {
+                writer.WriteNull_Internal(name);
+                return;
+            }
+
+            if (name == null)
+                writer.WriteStartArray();
+            else
+                writer.WriteStartArray(name);
+
+            writer.WriteStringValue(piece.Owner.ToString());
+            writer.WriteValue(piece.Id);
+            if (piece.Promoted)
+                writer.WriteStringValue("promoted");
+
+            writer.WriteEndArray();
+        }
+
+        private static void Write_Internal(this Utf8JsonWriter writer, string? name, (int X, int Y)? loc)
+        {
+            if (loc == null)
+            {
+                writer.WriteNull_Internal(name);
+                return;
+            }
+
+            if (name == null)
+                writer.WriteStartArray();
+            else
+                writer.WriteStartArray(name);
+
+            writer.WriteNumberValue(loc.Value.X);
+            writer.WriteNumberValue(loc.Value.Y);
+
+            writer.WriteEndArray();
+        }
+
+        public static void Write_Internal(this Utf8JsonWriter writer, string? name, IEnumerable<MoveRecorder.MoveDescription> moves)
+        {
+            if (name == null)
+                writer.WriteStartArray();
+            else
+                writer.WriteStartArray(name);
+
+            foreach (var move in moves)
+            {
+                writer.WriteStartArray();
+
+                writer.WriteValue(move.StartLoc);
+                writer.WriteValue(move.EndLoc);
+                writer.WriteValue(move.MidLoc);
+                writer.WriteValue(move.PromotedFrom);
+
+                writer.WriteStartArray();
+
+                foreach (var capture in move.Captures)
+                {
+                    writer.WriteStartArray();
+
+                    writer.WriteValue(capture.Piece);
+                    writer.WriteValue(capture.Location);
+
+                    writer.WriteEndArray();
+                }
+
+                writer.WriteEndArray();
+
+                writer.WriteEndArray();
+            }
+
+            writer.WriteEndArray();
+        }
+
+        private static void WriteNull_Internal(this Utf8JsonWriter writer, string? name)
+        {
+            if (name == null)
+                writer.WriteNullValue();
+            else
+                writer.WriteNull(name);
+        }
+    }
+
 
     static class EnumExtension
     {

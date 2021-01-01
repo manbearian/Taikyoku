@@ -69,12 +69,13 @@ namespace ShogiEngine
         }
 
         // Constructor for deserialization
-        internal TaikyokuShogi(Piece[,] pieces, Player ?currentPlayer, TaikyokuShogiOptions options)
+        internal TaikyokuShogi(TaikyokuShogiOptions options, Piece[,] pieces, Player ?currentPlayer, MoveRecorder moves)
         {
             if (pieces.Rank != 2 || pieces.GetLength(0) != BoardWidth || pieces.GetLength(1) != BoardHeight)
                 throw new NotSupportedException();
 
             _boardState = pieces;
+            _moveRecorder = moves;
             CurrentPlayer = currentPlayer;
             Options = options;
         }
@@ -92,6 +93,12 @@ namespace ShogiEngine
         public GameEndType? Ending { get; private set; }
 
         public Player? Winner { get; private set; }
+
+        public int MoveCount { get => _moveRecorder.Count; }
+
+        public IEnumerable<MoveRecorder.MoveDescription> Moves { get => _moveRecorder.Moves; }
+
+        private MoveRecorder _moveRecorder = new MoveRecorder();
 
         // Layout the pieces on the board in their starting position
         private void SetInitialBoard()
@@ -190,6 +197,9 @@ namespace ShogiEngine
                 return;
             }
 
+            // record the move
+            _moveRecorder.PushMove(startLoc, endLoc, midLoc, promote ? piece.Id : null as PieceIdentity?, capturedPieces.Select(elem => (_boardState[elem.X, elem.Y], elem)));
+
             // to allow for testing without king/prince on the board, only check for mate on capture of king/prince
             var checkForCheckmate = capturedPieces.Select(loc => _boardState[loc.X, loc.Y]).Any(piece => IsRoyalty(piece.Id));
 
@@ -234,6 +244,26 @@ namespace ShogiEngine
             }
         }
 
+        public void UndoLastMove()
+        {
+            var moveRecord = _moveRecorder.PopMove();
+
+            var piece = _boardState[moveRecord.EndLoc.X, moveRecord.EndLoc.Y];
+
+            // unpromote
+            if (moveRecord.PromotedFrom != null)
+                piece = new Piece(piece.Owner, moveRecord.PromotedFrom.Value, false);
+
+            // move back to start
+            _boardState[moveRecord.StartLoc.X, moveRecord.StartLoc.Y] = piece;
+
+            // replace captured pieces
+            foreach (var capture in moveRecord.Captures)
+            {
+                _boardState[capture.Location.X, capture.Location.Y] = capture.Piece;
+            }
+        }
+
         // Public "debug" API: Set which piece (or no piece) at a board location.
         public void Debug_SetPiece(Piece piece, (int X, int Y) loc)
         {
@@ -247,23 +277,14 @@ namespace ShogiEngine
         public void Debug_EndTurn() =>
             NextTurn();
 
-
-        // Comparison/Equality: value equality for games
-
-        public override bool Equals(object obj) =>
-            Equals(obj as TaikyokuShogi);
-
-        public bool Equals(TaikyokuShogi other)
+        public bool BoardStateEquals(TaikyokuShogi other)
         {
-            if (other is null)
-                return false;
-
-            if ((_currentPlayer, Options) != (other._currentPlayer, other.Options))
+            if (_currentPlayer != other._currentPlayer)
                 return false;
 
             for (int x = 0; x < _boardState.GetLength(0); ++x)
             {
-                for (int y = 0; y < _boardState.GetLength(1);  ++y)
+                for (int y = 0; y < _boardState.GetLength(1); ++y)
                 {
                     if (_boardState[x, y] != other._boardState[x, y])
                         return false;
@@ -272,11 +293,5 @@ namespace ShogiEngine
 
             return true;
         }
-
-        public override int GetHashCode() => (_currentPlayer, Options, _boardState).GetHashCode();
-
-        public static bool operator ==(TaikyokuShogi lhs, TaikyokuShogi rhs) => lhs?.Equals(rhs) ?? rhs is null;
-
-        public static bool operator !=(TaikyokuShogi lhs, TaikyokuShogi rhs) => !(lhs == rhs);
     }
 }

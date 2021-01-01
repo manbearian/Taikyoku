@@ -2465,7 +2465,6 @@ namespace ShogiEngine
         None, May, Must
     }
 
-
     internal class MoveGenerator
     {
         private TaikyokuShogi Game { get; }
@@ -2553,7 +2552,6 @@ namespace ShogiEngine
                 _ => throw new NotSupportedException()
             };
     }
-
 
     public static class TaikyokuShogiMoves
     {
