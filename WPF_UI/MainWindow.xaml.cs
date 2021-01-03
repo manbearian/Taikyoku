@@ -202,7 +202,7 @@ namespace WPF_UI
             if (Game == null)
                 return;
 
-            using var stream = File.OpenWrite(path);
+            using var stream = File.Open(path, FileMode.Create, FileAccess.Write, FileShare.None);
             stream.Write(Game.Serialize());
         }
 
