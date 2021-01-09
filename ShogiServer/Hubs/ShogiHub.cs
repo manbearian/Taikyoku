@@ -240,11 +240,22 @@ namespace ShogiServer.Hubs
 
             var playerId = Guid.NewGuid();
             (clientInfo.PlayerId, clientInfo.PlayerName) = (playerId, playerName);
+
+            try
+            {
+                Program.TableStorage.AddOrUpdateGame(gameInfo);
+            }
+            catch (StorageException)
+            {
+                (clientInfo.PlayerId, clientInfo.PlayerName) = (Guid.Empty, null);
+                OpenGames[gameId] = gameInfo;
+                throw new HubException("Internal Storage Error: Unable to connect game");
+            }
+
             ClientMap[playerId] = (Clients.Caller, Context.ConnectionId);
             ClientPlayerId = playerId;
             ClientGame = gameInfo;
 
-            Program.TableStorage.AddOrUpdateGame(gameInfo);
             await Clients.All.ReceiveGameList(AllOpenGames());
 
             var blackClient = ClientMap.GetValueOrDefault(gameInfo.BlackPlayer.PlayerId).Client;
@@ -308,7 +319,14 @@ namespace ShogiServer.Hubs
             }
 
             // Record updated game state into persistant storage
-            Program.TableStorage.AddOrUpdateGame(gameInfo);
+            try
+            {
+                Program.TableStorage.AddOrUpdateGame(gameInfo);
+            }
+            catch (StorageException)
+            {
+                throw new HubException("Interal Server error: cannot record move");
+            }
 
             var blackClient = ClientMap.GetValueOrDefault(gameInfo.BlackPlayer.PlayerId).Client;
             if (blackClient != null)

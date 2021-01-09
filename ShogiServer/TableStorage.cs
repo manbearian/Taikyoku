@@ -23,20 +23,14 @@ namespace ShogiServer
 
         public void AddOrUpdateGame(ShogiHub.GameInfo gameInfo)
         {
-            try
-            {
-                // Create a table client for interacting with the table service 
-                var table = _cloudTableClient.GetTableReference(RunningGameTableName);
-                table.CreateIfNotExists();
+            // Create a table client for interacting with the table service 
+            var table = _cloudTableClient.GetTableReference(RunningGameTableName);
+            table.CreateIfNotExists();
 
-                var tableOp = TableOperation.InsertOrReplace(gameInfo);
+            var tableOp = TableOperation.InsertOrReplace(gameInfo);
 
-                // Execute the operation.
-                table.Execute(tableOp);
-            }
-            catch (StorageException)
-            {
-            }
+            // Execute the operation.
+            table.Execute(tableOp);
         }
 
         public async Task<ShogiHub.GameInfo> FindGame(Guid gameId)

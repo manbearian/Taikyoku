@@ -11,6 +11,8 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
 
+using Microsoft.AspNetCore.SignalR;
+
 using ShogiClient;
 using ShogiEngine;
 using ShogiComms;
@@ -54,6 +56,25 @@ namespace WPF_UI
         {
             NameBox.IsEnabled = false;
             NameBox.Text = string.Empty;
+        }
+
+        private void SetUIForWaitForConnection()
+        {
+            // Disable all UI elements except the cancel button (TODO: add a cancel button!)
+            NameBox.IsEnabled = false;
+            JoinGameButton.IsEnabled = false;
+            GamesList.IsEnabled = false;
+        }
+
+        private void ResetUI()
+        {
+            // Renable all the UI elements after a canceled connection
+            NameBox.IsEnabled = true;
+            JoinGameButton.IsEnabled = true;
+            GamesList.IsEnabled = true;
+
+            if (IsShowingKnownGames)
+                SetUIForConnectExistingGame();
         }
 
         private void RecieveGameList(object sender, ReceiveGameListEventArgs e) =>
@@ -110,18 +131,27 @@ namespace WPF_UI
             if (selectedItem == null)
                 return;
 
+            SetUIForWaitForConnection();
+
             var gameInfo = (ClientGameInfo)(ClientGameInfoWrapper)selectedItem;
 
-            if (IsShowingKnownGames)
+            try
             {
-                await Connection.RequestRejoinGame(gameInfo.GameId, gameInfo.RequestingPlayerId);
-            }
-            else
-            {
-                Properties.Settings.Default.PlayerName = NameBox.Text;
-                Properties.Settings.Default.Save();
+                if (IsShowingKnownGames)
+                {
+                    await Connection.RequestRejoinGame(gameInfo.GameId, gameInfo.RequestingPlayerId);
+                }
+                else
+                {
+                    Properties.Settings.Default.PlayerName = NameBox.Text;
+                    Properties.Settings.Default.Save();
 
-                await Connection.RequestJoinGame(gameInfo.GameId, NameBox.Text);
+                    await Connection.RequestJoinGame(gameInfo.GameId, NameBox.Text);
+                }
+            }
+            catch (HubException)
+            {
+                ResetUI();
             }
         }
 
@@ -153,7 +183,7 @@ namespace WPF_UI
                 // TODO: log error? report to uesr?
                 Close();
             }
-            catch (Microsoft.AspNetCore.SignalR.HubException)
+            catch (HubException)
             {
                 // server couldn't find/load game
                 // TODO: log error? report to uesr?
