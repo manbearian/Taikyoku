@@ -23,7 +23,7 @@ namespace ShogiServer.Hubs
     {
         Task ReceiveNewGame(TaikyokuShogi game, Guid id);
 
-        Task ReceiveGameList(IEnumerable<ClientGameInfo> list);
+        Task ReceiveGameList(List<ClientGameInfo> list);
 
         Task ReceiveGameStart(TaikyokuShogi game, Guid id, Guid playerId, Player player);
 
@@ -156,14 +156,12 @@ namespace ShogiServer.Hubs
         private static readonly ConcurrentDictionary<Guid, (IShogiClient Client, string ClientId)> ClientMap = new ConcurrentDictionary<Guid, (IShogiClient Client, string ClientId)>();
         private static readonly object ClientMapLock = new object();
 
-        private static IEnumerable<ClientGameInfo> GamesList
-        {
-            get => OpenGames.Values.Select(info => info.ToClientGameInfo());
-        }
-
         private GameInfo ClientGame { get => (GameInfo)Context.Items["ClientGame"]; set => Context.Items["ClientGame"] = value; }
 
         private Guid ClientPlayerId { get => Context.Items["ClientPlayerId"] as Guid? ?? Guid.Empty; set => Context.Items["ClientPlayerId"] = value; }
+
+        private static List<ClientGameInfo> AllOpenGames()
+             => OpenGames.Values.Select(info => info.ToClientGameInfo()).ToList();
 
         public async Task CreateGame(string playerName, TaikyokuShogiOptions gameOptions, bool asBlackPlayer, TaikyokuShogi existingGame)
         {
@@ -180,13 +178,13 @@ namespace ShogiServer.Hubs
             ClientGame = gameInfo;
             ClientPlayerId = playerId;
 
-            await Clients.All.ReceiveGameList(GamesList);
+            await Clients.All.ReceiveGameList(AllOpenGames());
             await Clients.Caller.ReceiveNewGame(game, gameId);
         }
 
         public async Task RequestAllOpenGameInfo()
         {
-            await Clients.Caller.ReceiveGameList(GamesList);
+            await Clients.Caller.ReceiveGameList(AllOpenGames());
         }
 
         public async Task RequestGameInfo(IEnumerable<NetworkGameRequest> requests)
@@ -207,7 +205,7 @@ namespace ShogiServer.Hubs
             }
 
             Task.WaitAll(tasks.ToArray());
-            await Clients.Caller.ReceiveGameList(gameList);
+            await Clients.Caller.ReceiveGameList(gameList.ToList());
         }
 
         public async Task JoinGame(Guid gameId, string playerName)
@@ -247,7 +245,7 @@ namespace ShogiServer.Hubs
             ClientGame = gameInfo;
 
             await Program.TableStorage.AddGame(gameInfo);
-            await Clients.All.ReceiveGameList(GamesList);
+            await Clients.All.ReceiveGameList(AllOpenGames());
 
             var blackClient = ClientMap.GetValueOrDefault(gameInfo.BlackPlayer.PlayerId).Client;
             if (blackClient != null)
@@ -285,8 +283,7 @@ namespace ShogiServer.Hubs
         public async Task CancelGame()
         {
             OpenGames.TryRemove(ClientGame.Id, out _);
-
-            await Clients.All.ReceiveGameList(GamesList);
+            await Clients.All.ReceiveGameList(AllOpenGames());
         }
 
         public async Task RequestMove(Location startLoc, Location endLoc, Location midLoc, bool promote)

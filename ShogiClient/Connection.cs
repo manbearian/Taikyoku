@@ -77,7 +77,7 @@ namespace ShogiClient
             _connection.On<TaikyokuShogi, Guid>("ReceiveNewGame", (gameObject, gameId) =>
                 OnReceiveNewGame?.Invoke(this, new ReceiveGameUpdateEventArgs(gameObject, gameId)));
 
-            _connection.On<IEnumerable<ClientGameInfo>>("ReceiveGameList", gameList =>
+            _connection.On<List<ClientGameInfo>>("ReceiveGameList", gameList =>
                 OnReceiveGameList?.Invoke(this, new ReceiveGameListEventArgs(gameList)));
 
             _connection.On<TaikyokuShogi, Guid, Guid, Player>("ReceiveGameStart", (gameObject, gameId, playerId, player) =>
