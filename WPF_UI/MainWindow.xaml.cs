@@ -293,7 +293,7 @@ namespace WPF_UI
             }
             else if (e.Source == myGamesMenuItem)
             {
-                var window = new ConnectionWindow() { KnownGames = GameSaver.GetNetworkGames().Where(elem => elem != (GameId, PlayerId)) };
+                var window = new ConnectionWindow() { KnownGames = GameSaver.GetNetworkGames().EmptyIfNull().Where(elem => elem != (GameId, PlayerId)) };
 
                 if (window.ShowDialog() == true)
                 {

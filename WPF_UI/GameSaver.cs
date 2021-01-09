@@ -24,6 +24,8 @@ namespace WPF_UI
             if (gameSaverLock.WaitOne(TimeSpan.FromSeconds(1)))
             {
                 Properties.Settings.Default.Reload();
+                if (Properties.Settings.Default.NetworkGameList == null)
+                    Properties.Settings.Default.NetworkGameList = new HashSet<(Guid GameId, Guid PlayerId)>();
                 Properties.Settings.Default.NetworkGameList.Add((gameId, playerId));
                 Properties.Settings.Default.Save();
                 gameSaverLock.ReleaseMutex();
