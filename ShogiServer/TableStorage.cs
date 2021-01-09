@@ -21,18 +21,18 @@ namespace ShogiServer
             _cloudTableClient = storageAccount.CreateCloudTableClient(new TableClientConfiguration());
         }
 
-        public async Task AddGame(ShogiHub.GameInfo gameInfo)
+        public void AddOrUpdateGame(ShogiHub.GameInfo gameInfo)
         {
             try
             {
                 // Create a table client for interacting with the table service 
                 var table = _cloudTableClient.GetTableReference(RunningGameTableName);
-                await table.CreateIfNotExistsAsync();
+                table.CreateIfNotExists();
 
                 var tableOp = TableOperation.InsertOrReplace(gameInfo);
 
                 // Execute the operation.
-                await table.ExecuteAsync(tableOp);
+                table.Execute(tableOp);
             }
             catch (StorageException)
             {

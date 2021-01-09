@@ -244,7 +244,7 @@ namespace ShogiServer.Hubs
             ClientPlayerId = playerId;
             ClientGame = gameInfo;
 
-            await Program.TableStorage.AddGame(gameInfo);
+            Program.TableStorage.AddOrUpdateGame(gameInfo);
             await Clients.All.ReceiveGameList(AllOpenGames());
 
             var blackClient = ClientMap.GetValueOrDefault(gameInfo.BlackPlayer.PlayerId).Client;
@@ -308,10 +308,7 @@ namespace ShogiServer.Hubs
             }
 
             // Record updated game state into persistant storage
-            // TODO: there maybe a a reace here where the next move could commit before this move
-            //       somewhere we need to ensure that only the latest game update is saved to the DB
-            //       to avoid appearing to travel backwards in time.
-            await Program.TableStorage.AddGame(gameInfo);
+            Program.TableStorage.AddOrUpdateGame(gameInfo);
 
             var blackClient = ClientMap.GetValueOrDefault(gameInfo.BlackPlayer.PlayerId).Client;
             if (blackClient != null)
