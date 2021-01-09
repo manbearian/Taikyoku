@@ -141,6 +141,12 @@ namespace WPF_UI
                     await Connection.RequestAllOpenGameInfo();
                 }
             }
+            catch (System.Net.Http.HttpRequestException)
+            {
+                // bad connection, timeout, etc.
+                // TODO: log error? report to uesr?
+                Close();
+            }
             catch (System.Net.Sockets.SocketException)
             {
                 // bad connection, timeout, etc.
