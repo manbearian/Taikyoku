@@ -248,13 +248,9 @@ namespace WPF_UI
                 {
                     Contract.Assert(window.Game != null, "DialogResult == true => Game != null");
 
-                    if (window.NetworkGame)
-                    {
-                        NetworkConnection = window.Connection;
-                        LocalPlayer = window.LocalPlayer;
-                        GameId = window.GameId;
-                        PlayerId = window.PlayerId;
-                    }
+                    (NetworkConnection, LocalPlayer, GameId, PlayerId) = window.NetworkGame ? 
+                        (window.Connection, window.LocalPlayer, window.GameId, window.PlayerId)
+                        : (null, null, Guid.Empty, Guid.Empty);
 
                     StartGame(window.Game);
                 }
