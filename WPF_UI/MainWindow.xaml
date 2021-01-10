@@ -46,6 +46,9 @@
                 <MenuItem Header="-" IsEnabled="False"/>
                 <MenuItem x:Name="closeMenuItem" Header="Close" Click="MenuItem_Click" />
             </MenuItem>
+            <MenuItem Header="Play" x:Name="playMenu">
+                <MenuItem x:Name="resignMenuItem" Header="Resign" Click="MenuItem_Click" />
+            </MenuItem>
             <MenuItem Header="View" x:Name="viewMenu">
                 <MenuItem x:Name="rotateMenuItem" Header="Rotate Board" Click="MenuItem_Click" IsCheckable="True" IsChecked="{Binding IsRotated, ElementName=gameBoard, FallbackValue=False}"/>
             </MenuItem>

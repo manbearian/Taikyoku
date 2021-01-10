@@ -26,7 +26,8 @@ namespace ShogiEngine
     public enum GameEndType
     {
         Checkmate,
-        IllegalMove
+        IllegalMove,
+        Resignation
     }
 
     [Flags]
@@ -118,11 +119,16 @@ namespace ShogiEngine
             Winner = winner;
         }
 
+        public void Resign(Player resigningPlayer)
+        {
+            EndGame(GameEndType.Resignation, resigningPlayer.Opponent());
+        }
+
         // Public API: move the piece at startLoc to endLoc
         //   CurrentPlayer is advanced
         //   The optional parameter `midLoc` is used for area-moves (e.g. lion move)
         //   Caller should check `CurrentPlayer` and/or `Ending` property to determine if the game is over after the move
-        public virtual void MakeMove((int X, int Y) startLoc, (int X, int Y) endLoc, (int X, int Y)? midLoc = null, bool promote = false)
+        public void MakeMove((int X, int Y) startLoc, (int X, int Y) endLoc, (int X, int Y)? midLoc = null, bool promote = false)
         {
             var piece = GetPiece(startLoc);
 

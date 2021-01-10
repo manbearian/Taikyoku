@@ -30,6 +30,7 @@ namespace WPF_UI
             {
                 GameEndType.Checkmate => "Checkmate!",
                 GameEndType.IllegalMove => "Illegal Move!",
+                GameEndType.Resignation => $"{winner?.Opponent() ?? throw new NotSupportedException()} has resigned.",
                 _ => throw new NotSupportedException()
             };
 

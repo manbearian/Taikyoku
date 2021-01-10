@@ -340,6 +340,13 @@ namespace WPF_UI
             {
                 Close();
             }
+            else if (e.Source == resignMenuItem)
+            {
+                Game?.Resign(LocalPlayer ?? Game.CurrentPlayer ?? throw new NotSupportedException());
+                gameBoard.InvalidateVisual();
+                OnPlayerChange(this, new PlayerChangeEventArgs(null, null));
+                OnGameEnd(this, new GameEndEventArgs(Game?.Ending ?? throw new NotSupportedException(), Game.Winner));
+            }
             else if (e.Source == rotateMenuItem)
             {
                 gameBoard.IsRotated = rotateMenuItem.IsChecked;
