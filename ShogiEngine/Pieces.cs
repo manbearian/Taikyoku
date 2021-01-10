@@ -657,22 +657,26 @@ namespace ShogiEngine
 
         public string Romanji { get => Id.Romanji(); }
 
-        public bool CanPromote() => !Promoted && Id.PromotesTo() != null;
-
-        public Piece Promote() => CanPromote() ? new Piece(Owner, Id.PromotesTo().Value, true) : null;
+        public Piece? Promote()
+        {
+            var promotesTo = Id.PromotesTo();
+            if (promotesTo != null)
+                return new Piece(Owner, promotesTo.Value, true);
+            return null;
+        }
 
         public int Rank { get => Id.Rank(); }
 
-        public override bool Equals(object obj) =>
+        public override bool Equals(object? obj) =>
             Equals(obj as Piece);
 
-        public bool Equals(Piece other) =>
+        public bool Equals(Piece? other) =>
             (Owner, Id, Promoted) == (other?.Owner, other?.Id, other?.Promoted);
 
         public override int GetHashCode() => (Owner, Id, Promoted).GetHashCode();
 
-        public static bool operator ==(Piece lhs, Piece rhs) => lhs?.Equals(rhs) ?? rhs is null;
+        public static bool operator ==(Piece? lhs, Piece? rhs) => lhs?.Equals(rhs) ?? rhs is null;
 
-        public static bool operator !=(Piece lhs, Piece rhs) => !(lhs == rhs);
+        public static bool operator !=(Piece? lhs, Piece? rhs) => !(lhs == rhs);
     }
 }

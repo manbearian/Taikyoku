@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 
 namespace ShogiEngine
@@ -16,7 +17,7 @@ namespace ShogiEngine
 
             public PieceIdentity? PromotedFrom { get; }
 
-            public IEnumerable<(Piece Piece, (int X, int Y) Location)> Captures { get; }
+            public IEnumerable<(Piece Piece, (int X, int Y) Location)> Captures { get; } = Enumerable.Empty<(Piece Piece, (int X, int Y) Location)>();
 
             public MoveDescription() { }
 
@@ -24,7 +25,7 @@ namespace ShogiEngine
                 (StartLoc, EndLoc, MidLoc, PromotedFrom, Captures) = (startLoc, endLoc, midLoc, promotedFrom, captures);
         }
 
-        private Stack<MoveDescription> _moves =  new Stack<MoveDescription>();
+        private readonly Stack<MoveDescription> _moves =  new Stack<MoveDescription>();
 
         public IEnumerable<MoveDescription> Moves { get => _moves; }
 

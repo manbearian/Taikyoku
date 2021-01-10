@@ -11,7 +11,7 @@ namespace WPF_UI
 {
     static class GameSaver
     {
-        private static System.Threading.Mutex gameSaverLock = new System.Threading.Mutex(false, "SHOGI_gameSaverLock");
+        private static readonly System.Threading.Mutex gameSaverLock = new System.Threading.Mutex(false, "SHOGI_gameSaverLock");
 
         // For network games, save enough information to query the server about the game
         //  todo: should we cache other information?

@@ -14,7 +14,7 @@ namespace ShogiEngine
             if (reader.TokenType != JsonTokenType.StartObject)
                 throw new JsonException();
 
-            Piece[,] pieces = new Piece[TaikyokuShogi.BoardWidth, TaikyokuShogi.BoardHeight];
+            Piece?[,] pieces = new Piece?[TaikyokuShogi.BoardWidth, TaikyokuShogi.BoardHeight];
             MoveRecorder moveRecorder = new MoveRecorder();
             Player? currentPlayer = null;
             TaikyokuShogiOptions gameOptions = TaikyokuShogiOptions.None;
@@ -153,7 +153,7 @@ namespace ShogiEngine
             var owner = Enum.Parse<Player>(reader.GetString());
 
             reader.Read();
-            var pieceId = reader.GetPieceIdentity().Value;
+            var pieceId = reader.GetPieceIdentity() ?? throw new JsonException();
 
             reader.Read();
             var promoted = false;
@@ -199,9 +199,9 @@ namespace ShogiEngine
                     throw new JsonException();
 
                 reader.Read();
-                var startLoc = reader.GetLocation().Value;
+                var startLoc = reader.GetLocation() ?? throw new JsonException();
                 reader.Read();
-                var endLoc = reader.GetLocation().Value;
+                var endLoc = reader.GetLocation() ?? throw new JsonException();
                 reader.Read();
                 var midLoc = reader.GetLocation();
                 reader.Read();
@@ -222,9 +222,9 @@ namespace ShogiEngine
                         throw new JsonException();
 
                     reader.Read();
-                    var piece = reader.GetPiece();
+                    var piece = reader.GetPiece() ?? throw new JsonException();
                     reader.Read();
-                    var loc = reader.GetLocation().Value;
+                    var loc = reader.GetLocation() ?? throw new JsonException();
 
                     captures.Add((piece, loc));
 

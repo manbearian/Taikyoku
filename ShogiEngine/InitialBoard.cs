@@ -237,7 +237,7 @@ namespace ShogiEngine
             { " ", null }
         };
 
-        public static void SetInitialState(this Piece[,] board)
+        public static void SetInitialState(this Piece?[,] board)
         {
             // remove any existing pieces
             for (int i = 0; i < board.GetLength(0); ++i)

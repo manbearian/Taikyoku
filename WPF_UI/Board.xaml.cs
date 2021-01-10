@@ -179,7 +179,7 @@ namespace WPF_UI
             }
             else
             {
-                var selectedPiece = Game.GetPiece(Selected.Value);
+                var selectedPiece = Game.GetKnownPiece(Selected.Value);
 
                 if (selectedPiece.Owner == Game.CurrentPlayer)
                 {
@@ -376,7 +376,7 @@ namespace WPF_UI
                 if (Selected != null)
                 {
                     var loc = Selected.Value;
-                    var selectedPiece = Game.GetPiece(loc);
+                    var selectedPiece = Game.GetKnownPiece(loc);
 
                     var moves = Game.GetLegalMoves(selectedPiece, loc);
 

@@ -41,14 +41,14 @@ namespace ShogiEngine
         //    1 means single spaces in that direction
         //    N means move N squares in that direction
         //    N > 35 means move unlimited
-        private int[] _stepRange = new int[8];
+        private readonly int[] _stepRange = new int[8];
         public int[] StepRange { get => _stepRange; }
 
         // 16 states values of indicies (jumpable squares), int (range after jump)
         //    0 means cannot jump that direction (jump matrix)
         //    states 8-15 => 1 means can jump to this square (all other values invalid, range after jump must be 0)
         //    states 0-7 => N can over N squares and move M squares ater
-        private (int[] JumpDistances, int RangeAfter)[] _jumpRange = new (int[] JumpDistances, int RangeAfter)[16];
+        private readonly (int[] JumpDistances, int RangeAfter)[] _jumpRange = new (int[] JumpDistances, int RangeAfter)[16];
         public (int[] JumpDistances, int RangeAfter)[] JumpRange { get => _jumpRange; }
 
         // Hook Move (90-degree turn)
@@ -62,7 +62,7 @@ namespace ShogiEngine
 
         // Range capture (move over and capture number of pieces of lower rank)
         //   move matrix of Booleans for direction
-        private bool[] _rangeCapture = new bool[8];
+        private readonly bool[] _rangeCapture = new bool[8];
         public IReadOnlyList<bool> RangeCapture { get => _rangeCapture; }
 
         // Igui - capture without moving
@@ -2436,7 +2436,7 @@ namespace ShogiEngine
 
         public static PromotionType CheckPromotion(Piece piece, (int X, int Y) startLoc, (int X, int Y) endLoc, bool _capture /* ignored in Taikyoku Shogi */)
         {
-            if (!piece.CanPromote())
+            if (piece.Promote() == null)
                 return PromotionType.None;
 
             return piece.Owner switch
@@ -2473,7 +2473,8 @@ namespace ShogiEngine
 
         private (int X, int Y) StartLoc { get; }
 
-        private List<((int X, int Y) Loc, MoveType Type, PromotionType Promotion)> _moves = new List<((int X, int Y) Loc, MoveType Type, PromotionType Promotion)>();
+        private readonly List<((int X, int Y) Loc, MoveType Type, PromotionType Promotion)> _moves = new List<((int X, int Y) Loc, MoveType Type, PromotionType Promotion)>();
+ 
         public IEnumerable<((int X, int Y) Loc, MoveType Type, PromotionType Promotion)> Moves { get => _moves; }
 
         public MoveGenerator(TaikyokuShogi game, Piece piece, (int X, int Y) startLoc)

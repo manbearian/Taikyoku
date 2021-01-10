@@ -48,7 +48,7 @@ namespace ShogiEngine
         public const int BoardHeight = 36;
         public const int BoardWidth = 36;
 
-        private readonly Piece[,] _boardState = new Piece[BoardWidth, BoardHeight];
+        private readonly Piece?[,] _boardState = new Piece?[BoardWidth, BoardHeight];
         private Player? _currentPlayer;
 
         public Player? CurrentPlayer
@@ -69,7 +69,7 @@ namespace ShogiEngine
         }
 
         // Constructor for deserialization
-        internal TaikyokuShogi(TaikyokuShogiOptions options, Piece[,] pieces, Player ?currentPlayer, MoveRecorder moves)
+        internal TaikyokuShogi(TaikyokuShogiOptions options, Piece?[,] pieces, Player? currentPlayer, MoveRecorder moves)
         {
             if (pieces.Rank != 2 || pieces.GetLength(0) != BoardWidth || pieces.GetLength(1) != BoardHeight)
                 throw new NotSupportedException();
@@ -86,7 +86,9 @@ namespace ShogiEngine
         public byte[] Serialize() =>
             JsonSerializer.SerializeToUtf8Bytes(this, new JsonSerializerOptions());
 
-        public Piece GetPiece((int X, int Y) loc) => _boardState[loc.X, loc.Y];
+        public Piece? GetPiece((int X, int Y) loc) => _boardState[loc.X, loc.Y];
+
+        public Piece GetKnownPiece((int X, int Y) loc) => _boardState[loc.X, loc.Y] ?? throw new NullReferenceException();
 
         public TaikyokuShogiOptions Options { get; }
 
@@ -98,7 +100,7 @@ namespace ShogiEngine
 
         public IEnumerable<MoveRecorder.MoveDescription> Moves { get => _moveRecorder.Moves; }
 
-        private MoveRecorder _moveRecorder = new MoveRecorder();
+        private readonly MoveRecorder _moveRecorder = new MoveRecorder();
 
         // Layout the pieces on the board in their starting position
         private void SetInitialBoard()
@@ -198,10 +200,10 @@ namespace ShogiEngine
             }
 
             // record the move
-            _moveRecorder.PushMove(startLoc, endLoc, midLoc, promote ? piece.Id : null as PieceIdentity?, capturedPieces.Select(elem => (_boardState[elem.X, elem.Y], elem)));
+            _moveRecorder.PushMove(startLoc, endLoc, midLoc, promote ? piece.Id : null as PieceIdentity?, capturedPieces.Select(elem => (GetKnownPiece(elem), elem)));
 
             // to allow for testing without king/prince on the board, only check for mate on capture of king/prince
-            var checkForCheckmate = capturedPieces.Select(loc => _boardState[loc.X, loc.Y]).Any(piece => IsRoyalty(piece.Id));
+            var checkForCheckmate = capturedPieces.Select(loc => GetKnownPiece(loc)).Any(piece => IsRoyalty(piece.Id));
 
             // remove captured pieces
             foreach (var (x, y) in capturedPieces)
@@ -234,7 +236,7 @@ namespace ShogiEngine
 
                 foreach (var p in _boardState)
                 {
-                    if (p?.Owner == CurrentPlayer?.Opponent() && IsRoyalty(p.Id))
+                    if (p != null && p.Owner == CurrentPlayer?.Opponent() && IsRoyalty(p.Id))
                     {
                         return false;
                     }
@@ -248,7 +250,7 @@ namespace ShogiEngine
         {
             var moveRecord = _moveRecorder.PopMove();
 
-            var piece = _boardState[moveRecord.EndLoc.X, moveRecord.EndLoc.Y];
+            var piece = GetKnownPiece(moveRecord.EndLoc);
 
             // unpromote
             if (moveRecord.PromotedFrom != null)
@@ -265,7 +267,7 @@ namespace ShogiEngine
         }
 
         // Public "debug" API: Set which piece (or no piece) at a board location.
-        public void Debug_SetPiece(Piece piece, (int X, int Y) loc)
+        public void Debug_SetPiece(Piece? piece, (int X, int Y) loc)
         {
             if (_boardState[loc.X, loc.Y] == piece)
                 return;
