@@ -11,7 +11,7 @@ namespace ShogiServer
 
     public class AppSettings
     {
-        public string StorageConnectionString { get; set; }
+        public string? StorageConnectionString { get; set; }
 
         public static AppSettings LoadAppSettings()
         {

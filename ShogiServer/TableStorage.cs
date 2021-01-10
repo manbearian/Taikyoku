@@ -16,7 +16,7 @@ namespace ShogiServer
 
         public TableStorage()
         {
-            var storageConnectionString = AppSettings.LoadAppSettings().StorageConnectionString;
+            var storageConnectionString = AppSettings.LoadAppSettings().StorageConnectionString ?? string.Empty;
             var storageAccount = CreateStorageAccountFromConnectionString(storageConnectionString);
             _cloudTableClient = storageAccount.CreateCloudTableClient(new TableClientConfiguration());
         }
@@ -33,7 +33,7 @@ namespace ShogiServer
             table.Execute(tableOp);
         }
 
-        public async Task<ShogiHub.GameInfo> FindGame(Guid gameId)
+        public async Task<ShogiHub.GameInfo?> FindGame(Guid gameId)
         {
             try
             {

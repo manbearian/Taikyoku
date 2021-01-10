@@ -44,10 +44,12 @@ namespace ShogiServer.Hubs
             {
                 public Guid PlayerId { get; set; }
 
-                public string PlayerName { get; set; }
+                public string? PlayerName { get; set; }
             }
 
-            public TaikyokuShogi Game { get; private set; }
+            private TaikyokuShogi? _game;
+
+            public TaikyokuShogi Game { get => _game ?? throw new NullReferenceException(); }
 
             public Guid Id { get; private set; }
 
@@ -61,7 +63,7 @@ namespace ShogiServer.Hubs
 
             public GameInfo(TaikyokuShogi game, Guid id)
             {
-                (Game, Id, Created, LastPlayed) = (game, id, DateTime.UtcNow, DateTime.Now);
+                (_game, Id, Created, LastPlayed) = (game, id, DateTime.UtcNow, DateTime.Now);
                 (((ITableEntity)this).PartitionKey, ((ITableEntity)this).RowKey) = (string.Empty, id.ToString());
             }
 
@@ -130,7 +132,7 @@ namespace ShogiServer.Hubs
 
             public void ReadEntity(IDictionary<string, EntityProperty> properties, OperationContext operationContext)
             {
-                Game = TaikyokuShogi.Deserlialize(properties["Game"].BinaryValue);
+                _game = TaikyokuShogi.Deserlialize(properties["Game"].BinaryValue);
                 Id = properties["Id"].GuidValue ?? throw new Exception("Cannot deserialize");
                 Created = properties["Created"].DateTime ?? throw new Exception("Cannot deserialize");
                 LastPlayed = properties["LastPlayed"].DateTime ?? throw new Exception("Cannot deserialize");
@@ -140,11 +142,11 @@ namespace ShogiServer.Hubs
                 WhitePlayer.PlayerName = properties["WhitePlayer_PlayerName"].StringValue;
             }
 
-            string ITableEntity.PartitionKey { get; set; }
+            string? ITableEntity.PartitionKey { get; set; }
 
-            string ITableEntity.RowKey { get; set; }
+            string? ITableEntity.RowKey { get; set; }
 
-            string ITableEntity.ETag { get; set; }
+            string? ITableEntity.ETag { get; set; }
 
             DateTimeOffset ITableEntity.Timestamp { get; set; }
         }
@@ -273,14 +275,9 @@ namespace ShogiServer.Hubs
             await DisconnectClientGame();
 
             var gameInfo = await Program.TableStorage.FindGame(gameId);
-            ClientGame = gameInfo;
+            ClientGame = gameInfo ?? throw new HubException($"Failed to join game; game id not found: {gameId}");
             ClientPlayerId = playerId;
             ClientMap[playerId] = (Clients.Caller, Context.ConnectionId);
-
-            if (gameInfo == null)
-            {
-                throw new HubException($"Failed to join game, game id not found: {gameId}");
-            }
 
             var requestedPlayer = gameInfo.GetPlayerColor(playerId);
             var otherPlayerInfo = gameInfo.GetPlayerInfo(requestedPlayer.Opponent());
