@@ -44,7 +44,7 @@ namespace ShogiServer.Hubs
             {
                 public Guid PlayerId { get; set; }
 
-                public string? PlayerName { get; set; }
+                public string PlayerName { get; set; } = string.Empty;
             }
 
             private TaikyokuShogi? _game;
@@ -249,7 +249,7 @@ namespace ShogiServer.Hubs
             }
             catch (StorageException)
             {
-                (clientInfo.PlayerId, clientInfo.PlayerName) = (Guid.Empty, null);
+                (clientInfo.PlayerId, clientInfo.PlayerName) = (Guid.Empty, string.Empty);
                 OpenGames[gameId] = gameInfo;
                 throw new HubException("Internal Storage Error: Unable to connect game");
             }

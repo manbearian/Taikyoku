@@ -48,7 +48,7 @@ namespace ShogiComms
 
         public static explicit operator Location((int X, int Y) loc) => new Location() {X = loc.X, Y = loc.Y };
 
-        public static explicit operator Location((int X, int Y)? loc) => loc is null ? null : (Location)loc.Value;
+        public static explicit operator Location?((int X, int Y)? loc) => loc is null ? null : (Location)loc.Value;
 
         public static explicit operator (int X, int Y)(Location loc) => (loc.X, loc.Y);
 

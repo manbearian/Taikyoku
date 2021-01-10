@@ -50,22 +50,22 @@ namespace ShogiClient
         private readonly HubConnection _connection;
 
         public delegate void ReceiveNewGameHandler(object sender, ReceiveGameUpdateEventArgs e);
-        public event ReceiveNewGameHandler OnReceiveNewGame;
+        public event ReceiveNewGameHandler? OnReceiveNewGame;
 
         public delegate void ReceiveGameListHandler(object sender, ReceiveGameListEventArgs e);
-        public event ReceiveGameListHandler OnReceiveGameList;
+        public event ReceiveGameListHandler? OnReceiveGameList;
 
         public delegate void ReceiveGameStartHandler(object sender, ReceiveGameStartEventArgs e);
-        public event ReceiveGameStartHandler OnReceiveGameStart;
+        public event ReceiveGameStartHandler? OnReceiveGameStart;
 
         public delegate void ReceiveGameUpdateHandler(object sender, ReceiveGameUpdateEventArgs e);
-        public event ReceiveGameUpdateHandler OnReceiveGameUpdate;
+        public event ReceiveGameUpdateHandler? OnReceiveGameUpdate;
 
         public delegate void ReceiveGameDisconnectHandler(object sender, ReceiveGameConnectionEventArgs e);
-        public event ReceiveGameDisconnectHandler OnReceiveGameDisconnect;
+        public event ReceiveGameDisconnectHandler? OnReceiveGameDisconnect;
 
         public delegate void ReceiveGameReconnectHandler(object sender, ReceiveGameConnectionEventArgs e);
-        public event ReceiveGameReconnectHandler OnReceiveGameReconnect;
+        public event ReceiveGameReconnectHandler? OnReceiveGameReconnect;
 
         public Connection()
         {
@@ -102,7 +102,7 @@ namespace ShogiClient
         public async Task RequestGameInfo(IEnumerable<NetworkGameRequest> requests) =>
             await _connection.InvokeAsync("RequestGameInfo", requests);
 
-        public async Task RequestNewGame(string playerName, TaikyokuShogiOptions gameOptions, bool asBlackPlayer, TaikyokuShogi existingGame = null) =>
+        public async Task RequestNewGame(string playerName, TaikyokuShogiOptions gameOptions, bool asBlackPlayer, TaikyokuShogi? existingGame = null) =>
             await _connection.InvokeAsync("CreateGame", playerName, gameOptions, asBlackPlayer, existingGame);
 
         public async Task RequestJoinGame(Guid gameId, string playerName) =>
@@ -115,7 +115,7 @@ namespace ShogiClient
             await _connection.InvokeAsync("CancelGame");
 
         public async Task RequestMove((int X, int Y) startLoc, (int X, int Y) endLoc, (int X, int Y)? midLoc, bool promote) =>
-            await _connection.InvokeAsync("RequestMove", (Location)startLoc, (Location)endLoc, (Location)midLoc, promote);
+            await _connection.InvokeAsync("RequestMove", (Location)startLoc, (Location)endLoc, (Location?)midLoc, promote);
     }
 
     public static class ClientGameInfoExtension
