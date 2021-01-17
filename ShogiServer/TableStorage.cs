@@ -21,16 +21,23 @@ namespace ShogiServer
             _cloudTableClient = storageAccount.CreateCloudTableClient(new TableClientConfiguration());
         }
 
-        public void AddOrUpdateGame(ShogiHub.GameInfo gameInfo)
+        public ShogiHub.GameInfo AddOrUpdateGame(ShogiHub.GameInfo gameInfo)
         {
-            // Create a table client for interacting with the table service 
             var table = _cloudTableClient.GetTableReference(RunningGameTableName);
             table.CreateIfNotExists();
 
-            var tableOp = TableOperation.InsertOrReplace(gameInfo);
+            var lookupOp = TableOperation.Retrieve<ShogiHub.GameInfo>("", gameInfo.Id.ToString());
+            var oldGameInfo = table.Execute(lookupOp).Result as ShogiHub.GameInfo;
 
-            // Execute the operation.
-            table.Execute(tableOp);
+            // game was recorded as ending; don't update things
+            // this can happen if our opponent conceded while we were making a move
+            if (oldGameInfo?.Game.Ending != null)
+                return oldGameInfo;
+
+            // todo: validate what happens here if the game was updated between the read and write
+            // theoretically it should fail, but what we really want to do is retry the write.
+            var updateOp = TableOperation.InsertOrReplace(gameInfo);
+            return table.Execute(updateOp).Result as ShogiHub.GameInfo ?? throw new StorageException();
         }
 
         public async Task<ShogiHub.GameInfo?> FindGame(Guid gameId)

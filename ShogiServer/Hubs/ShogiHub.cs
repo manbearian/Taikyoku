@@ -245,7 +245,7 @@ namespace ShogiServer.Hubs
 
             try
             {
-                Program.TableStorage.AddOrUpdateGame(gameInfo);
+                gameInfo = Program.TableStorage.AddOrUpdateGame(gameInfo);
             }
             catch (StorageException)
             {
@@ -294,6 +294,29 @@ namespace ShogiServer.Hubs
             await Clients.All.ReceiveGameList(AllOpenGames());
         }
 
+        // Record updated game state into persistant storage and notify any attached clients
+        private async Task UpdateGame(ShogiHub.GameInfo gameInfo)
+        {
+            try
+            {
+                gameInfo = Program.TableStorage.AddOrUpdateGame(gameInfo);
+            }
+            catch (StorageException)
+            {
+                throw new HubException("Interal Server error: cannot record move");
+            }
+
+            ClientGame = gameInfo;
+
+            var blackClient = ClientMap.GetValueOrDefault(gameInfo.BlackPlayer.PlayerId).Client;
+            if (blackClient != null)
+                await blackClient.ReceiveGameUpdate(gameInfo.Game, gameInfo.Id);
+
+            var whiteClient = ClientMap.GetValueOrDefault(gameInfo.WhitePlayer.PlayerId).Client;
+            if (whiteClient != null)
+                await whiteClient.ReceiveGameUpdate(gameInfo.Game, gameInfo.Id);
+        }
+
         public async Task RequestMove(Location startLoc, Location endLoc, Location midLoc, bool promote)
         {
             var gameInfo = ClientGame;
@@ -315,23 +338,21 @@ namespace ShogiServer.Hubs
                 throw new HubException("invalid move: unable to complete move", e);
             }
 
-            // Record updated game state into persistant storage
-            try
-            {
-                Program.TableStorage.AddOrUpdateGame(gameInfo);
-            }
-            catch (StorageException)
-            {
-                throw new HubException("Interal Server error: cannot record move");
-            }
+            await UpdateGame(gameInfo);
+        }
 
-            var blackClient = ClientMap.GetValueOrDefault(gameInfo.BlackPlayer.PlayerId).Client;
-            if (blackClient != null)
-                await blackClient.ReceiveGameUpdate(gameInfo.Game, gameInfo.Id);
+        public async Task RequestResign()
+        {
+            var gameInfo = ClientGame;
+            var playerId = ClientPlayerId;
 
-            var whiteClient = ClientMap.GetValueOrDefault(gameInfo.WhitePlayer.PlayerId).Client;
-            if (whiteClient != null)
-                await whiteClient.ReceiveGameUpdate(gameInfo.Game, gameInfo.Id);
+            if (gameInfo == null)
+                throw new HubException("illegal move: no game in progress");
+
+            gameInfo.Game.Resign(gameInfo.GetPlayerColor(playerId));
+            gameInfo.LastPlayed = DateTime.Now;
+
+            await UpdateGame(gameInfo);
         }
 
         private async Task DisconnectClientGame()

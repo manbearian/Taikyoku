@@ -343,6 +343,10 @@ namespace WPF_UI
             else if (e.Source == resignMenuItem)
             {
                 Game?.Resign(LocalPlayer ?? Game.CurrentPlayer ?? throw new NotSupportedException());
+                if (IsNetworkGame)
+                {
+                    NetworkConnection.RequestResign();
+                }
                 gameBoard.InvalidateVisual();
                 OnPlayerChange(this, new PlayerChangeEventArgs(null, null));
                 OnGameEnd(this, new GameEndEventArgs(Game?.Ending ?? throw new NotSupportedException(), Game.Winner));

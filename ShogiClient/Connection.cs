@@ -116,6 +116,9 @@ namespace ShogiClient
 
         public async Task RequestMove((int X, int Y) startLoc, (int X, int Y) endLoc, (int X, int Y)? midLoc, bool promote) =>
             await _connection.InvokeAsync("RequestMove", (Location)startLoc, (Location)endLoc, (Location?)midLoc, promote);
+
+        public async Task RequestResign() =>
+            await _connection.InvokeAsync("RequestResign");
     }
 
     public static class ClientGameInfoExtension
