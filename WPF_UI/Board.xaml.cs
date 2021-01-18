@@ -446,6 +446,7 @@ namespace WPF_UI
 
         public PlayerChangeEventArgs(Player? oldPlayer, Player? newPlayer) => (OldPlayer, NewPlayer) = (oldPlayer, newPlayer);
     }
+
     public class GameEndEventArgs : EventArgs
     {
         public GameEndType Ending { get; }

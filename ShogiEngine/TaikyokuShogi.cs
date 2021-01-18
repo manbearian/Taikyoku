@@ -70,13 +70,32 @@ namespace ShogiEngine
         }
 
         // Constructor for deserialization
-        internal TaikyokuShogi(TaikyokuShogiOptions options, Piece?[,] pieces, Player? currentPlayer, MoveRecorder moves)
+        internal TaikyokuShogi(TaikyokuShogiOptions options, Piece?[,] pieces, Player? currentPlayer, GameEndType? ending, Player? winner, MoveRecorder moves)
         {
             if (pieces.Rank != 2 || pieces.GetLength(0) != BoardWidth || pieces.GetLength(1) != BoardHeight)
                 throw new NotSupportedException();
 
+            // validate that GameEndType/Winner are a valid combination
+            switch (ending)
+            {
+                case GameEndType.Checkmate:
+                case GameEndType.IllegalMove:
+                case GameEndType.Resignation:
+                    if (winner == null)
+                        throw new ArgumentException("Invalid Game Ending", nameof(ending));
+                    break;
+                case null:
+                    if (winner != null)
+                        throw new ArgumentException("Invalid Game Ending", nameof(winner));
+                    break;
+                default:
+                    throw new ArgumentException("Invalid Game Ending", nameof(ending));
+            }
+
             _boardState = pieces;
             _moveRecorder = moves;
+            Ending = ending;
+            Winner = winner;
             CurrentPlayer = currentPlayer;
             Options = options;
         }

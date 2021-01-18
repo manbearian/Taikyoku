@@ -225,8 +225,30 @@ namespace WPF_UI
         private void OnPlayerChange(object sender, PlayerChangeEventArgs eventArgs) =>
             SetPlayer(eventArgs.NewPlayer);
 
-        private void OnGameEnd(object sender, GameEndEventArgs eventArgs) =>
+        private void OnGameEnd(object sender, GameEndEventArgs eventArgs)
+        {
+            if (IsNetworkGame)
+            {
+                StatusBarTextBlock2.Text = (eventArgs.Winner == null) ?
+                    "Draw!" : ((eventArgs.Winner == LocalPlayer) ? "You win!" : "You lost");
+            }
+            else
+            {
+                StatusBarTextBlock2.Text = eventArgs.Winner switch
+                {
+                    Player.White => "White Wins!",
+                    Player.Black => "Black Wins!",
+                    null => "Draw!",
+                    _ => throw new NotSupportedException()
+                };
+            }
+
+            StatusBarTextBlock2.Visibility = Visibility.Visible;
+
+            // todo: when a completed game is loaded from disk it causes the game ending window to show up
+            //       before the game window itself
             new GameEndWindow().ShowDialog(eventArgs.Ending, eventArgs.Winner);
+        }
 
         private void OnClose(object? Sender, EventArgs e)
         {
@@ -239,7 +261,7 @@ namespace WPF_UI
             }
         }
 
-        private void MenuItem_Click(object sender, RoutedEventArgs e)
+        private async void MenuItem_Click(object sender, RoutedEventArgs e)
         {
             if (e.Source == newGameMenuItem)
             {
@@ -345,7 +367,8 @@ namespace WPF_UI
                 Game?.Resign(LocalPlayer ?? Game.CurrentPlayer ?? throw new NotSupportedException());
                 if (IsNetworkGame)
                 {
-                    NetworkConnection.RequestResign();
+                    Contract.Assert(NetworkConnection != null);
+                    await NetworkConnection.RequestResign();
                 }
                 gameBoard.InvalidateVisual();
                 OnPlayerChange(this, new PlayerChangeEventArgs(null, null));

@@ -17,12 +17,23 @@ namespace ShogiEngine
             Piece?[,] pieces = new Piece?[TaikyokuShogi.BoardWidth, TaikyokuShogi.BoardHeight];
             MoveRecorder moveRecorder = new MoveRecorder();
             Player? currentPlayer = null;
+            Player? winner = null;
+            GameEndType? ending = null;
             TaikyokuShogiOptions gameOptions = TaikyokuShogiOptions.None;
 
             while (reader.Read())
             {
                 if (reader.TokenType == JsonTokenType.EndObject)
-                    return new TaikyokuShogi(gameOptions, pieces, currentPlayer, moveRecorder);
+                {
+                    try
+                    {
+                        return new TaikyokuShogi(gameOptions, pieces, currentPlayer, ending, winner, moveRecorder);
+                    }
+                    catch (ArgumentException e)
+                    {
+                        throw new JsonException("Failed to construct the game object", e);
+                    }
+                }
 
                 if (reader.TokenType != JsonTokenType.PropertyName)
                     throw new JsonException();
@@ -50,12 +61,17 @@ namespace ShogiEngine
 
                     case "CurrentPlayer":
                         reader.Read();
-                        currentPlayer = reader.TokenType switch
-                        {
-                            JsonTokenType.Null => null,
-                            JsonTokenType.String => reader.GetString().ToEnum<Player>(),
-                            _ => throw new JsonException()
-                        };
+                        currentPlayer = reader.GetEnum<Player>();
+                        break;
+
+                    case "Ending":
+                        reader.Read();
+                        ending = reader.GetEnum<GameEndType>();
+                        break;
+
+                    case "Winner":
+                        reader.Read();
+                        winner = reader.GetEnum<Player>();
                         break;
 
                     case "Options":
@@ -90,6 +106,10 @@ namespace ShogiEngine
             writer.WriteStartObject();
 
             writer.WriteString("CurrentPlayer", game.CurrentPlayer?.ToString());
+
+            writer.WriteString("Ending", game.Ending?.ToString());
+
+            writer.WriteString("Winner", game.Winner?.ToString());
 
             writer.WriteStartArray("Options");
             for (int i = 0; i < sizeof(TaikyokuShogiOptions) * 8; ++i)
@@ -180,6 +200,15 @@ namespace ShogiEngine
                 throw new JsonException();
 
             return Enum.Parse<PieceIdentity>(reader.GetString());
+        }
+        public static T? GetEnum<T>(this ref Utf8JsonReader reader) where T : struct
+        {
+            return reader.TokenType switch
+            {
+                JsonTokenType.Null => null,
+                JsonTokenType.String => reader.GetString().ToEnum<T>(),
+                _ => throw new JsonException()
+            };
         }
 
         // { { }, { }, { } }
@@ -365,7 +394,6 @@ namespace ShogiEngine
                 writer.WriteNull(name);
         }
     }
-
 
     static class EnumExtension
     {
