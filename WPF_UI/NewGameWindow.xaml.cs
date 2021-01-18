@@ -33,6 +33,8 @@ namespace WPF_UI
 
         public Player? LocalPlayer { get; private set; }
 
+        public string? Opponent { get; private set; }
+
         private bool WaitingForConnection { get => !NewGameButton.IsEnabled; }
 
         public NewGameWindow()
@@ -71,6 +73,7 @@ namespace WPF_UI
                 GameId = e.GameId;
                 PlayerId = e.PlayerId;
                 LocalPlayer = e.Player;
+                Opponent = e.Opponent;
                 DialogResult = true;
                 NetworkGame = true;
                 Close();

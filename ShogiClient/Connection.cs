@@ -28,7 +28,9 @@ namespace ShogiClient
 
         public Player Player { get; }
 
-        public ReceiveGameStartEventArgs(TaikyokuShogi game, Guid gameId, Guid playerId, Player player) => (Game, GameId, PlayerId, Player) = (game, gameId, playerId, player);
+        public string Opponent { get; }
+
+        public ReceiveGameStartEventArgs(TaikyokuShogi game, Guid gameId, Guid playerId, Player player, string opponent) => (Game, GameId, PlayerId, Player, Opponent) = (game, gameId, playerId, player, opponent);
     }
 
     public class ReceiveGameConnectionEventArgs : EventArgs
@@ -80,8 +82,8 @@ namespace ShogiClient
             _connection.On<List<ClientGameInfo>>("ReceiveGameList", gameList =>
                 OnReceiveGameList?.Invoke(this, new ReceiveGameListEventArgs(gameList)));
 
-            _connection.On<TaikyokuShogi, Guid, Guid, Player>("ReceiveGameStart", (gameObject, gameId, playerId, player) =>
-                OnReceiveGameStart?.Invoke(this, new ReceiveGameStartEventArgs(gameObject, gameId, playerId, player)));
+            _connection.On<TaikyokuShogi, Guid, Guid, Player, string>("ReceiveGameStart", (gameObject, gameId, playerId, player, opponent) =>
+                OnReceiveGameStart?.Invoke(this, new ReceiveGameStartEventArgs(gameObject, gameId, playerId, player, opponent)));
 
             _connection.On<TaikyokuShogi, Guid>("ReceiveGameUpdate", (gameObject, gameId) =>
                 OnReceiveGameUpdate?.Invoke(this, new ReceiveGameUpdateEventArgs(gameObject, gameId)));

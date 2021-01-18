@@ -25,7 +25,7 @@ namespace ShogiServer.Hubs
 
         Task ReceiveGameList(List<ClientGameInfo> list);
 
-        Task ReceiveGameStart(TaikyokuShogi game, Guid id, Guid playerId, Player player);
+        Task ReceiveGameStart(TaikyokuShogi game, Guid id, Guid playerId, Player player, string opponent);
 
         Task ReceiveGameUpdate(TaikyokuShogi game, Guid id);
 
@@ -100,11 +100,11 @@ namespace ShogiServer.Hubs
                     // we don't generally want to send the client-ids off of the server to avoid
                     // leaking these (having someone else's client-id would allow spoofing) but
                     // we need to send back the requesting client's player-id so it can map back
-                    // to its  game request in the case where it has recorded both players in the
+                    // to its game request in the case where it has recorded both players in the
                     // game within the same client.
                     //  e.g. client requests game status as a set of (game-id, player-id) pairs,
                     //  so it might request both (3, 0) and (3, 1) we must send it back the
-                    //  player-id  so it can differentiate the results.
+                    //  player-id so it can differentiate the results.
                     RequestingPlayerId = requestingPlayerId,
                 };
 
@@ -260,11 +260,11 @@ namespace ShogiServer.Hubs
 
             var blackClient = ClientMap.GetValueOrDefault(gameInfo.BlackPlayer.PlayerId).Client;
             if (blackClient != null)
-                await blackClient.ReceiveGameStart(gameInfo.Game, gameId, gameInfo.BlackPlayer.PlayerId, Player.Black);
+                await blackClient.ReceiveGameStart(gameInfo.Game, gameId, gameInfo.BlackPlayer.PlayerId, Player.Black, gameInfo.WhitePlayer.PlayerName);
 
             var whiteClient = ClientMap.GetValueOrDefault(gameInfo.WhitePlayer.PlayerId).Client;
             if (whiteClient != null)
-                await whiteClient.ReceiveGameStart(gameInfo.Game, gameId, gameInfo.WhitePlayer.PlayerId, Player.White);
+                await whiteClient.ReceiveGameStart(gameInfo.Game, gameId, gameInfo.WhitePlayer.PlayerId, Player.White, gameInfo.BlackPlayer.PlayerName);
         }
 
         public async Task RejoinGame(Guid gameId, Guid playerId)
@@ -283,7 +283,7 @@ namespace ShogiServer.Hubs
             var otherClient = ClientMap.GetValueOrDefault(otherPlayerInfo.PlayerId).Client;
             if (otherClient != null)
                 await otherClient.ReceiveGameReconnect(gameId);
-            await Clients.Caller.ReceiveGameStart(gameInfo.Game, gameId, playerId, requestedPlayer);
+            await Clients.Caller.ReceiveGameStart(gameInfo.Game, gameId, playerId, requestedPlayer, otherPlayerInfo.PlayerName);
         }
 
         public async Task CancelGame()

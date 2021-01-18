@@ -35,6 +35,7 @@ namespace WPF_UI
         PieceInfoWindow? _pieceInfoWindow = null;
         Connection? NetworkConnection = null;
         Player? LocalPlayer = null;
+        string? OpponentName = null;
         Guid GameId = Guid.Empty;
         Guid PlayerId = Guid.Empty;
 
@@ -44,6 +45,7 @@ namespace WPF_UI
         {
             NetworkConnection = null;
             LocalPlayer = null;
+            OpponentName = null;
             GameId = Guid.Empty;
             PlayerId = Guid.Empty;
         }
@@ -111,6 +113,7 @@ namespace WPF_UI
 
                     NetworkConnection = window.Connection;
                     LocalPlayer = window.LocalPlayer;
+                    OpponentName = window.Opponent;
                     GameId = window.GameId;
                     PlayerId = window.PlayerId;
 
@@ -133,6 +136,7 @@ namespace WPF_UI
             {
                 Contract.Assert(NetworkConnection != null);
                 Contract.Assert(LocalPlayer != null);
+                Contract.Assert(OpponentName != null);
                 Contract.Assert(GameId != Guid.Empty);
                 Contract.Assert(PlayerId != Guid.Empty);
 
@@ -144,7 +148,7 @@ namespace WPF_UI
                 NetworkConnection.OnReceiveGameDisconnect += OnReceiveGameDisconnect;
                 NetworkConnection.OnReceiveGameReconnect += OnReceiveGameReconnect;
 
-                StatusBarTextBlock1.Text = "Network Game";
+                StatusBarTextBlock1.Text = $"vs. {OpponentName}";
                 StatusBarTextBlock2.Text = "";
                 StatusBarSeparator2.Visibility = Visibility.Visible;
                 StatusBarTextBlock2.Visibility = Visibility.Visible;
@@ -319,6 +323,7 @@ namespace WPF_UI
 
                     NetworkConnection = window.Connection;
                     LocalPlayer = window.LocalPlayer;
+                    OpponentName = window.Opponent;
                     GameId = window.GameId;
                     PlayerId = window.PlayerId;
                     StartGame(window.Game);
@@ -339,6 +344,7 @@ namespace WPF_UI
 
                     NetworkConnection = window.Connection;
                     LocalPlayer = window.LocalPlayer;
+                    OpponentName = window.Opponent;
                     GameId = window.GameId;
                     PlayerId = window.PlayerId;
                     StartGame(window.Game);
@@ -353,6 +359,7 @@ namespace WPF_UI
 
                     NetworkConnection = window.Connection;
                     LocalPlayer = window.LocalPlayer;
+                    OpponentName = window.Opponent;
                     GameId = window.GameId;
                     PlayerId = window.PlayerId;
                     StartGame(window.Game);
@@ -422,7 +429,7 @@ namespace WPF_UI
             if (e.GameId != GameId)
                 return;
 
-            StatusBarTextBlock1.Text = "Network Game (opponent disconnected)";
+            StatusBarTextBlock1.Text = $"vs. {OpponentName} (opponent disconnected)";
         }
 
         void OnReceiveGameReconnect(object sender, ReceiveGameConnectionEventArgs e)
@@ -431,7 +438,7 @@ namespace WPF_UI
             if (e.GameId != GameId)
                 return;
 
-            StatusBarTextBlock1.Text = "Network Game";
+            StatusBarTextBlock1.Text = $"vs. {OpponentName}";
         }
 
         void ShowPieceInfo(object sender, MouseEventArgs e)

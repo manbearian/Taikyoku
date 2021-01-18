@@ -29,7 +29,9 @@ namespace WPF_UI
 
         public Guid PlayerId { get; }
 
-        public Player LocalPlayer { get; private set; }
+        public Player? LocalPlayer { get; private set; }
+
+        public string? Opponent { get; private set; }
 
         public ReconnectWindow(Guid gameId, Guid playerId)
         {
@@ -50,6 +52,7 @@ namespace WPF_UI
 
                 Game = e.Game;
                 LocalPlayer = e.Player;
+                Opponent = e.Opponent;
                 DialogResult = true;
                 Close();
             });

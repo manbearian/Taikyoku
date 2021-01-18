@@ -34,6 +34,8 @@ namespace WPF_UI
 
         public Player? LocalPlayer { get; private set; }
 
+        public string? Opponent { get; private set; }
+
         public IEnumerable<(Guid GameId, Guid PlayerId)>? KnownGames { get; set; }
 
         public IEnumerable<(Guid GameId, Guid PlayerId)> DeadGames { get; private set; } = Enumerable.Empty<(Guid GameId, Guid PlayerId)>();
@@ -87,6 +89,7 @@ namespace WPF_UI
                 GameId = e.GameId;
                 PlayerId = e.PlayerId;
                 LocalPlayer = e.Player;
+                Opponent = e.Opponent;
                 DialogResult = true;
                 Close();
             });
