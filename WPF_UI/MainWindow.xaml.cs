@@ -188,6 +188,8 @@ namespace WPF_UI
             corners.ForEach(corner => { corner.Fill = fillColor; });
             borders.ForEach(border => { border.FillColor = fillColor; border.TextColor = textColor; border.InvalidateVisual(); });
 
+            playMenu.IsEnabled = player != null;
+
             if (IsNetworkGame)
             {
                 Contract.Assert(LocalPlayer != null);
