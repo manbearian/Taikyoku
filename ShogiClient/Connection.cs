@@ -71,8 +71,13 @@ namespace ShogiClient
 
         public Connection()
         {
+            //_connection = new HubConnectionBuilder().
+            //    WithUrl("https://localhost:44352/ShogiHub").
+            //    WithAutomaticReconnect().
+            //    Build();
+
             _connection = new HubConnectionBuilder().
-                WithUrl("https://localhost:44352/ShogiHub").
+                WithUrl("http://localhost:7071/api").
                 WithAutomaticReconnect().
                 Build();
 

@@ -13,7 +13,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ShogiServer", "ShogiServer\
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ShogiClient", "ShogiClient\ShogiClient.csproj", "{528985BA-1511-4A1F-A1B8-F24E6EADA0F7}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ShogiComms", "ShogiComms\ShogiComms.csproj", "{1DC13DCC-1DD4-4AE7-A811-7B10FE502254}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ShogiComms", "ShogiComms\ShogiComms.csproj", "{1DC13DCC-1DD4-4AE7-A811-7B10FE502254}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ShogiServerless", "ShogiSeverless\ShogiServerless.csproj", "{745B2D4A-2657-4FA5-A523-E0DF8DC1C17B}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -45,6 +47,10 @@ Global
 		{1DC13DCC-1DD4-4AE7-A811-7B10FE502254}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{1DC13DCC-1DD4-4AE7-A811-7B10FE502254}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{1DC13DCC-1DD4-4AE7-A811-7B10FE502254}.Release|Any CPU.Build.0 = Release|Any CPU
+		{745B2D4A-2657-4FA5-A523-E0DF8DC1C17B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{745B2D4A-2657-4FA5-A523-E0DF8DC1C17B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{745B2D4A-2657-4FA5-A523-E0DF8DC1C17B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{745B2D4A-2657-4FA5-A523-E0DF8DC1C17B}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
