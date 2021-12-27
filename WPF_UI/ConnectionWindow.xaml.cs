@@ -103,14 +103,7 @@ namespace WPF_UI
                 RecordDeadGames(gameList.Select(elem => (elem.GameId, elem.RequestingPlayerId)));
             }
 
-            if (gameList.Count() == 0)
-            {
-                GamesList.Items.Add("No Games Available");
-
-                GamesList.DisplayMemberPath = null;
-                GamesList.IsEnabled = false;
-            }
-            else
+            if (gameList.Any())
             {
                 var orderedList = gameList.OrderByDescending(elem => elem.LastPlayed).ThenByDescending(elem => elem.Created).ThenBy(elem => elem.ClientColor);
 
@@ -122,9 +115,16 @@ namespace WPF_UI
                 GamesList.DisplayMemberPath = "DisplayString";
                 GamesList.IsEnabled = true;
             }
+            else
+            {
+                GamesList.Items.Add("No Games Available");
+
+                GamesList.DisplayMemberPath = null;
+                GamesList.IsEnabled = false;
+            }
 
             void RecordDeadGames(IEnumerable<(Guid GameId, Guid PlayerId)> serverKnownGames) =>
-                DeadGames = KnownGames.Except(serverKnownGames).ToList(); // make a copy of the enumeration
+                DeadGames = KnownGames.EmptyIfNull().Except(serverKnownGames).ToList(); // make a copy of the enumeration
         }
 
         private async void JoinGameButton_Click(object sender, RoutedEventArgs e)
@@ -167,7 +167,7 @@ namespace WPF_UI
                 if (IsShowingKnownGames)
                 {
                     SetUIForConnectExistingGame();
-                    await Connection.RequestGameInfo(KnownGames.Select(p => new NetworkGameRequest(p.GameId, p.PlayerId)));
+                    await Connection.RequestGameInfo(KnownGames.EmptyIfNull().Select(p => new NetworkGameRequest(p.GameId, p.PlayerId)));
                 }
                 else
                 {

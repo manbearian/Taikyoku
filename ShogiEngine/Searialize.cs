@@ -170,7 +170,7 @@ namespace ShogiEngine
                 throw new JsonException();
 
             reader.Read();
-            var owner = Enum.Parse<Player>(reader.GetString());
+            var owner = Enum.Parse<Player>(reader.GetString() ?? throw new JsonException());
 
             reader.Read();
             var pieceId = reader.GetPieceIdentity() ?? throw new JsonException();
@@ -199,14 +199,14 @@ namespace ShogiEngine
             if (reader.TokenType != JsonTokenType.String)
                 throw new JsonException();
 
-            return Enum.Parse<PieceIdentity>(reader.GetString());
+            return Enum.Parse<PieceIdentity>(reader.GetString() ?? throw new JsonException());
         }
         public static T? GetEnum<T>(this ref Utf8JsonReader reader) where T : struct
         {
             return reader.TokenType switch
             {
                 JsonTokenType.Null => null,
-                JsonTokenType.String => reader.GetString().ToEnum<T>(),
+                JsonTokenType.String => reader.GetString()?.ToEnum<T>(),
                 _ => throw new JsonException()
             };
         }
@@ -397,9 +397,10 @@ namespace ShogiEngine
 
     static class EnumExtension
     {
-        public static T ToEnum<T>(this string s) where T : struct
+        public static T? ToEnum<T>(this string s) where T : struct
         {
-            Enum.TryParse<T>(s, out var e);
+            if (!Enum.TryParse<T>(s, out var e))
+                return null;
             return e;
         }
     }
