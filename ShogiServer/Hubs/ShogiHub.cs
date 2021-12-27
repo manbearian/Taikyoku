@@ -158,7 +158,7 @@ namespace ShogiServer.Hubs
         private static readonly ConcurrentDictionary<Guid, (IShogiClient Client, string ClientId)> ClientMap = new ConcurrentDictionary<Guid, (IShogiClient Client, string ClientId)>();
         private static readonly object ClientMapLock = new object();
 
-        private GameInfo ClientGame { get => (GameInfo)Context.Items["ClientGame"]; set => Context.Items["ClientGame"] = value; }
+        private GameInfo ClientGame { get => Context.Items["ClientGame"] as GameInfo ?? throw new Exception("invalid client game"); set => Context.Items["ClientGame"] = value; }
 
         private Guid ClientPlayerId { get => Context.Items["ClientPlayerId"] as Guid? ?? Guid.Empty; set => Context.Items["ClientPlayerId"] = value; }
 
@@ -376,7 +376,7 @@ namespace ShogiServer.Hubs
                 await otherClient.ReceiveGameDisconnect(gameInfo.Id);
         }
 
-        public override async Task OnDisconnectedAsync(Exception exception)
+        public override async Task OnDisconnectedAsync(Exception? exception)
         {
             await DisconnectClientGame();
             await base.OnDisconnectedAsync(exception);

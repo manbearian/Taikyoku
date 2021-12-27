@@ -101,7 +101,7 @@ namespace ShogiEngine
         }
 
         public static TaikyokuShogi Deserlialize(ReadOnlySpan<byte> serialBytes) =>
-            JsonSerializer.Deserialize<TaikyokuShogi>(serialBytes);
+            JsonSerializer.Deserialize<TaikyokuShogi>(serialBytes) ?? throw new NullReferenceException();
 
         public byte[] Serialize() =>
             JsonSerializer.SerializeToUtf8Bytes(this, new JsonSerializerOptions());
