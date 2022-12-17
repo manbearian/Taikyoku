@@ -642,13 +642,13 @@ namespace ShogiEngine
 
     public class Piece
     {
-        public Player Owner { get; }
+        public PlayerColor Owner { get; }
 
         public PieceIdentity Id { get; }
 
         public bool Promoted { get; }
 
-        public Piece(Player owner, PieceIdentity id, bool promoted = false) =>
+        public Piece(PlayerColor owner, PieceIdentity id, bool promoted = false) =>
             (Owner, Id, Promoted) = (owner, id, promoted);
 
         public string Name { get => Id.Name(); }

@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 
 using Microsoft.Azure.Cosmos.Table;
+using static ShogiServerless.ShogiHub;
 
 namespace ShogiServerless
 {
@@ -41,10 +42,34 @@ namespace ShogiServerless
             }
             catch(StorageException)
             {
-                
+
             }
 
             return null;
+        }
+
+        public async Task<IEnumerable<ShogiHub.GameInfo>> AllGames()
+        {
+            try
+            {
+                var table = _cloudTableClient.GetTableReference(RunningGameTableName);
+                TableContinuationToken? token = null;
+                var entities = new List<ShogiHub.GameInfo>();
+                do
+                {
+                    var queryResult = await table.ExecuteQuerySegmentedAsync(new TableQuery<ShogiHub.GameInfo>(), token);
+                    entities.AddRange(queryResult.Results);
+                    token = queryResult.ContinuationToken;
+                } while (token != null);
+
+                return entities;
+            }
+            catch (StorageException)
+            {
+
+            }
+
+            return new List<ShogiHub.GameInfo>();
         }
 
         public async Task<ShogiHub.GameInfo?> FindGame(Guid gameId)

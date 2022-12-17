@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "ShogiServerless": {
+      "commandName": "Project",
+      "commandLineArgs": "--csharp"
+    }
+  }
+}

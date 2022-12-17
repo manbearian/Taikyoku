@@ -71,7 +71,7 @@ namespace WPF_UI
             MouseRightButtonUp += RightClickHandler;
         }
 
-        public void SetGame(TaikyokuShogi game, Connection? networkConnection = null, Player? localPlayer = null)
+        public void SetGame(TaikyokuShogi game, Connection? networkConnection = null, PlayerColor? localPlayer = null)
         {
             Game = game;
             _networkConnection = networkConnection;
@@ -80,7 +80,7 @@ namespace WPF_UI
             Selected2 = null;
 
             IsEnabled = Game.CurrentPlayer != null && (networkConnection == null || Game.CurrentPlayer == localPlayer);
-            IsRotated = localPlayer == Player.White;
+            IsRotated = localPlayer == PlayerColor.White;
 
             InvalidateVisual();
 
@@ -233,7 +233,7 @@ namespace WPF_UI
                     return;
                 }
 
-                Player prevPlayer = Game.CurrentPlayer.Value;
+                PlayerColor prevPlayer = Game.CurrentPlayer.Value;
 
                 Game.MakeMove(startLoc, endLoc, midLoc, promote);
  
@@ -338,7 +338,7 @@ namespace WPF_UI
             void DrawPiece(DrawingContext dc, Geometry pieceGeometry, (int X, int Y) loc, Piece piece)
             {
                 dc.PushTransform(new TranslateTransform(SpaceWidth * loc.X, SpaceHeight * loc.Y));
-                dc.PushTransform(new RotateTransform(piece.Owner == Player.White ? 180 : 0, SpaceWidth / 2, SpaceHeight / 2));
+                dc.PushTransform(new RotateTransform(piece.Owner == PlayerColor.White ? 180 : 0, SpaceWidth / 2, SpaceHeight / 2));
 
                 var brush = (loc == Selected) ? ((piece.Owner == Game.CurrentPlayer) ? Brushes.Blue : Brushes.Red) : Brushes.Black;
                 var pen = new Pen(brush, 1.0);
@@ -440,20 +440,20 @@ namespace WPF_UI
 
     public class PlayerChangeEventArgs : EventArgs
     {
-        public Player? OldPlayer { get; }
+        public PlayerColor? OldPlayer { get; }
 
-        public Player? NewPlayer { get; }
+        public PlayerColor? NewPlayer { get; }
 
-        public PlayerChangeEventArgs(Player? oldPlayer, Player? newPlayer) => (OldPlayer, NewPlayer) = (oldPlayer, newPlayer);
+        public PlayerChangeEventArgs(PlayerColor? oldPlayer, PlayerColor? newPlayer) => (OldPlayer, NewPlayer) = (oldPlayer, newPlayer);
     }
 
     public class GameEndEventArgs : EventArgs
     {
         public GameEndType Ending { get; }
 
-        public Player? Winner { get; }
+        public PlayerColor? Winner { get; }
 
-        public GameEndEventArgs(GameEndType gameEnding, Player? winner) => (Ending, Winner) = (gameEnding, winner);
+        public GameEndEventArgs(GameEndType gameEnding, PlayerColor? winner) => (Ending, Winner) = (gameEnding, winner);
     }
 
 }

@@ -34,7 +34,7 @@ namespace WPF_UI
         TaikyokuShogi? _game = null;
         PieceInfoWindow? _pieceInfoWindow = null;
         Connection? NetworkConnection = null;
-        Player? LocalPlayer = null;
+        PlayerColor? LocalPlayer = null;
         string? OpponentName = null;
         Guid GameId = Guid.Empty;
         Guid PlayerId = Guid.Empty;
@@ -175,12 +175,12 @@ namespace WPF_UI
             InvalidateVisual();
         }
 
-        private void SetPlayer(Player? player)
+        private void SetPlayer(PlayerColor? player)
         {
             var (fillColor, textColor) = player switch
             {
-                Player.White => (Brushes.White, Brushes.Black),
-                Player.Black => (Brushes.Black, Brushes.White),
+                PlayerColor.White => (Brushes.White, Brushes.Black),
+                PlayerColor.Black => (Brushes.Black, Brushes.White),
                 null => (Brushes.Gray, Brushes.Black),
                 _ => throw new InvalidOperationException()
             };
@@ -242,8 +242,8 @@ namespace WPF_UI
             {
                 StatusBarTextBlock2.Text = eventArgs.Winner switch
                 {
-                    Player.White => "White Wins!",
-                    Player.Black => "Black Wins!",
+                    PlayerColor.White => "White Wins!",
+                    PlayerColor.Black => "Black Wins!",
                     null => "Draw!",
                     _ => throw new NotSupportedException()
                 };
@@ -325,7 +325,7 @@ namespace WPF_UI
 
                     NetworkConnection = window.Connection;
                     LocalPlayer = window.LocalPlayer;
-                    OpponentName = window.Opponent;
+                    OpponentName = window.OpponentName;
                     GameId = window.GameId;
                     PlayerId = window.PlayerId;
                     StartGame(window.Game);
@@ -346,7 +346,7 @@ namespace WPF_UI
 
                     NetworkConnection = window.Connection;
                     LocalPlayer = window.LocalPlayer;
-                    OpponentName = window.Opponent;
+                    OpponentName = window.OpponentName;
                     GameId = window.GameId;
                     PlayerId = window.PlayerId;
                     StartGame(window.Game);

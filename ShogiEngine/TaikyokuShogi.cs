@@ -7,7 +7,7 @@ using System.Text.Json.Serialization;
 
 namespace ShogiEngine
 {
-    public enum Player
+    public enum PlayerColor
     {
         Black,
         White
@@ -15,10 +15,10 @@ namespace ShogiEngine
 
     public static class PlayerExtension
     {
-        public static Player Opponent(this Player p) => p switch
+        public static PlayerColor Opponent(this PlayerColor p) => p switch
             {
-                Player.Black => Player.White,
-                Player.White => Player.Black,
+                PlayerColor.Black => PlayerColor.White,
+                PlayerColor.White => PlayerColor.Black,
                 _ => throw new NotSupportedException()
             };
     }
@@ -31,6 +31,8 @@ namespace ShogiEngine
     }
 
     [Flags]
+
+    [JsonConverter(typeof(JsonStringEnumConverter))]
     public enum TaikyokuShogiOptions
     {
         None =                            0,
@@ -50,9 +52,9 @@ namespace ShogiEngine
         public const int BoardWidth = 36;
 
         private readonly Piece?[,] _boardState = new Piece?[BoardWidth, BoardHeight];
-        private Player? _currentPlayer;
+        private PlayerColor? _currentPlayer;
 
-        public Player? CurrentPlayer
+        public PlayerColor? CurrentPlayer
         {
             get => _currentPlayer;
 
@@ -65,12 +67,12 @@ namespace ShogiEngine
         public TaikyokuShogi(TaikyokuShogiOptions gameOptions = TaikyokuShogiOptions.None)
         {
             SetInitialBoard();
-            CurrentPlayer = Player.Black;
+            CurrentPlayer = PlayerColor.Black;
             Options = gameOptions;
         }
 
         // Constructor for deserialization
-        internal TaikyokuShogi(TaikyokuShogiOptions options, Piece?[,] pieces, Player? currentPlayer, GameEndType? ending, Player? winner, MoveRecorder moves)
+        internal TaikyokuShogi(TaikyokuShogiOptions options, Piece?[,] pieces, PlayerColor? currentPlayer, GameEndType? ending, PlayerColor? winner, MoveRecorder moves)
         {
             if (pieces.Rank != 2 || pieces.GetLength(0) != BoardWidth || pieces.GetLength(1) != BoardHeight)
                 throw new NotSupportedException();
@@ -114,7 +116,7 @@ namespace ShogiEngine
 
         public GameEndType? Ending { get; private set; }
 
-        public Player? Winner { get; private set; }
+        public PlayerColor? Winner { get; private set; }
 
         public int MoveCount { get => _moveRecorder.Count; }
 
@@ -129,16 +131,16 @@ namespace ShogiEngine
         }
 
         // Move the turn to the next player
-        private void NextTurn() => CurrentPlayer = (CurrentPlayer == Player.Black ? Player.White : Player.Black);
+        private void NextTurn() => CurrentPlayer = (CurrentPlayer == PlayerColor.Black ? PlayerColor.White : PlayerColor.Black);
 
-        private void EndGame(GameEndType gameEnding, Player? winner)
+        private void EndGame(GameEndType gameEnding, PlayerColor? winner)
         {
             CurrentPlayer = null;
             Ending = gameEnding;
             Winner = winner;
         }
 
-        public void Resign(Player resigningPlayer)
+        public void Resign(PlayerColor resigningPlayer)
         {
             EndGame(GameEndType.Resignation, resigningPlayer.Opponent());
         }

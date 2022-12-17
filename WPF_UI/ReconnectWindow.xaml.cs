@@ -29,7 +29,7 @@ namespace WPF_UI
 
         public Guid PlayerId { get; }
 
-        public Player? LocalPlayer { get; private set; }
+        public PlayerColor? LocalPlayer { get; private set; }
 
         public string? Opponent { get; private set; }
 
@@ -47,12 +47,10 @@ namespace WPF_UI
             Dispatcher.Invoke(() =>
             {
                 // ignore spurious game events
-                if (e.GameId != GameId || e.PlayerId != PlayerId)
+                if (e.GameId != GameId)
                     return;
 
                 Game = e.Game;
-                LocalPlayer = e.Player;
-                Opponent = e.Opponent;
                 DialogResult = true;
                 Close();
             });

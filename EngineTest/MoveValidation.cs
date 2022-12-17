@@ -23,7 +23,7 @@ namespace EngineTest
         public void OtherPlayersPiece()
         {
             var game = new TaikyokuShogi();
-            var testPiece = new Piece(Player.White, PieceIdentity.Queen);
+            var testPiece = new Piece(PlayerColor.White, PieceIdentity.Queen);
             var startLoc = (17, 17);
             game.Debug_SetPiece(testPiece, startLoc);
             Assert.Throws<InvalidOperationException>(() => game.MakeMove(startLoc, Movement.ComputeMove(startLoc, Movement.Up, 1).Value));
@@ -85,7 +85,7 @@ namespace EngineTest
         public void Pawn()
         {
             var startLoc = (17, 17);
-            var testPiece = new Piece(Player.Black, PieceIdentity.Pawn);
+            var testPiece = new Piece(PlayerColor.Black, PieceIdentity.Pawn);
 
             // validate can only move up one square
             var validMoves = new HashSet<(int, int)>();
@@ -96,18 +96,18 @@ namespace EngineTest
 
             // capture opponent piece
             ValidateMoves(testPiece, startLoc, validMoves,
-                new Dictionary<(int, int), Piece>() { { upOne, new Piece(Player.White, PieceIdentity.King) } });
+                new Dictionary<(int, int), Piece>() { { upOne, new Piece(PlayerColor.White, PieceIdentity.King) } });
 
             // cannot capture your own piece
             ValidateMoves(testPiece, startLoc, new HashSet<(int, int)>(),
-                new Dictionary<(int, int), Piece>() { { upOne, new Piece(Player.Black, PieceIdentity.King) } });
+                new Dictionary<(int, int), Piece>() { { upOne, new Piece(PlayerColor.Black, PieceIdentity.King) } });
         }
 
         [Fact]
         public void RangeMove()
         {
             var startLoc = (12, 25); // random, non-centered location
-            var testPiece = new Piece(Player.Black, PieceIdentity.Queen);
+            var testPiece = new Piece(PlayerColor.Black, PieceIdentity.Queen);
 
             var validMoves = new HashSet<(int X, int Y)>();
 
@@ -133,7 +133,7 @@ namespace EngineTest
             // scatter some pieces around the board - can capture in all directions
             for (int i = 0; i < Movement.DirectionCount; ++i)
             {
-                otherPieces.Add(Movement.ComputeMove(startLoc, i, i + 1).Value, new Piece(Player.White, PieceIdentity.King));
+                otherPieces.Add(Movement.ComputeMove(startLoc, i, i + 1).Value, new Piece(PlayerColor.White, PieceIdentity.King));
 
                 for (int j = 0; j <= i; ++j)
                 {
@@ -150,8 +150,8 @@ namespace EngineTest
             // scatter some pieces around the board - cannot capture in any direction, blocked by own pieces
             for (int i = 0; i < Movement.DirectionCount; ++i)
             {
-                otherPieces.Add(Movement.ComputeMove(startLoc, i, i + 1).Value, new Piece(Player.Black, PieceIdentity.King));
-                otherPieces.Add(Movement.ComputeMove(startLoc, i, i + 2).Value, new Piece(Player.White, PieceIdentity.King));
+                otherPieces.Add(Movement.ComputeMove(startLoc, i, i + 1).Value, new Piece(PlayerColor.Black, PieceIdentity.King));
+                otherPieces.Add(Movement.ComputeMove(startLoc, i, i + 2).Value, new Piece(PlayerColor.White, PieceIdentity.King));
 
                 for (int j = 0; j < i; ++j)
                 {

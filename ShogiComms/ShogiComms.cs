@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace ShogiComms
 {
@@ -17,6 +19,33 @@ namespace ShogiComms
 
         public NetworkGameRequest(Guid gameId, Guid requestingPlayerId) =>
             (GameId, RequestingPlayerId) = (gameId, requestingPlayerId);
+    }
+
+    // Workaround for issue passing lists to Hub not serializing properly
+    public class NetworkGameRequestList
+    {
+        public NetworkGameRequestList(IEnumerable<NetworkGameRequest> list) =>
+            List = list.ToArray();
+
+        public NetworkGameRequest[] List { get; } = Array.Empty<NetworkGameRequest>();
+    }
+
+    public static class NetworkGameRequestListExtensions
+    {
+        public static NetworkGameRequestList ToNetworkGameRequestList(this IEnumerable<NetworkGameRequest> list) =>
+            new NetworkGameRequestList(list);
+    }
+
+    // Workaround for returning named tuples from Hub which was causing silent failure
+    public class GamePlayerPair
+    {
+        public Guid GameId { get; set; } = Guid.Empty;
+
+        public Guid PlayerId { get; set; } = Guid.Empty;
+
+        public void Deconstruct(out Guid gameId, out Guid playerId) { gameId = GameId; playerId = PlayerId; }
+
+        public GamePlayerPair(Guid gameId, Guid playerId) => (GameId, PlayerId) = (gameId, playerId);
     }
 
     public class ClientGameInfo

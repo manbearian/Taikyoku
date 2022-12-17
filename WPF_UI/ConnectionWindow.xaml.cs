@@ -1,21 +1,13 @@
-﻿using System;
+﻿using Microsoft.AspNetCore.SignalR;
+using ShogiClient;
+using ShogiComms;
+using ShogiEngine;
+using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
 using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Shapes;
-
-using Microsoft.AspNetCore.SignalR;
-
-using ShogiClient;
-using ShogiEngine;
-using ShogiComms;
 
 namespace WPF_UI
 {
@@ -32,9 +24,9 @@ namespace WPF_UI
 
         public Guid PlayerId { get; private set; }
 
-        public Player? LocalPlayer { get; private set; }
+        public PlayerColor? LocalPlayer { get; private set; }
 
-        public string? Opponent { get; private set; }
+        public string? OpponentName { get; private set; }
 
         public IEnumerable<(Guid GameId, Guid PlayerId)>? KnownGames { get; set; }
 
@@ -82,17 +74,23 @@ namespace WPF_UI
         private void RecieveGameList(object sender, ReceiveGameListEventArgs e) =>
             Dispatcher.Invoke(() => UpdateGameList(e.GameList));
 
-        private void RecieveGameStart(object sender, ReceiveGameStartEventArgs e) =>
+        private void RecieveGameStart(object sender, ReceiveGameStartEventArgs e)
+        {
+            if (GameId != e.GameId)
+            {
+                // game start for unknown game; ignore
+                // TODO: log this???
+                return;
+            }
+
             Dispatcher.Invoke(() =>
             {
                 Game = e.Game;
-                GameId = e.GameId;
                 PlayerId = e.PlayerId;
-                LocalPlayer = e.Player;
-                Opponent = e.Opponent;
                 DialogResult = true;
                 Close();
             });
+        }
 
         private void UpdateGameList(IEnumerable<ClientGameInfo> gameList)
         {
@@ -137,6 +135,9 @@ namespace WPF_UI
             SetUIForWaitForConnection();
 
             var gameInfo = (ClientGameInfo)(ClientGameInfoWrapper)selectedItem;
+            GameId = gameInfo.GameId;
+            LocalPlayer = gameInfo.PlayerColor();
+            OpponentName = gameInfo.OpponentName();
 
             try
             {
@@ -149,7 +150,7 @@ namespace WPF_UI
                     Properties.Settings.Default.PlayerName = NameBox.Text;
                     Properties.Settings.Default.Save();
 
-                    await Connection.RequestJoinGame(gameInfo.GameId, NameBox.Text);
+                    await Connection.JoinGame(gameInfo.GameId, NameBox.Text);
                 }
             }
             catch (HubException)
@@ -167,11 +168,18 @@ namespace WPF_UI
                 if (IsShowingKnownGames)
                 {
                     SetUIForConnectExistingGame();
-                    await Connection.RequestGameInfo(KnownGames.EmptyIfNull().Select(p => new NetworkGameRequest(p.GameId, p.PlayerId)));
+                    await Connection.RequestGameInfo(KnownGames.EmptyIfNull().Select(p => new NetworkGameRequest(p.GameId, p.PlayerId)).ToList()).
+                        ContinueWith(t =>
+                    {
+                        Dispatcher.Invoke(() => UpdateGameList(t.Result));
+                    });
                 }
                 else
                 {
-                    await Connection.RequestAllOpenGameInfo();
+                    await Connection.RequestAllOpenGameInfo().ContinueWith(t =>
+                    {
+                        Dispatcher.Invoke(() => UpdateGameList(t.Result));
+                    });
                 }
             }
             catch (System.Net.Http.HttpRequestException)

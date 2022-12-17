@@ -20,27 +20,30 @@ using Azure.Core.Extensions;
 using ShogiEngine;
 using ShogiComms;
 using Microsoft.Extensions.Logging;
+using Azure.Core;
+using System.Text.Json;
+using Microsoft.Azure.SignalR.Management;
 
 namespace ShogiServerless
 {
     public interface IShogiClient
     {
-        Task ReceiveNewGame(TaikyokuShogi game, Guid id);
-
         Task ReceiveGameList(List<ClientGameInfo> list);
 
-        Task ReceiveGameStart(TaikyokuShogi game, Guid id, Guid playerId, Player player, string opponent);
+        Task ReceiveGameStart(string serializedGame, Guid gameId,  Guid playerId);
 
-        Task ReceiveGameUpdate(TaikyokuShogi game, Guid id);
+        Task ReceiveGameUpdate(string serializedGame, Guid id);
 
         // indicate the other player disconncted
         Task ReceiveGameDisconnect(Guid id);
 
         // indicate that the other player reconnected
         Task ReceiveGameReconnect(Guid id);
+
+        Task Echo(string message);
     }
 
-    public class ShogiHub : ServerlessHub
+    public class ShogiHub : ServerlessHub<IShogiClient>
     {
         internal static TableStorage TableStorage { get; } = new TableStorage();
 
@@ -48,9 +51,20 @@ namespace ShogiServerless
         {
             internal class PlayerInfo
             {
-                public Guid PlayerId { get; set; }
+                public PlayerInfo() { }
+
+                public PlayerInfo(string name)
+                {
+                    PlayerId = Guid.NewGuid();
+                    PlayerName = name;
+                }
+
+                public Guid PlayerId { get; set; } = Guid.Empty;
 
                 public string PlayerName { get; set; } = string.Empty;
+
+                public override string ToString() => $"<{PlayerName}-{PlayerId}>";
+
             }
 
             private TaikyokuShogi? _game;
@@ -63,30 +77,58 @@ namespace ShogiServerless
 
             public DateTime LastPlayed { get; set; }
 
-            public PlayerInfo BlackPlayer { get; } = new PlayerInfo();
+            public PlayerInfo BlackPlayer { get; private set; } = new PlayerInfo();
 
-            public PlayerInfo WhitePlayer { get; } = new PlayerInfo();
+            public PlayerInfo WhitePlayer { get; private set; } = new PlayerInfo();
 
-            public GameInfo(TaikyokuShogi game, Guid id)
+            public bool IsOpen { get => BlackPlayer.PlayerId == Guid.Empty || WhitePlayer.PlayerId == Guid.Empty; }
+
+            public GameInfo(TaikyokuShogi game, string playerName, PlayerColor color)
             {
-                (_game, Id, Created, LastPlayed) = (game, id, DateTime.UtcNow, DateTime.Now);
-                (((ITableEntity)this).PartitionKey, ((ITableEntity)this).RowKey) = (string.Empty, id.ToString());
+                (_game, Id, Created, LastPlayed) = (game, Guid.NewGuid(), DateTime.UtcNow, DateTime.Now);
+                var playerInfo = new PlayerInfo(playerName);
+                if (color == PlayerColor.Black)
+                    BlackPlayer = playerInfo;
+                else
+                    WhitePlayer = playerInfo;
+                (((ITableEntity)this).PartitionKey, ((ITableEntity)this).RowKey) = (string.Empty, Id.ToString());
             }
 
-            public Player GetPlayerColor(Guid playerId) => 
-                playerId == BlackPlayer.PlayerId ? Player.Black :
-                    (playerId == WhitePlayer.PlayerId ? Player.White :
+            public PlayerColor GetPlayerColor(Guid playerId) => 
+                playerId == BlackPlayer.PlayerId ? PlayerColor.Black :
+                    (playerId == WhitePlayer.PlayerId ? PlayerColor.White :
                         throw new HubException("unknown player"));
+
+            public (PlayerInfo oldPlayer, PlayerInfo newPlayer) AddPlayer(string name)
+            {
+                if (BlackPlayer.PlayerId == Guid.Empty)
+                {
+                    if (WhitePlayer.PlayerId == Guid.Empty)
+                    {
+                        throw new HubException($"Failed to join game, game is abandoned: {Id}");
+                    }
+
+                    BlackPlayer = new PlayerInfo(name);
+                    return (WhitePlayer, BlackPlayer);
+                }
+                else if (WhitePlayer.PlayerId == Guid.Empty)
+                {
+                    WhitePlayer = new PlayerInfo(name);
+                    return (BlackPlayer, WhitePlayer);
+                }
+                
+                throw new HubException($"Failed to join game, game is full: {Id}");
+            }
 
             public PlayerInfo GetPlayerInfo(Guid playerId) => GetPlayerInfo(GetPlayerColor(playerId));
 
             public PlayerInfo GetOtherPlayerInfo(Guid playerId) => GetPlayerInfo(GetPlayerColor(playerId).Opponent());
 
-            public PlayerInfo GetPlayerInfo(Player player) =>
+            public PlayerInfo GetPlayerInfo(PlayerColor player) =>
                 player switch
                 {
-                    Player.Black => BlackPlayer,
-                    Player.White => WhitePlayer,
+                    PlayerColor.Black => BlackPlayer,
+                    PlayerColor.White => WhitePlayer,
                     _ => throw new HubException("unknown player")
                 };
 
@@ -156,58 +198,70 @@ namespace ShogiServerless
 
             DateTimeOffset ITableEntity.Timestamp { get; set; }
         }
-
-#if false
+        
+        private static async Task<IEnumerable<ClientGameInfo>> AllOpenGames() =>
+            await TableStorage.AllGames().ContinueWith(t =>
+            {
+                var gameList = new List<ClientGameInfo>();
+                foreach (var game in t.Result)
+                {
+                    if (game.IsOpen)
+                    {
+                        gameList.Add(game.ToClientGameInfo());
+                    }
+                }
+                return gameList as IEnumerable<ClientGameInfo>;
+            });
 
         public ShogiHub() : base() { }
 
-        // database of games looking for players
-        private static readonly ConcurrentDictionary<Guid, GameInfo> OpenGames = new ConcurrentDictionary<Guid, GameInfo>();
-
-        // map players to their connections
-        private static readonly ConcurrentDictionary<Guid, (IShogiClient Client, string ClientId)> ClientMap = new ConcurrentDictionary<Guid, (IShogiClient Client, string ClientId)>();
-        private static readonly object ClientMapLock = new object();
-
-#if false
-
-        private GameInfo ClientGame { get => (GameInfo)Context.Items["ClientGame"]; set => Context.Items["ClientGame"] = value; }
-
-        private Guid ClientPlayerId { get => Context.Items["ClientPlayerId"] as Guid? ?? Guid.Empty; set => Context.Items["ClientPlayerId"] = value; }
-
-        private static List<ClientGameInfo> AllOpenGames()
-             => OpenGames.Values.Select(info => info.ToClientGameInfo()).ToList();
-
-        public async Task CreateGame(string playerName, TaikyokuShogiOptions gameOptions, bool asBlackPlayer, TaikyokuShogi existingGame)
+        [FunctionName(nameof(CreateGame))]
+        public async Task<GamePlayerPair> CreateGame([SignalRTrigger] InvocationContext context,
+            string playerName, bool asBlackPlayer, string existingGameSerialized, ILogger logger)
         {
-            var game = existingGame ?? new TaikyokuShogi(gameOptions);
-            var gameId = Guid.NewGuid();
-            var playerId = Guid.NewGuid();
-            var gameInfo = new GameInfo(game, gameId);
+            var game = JsonSerializer.Deserialize<TaikyokuShogi>(existingGameSerialized ?? "")
+                ?? throw new HubException("failed to deserialize game state");
+            var gameInfo = new GameInfo(game, playerName, asBlackPlayer ? PlayerColor.Black : PlayerColor.White);
+            gameInfo = TableStorage.AddOrUpdateGame(gameInfo)
+                ?? throw new HubException("failed to add game state");
 
-            var playerInfo = asBlackPlayer ? gameInfo.BlackPlayer : gameInfo.WhitePlayer;
-            (playerInfo.PlayerId, playerInfo.PlayerName) = (playerId, playerName);
+            logger.LogInformation($"client '{context.ConnectionId}' creaging new game created with id '{gameInfo.Id}'");
 
-            ClientMap[playerId] = (Clients.Caller, Context.ConnectionId);
-            OpenGames[gameId] = gameInfo;
-            ClientGame = gameInfo;
-            ClientPlayerId = playerId;
+            logger.LogInformation("sending attached clients updated game list");
+            await AllOpenGames().ContinueWith(t => Clients.All.ReceiveGameList(t.Result.ToList()));
 
-            await Clients.All.ReceiveGameList(AllOpenGames());
-            await Clients.ReceiveNewGame(game, gameId);
+            logger.LogInformation($"adding client to game group");
+            await Groups.AddToGroupAsync(context.ConnectionId, gameInfo.Id.ToString());
+
+            return new GamePlayerPair(gameInfo.Id, asBlackPlayer ? gameInfo.BlackPlayer.PlayerId : gameInfo.WhitePlayer.PlayerId);
         }
 
-        public async Task RequestAllOpenGameInfo()
+        [FunctionName(nameof(RequestAllOpenGameInfo))]
+        public async Task<IEnumerable<ClientGameInfo>> RequestAllOpenGameInfo([SignalRTrigger] InvocationContext context)
         {
-            await Clients.Caller.ReceiveGameList(AllOpenGames());
+            // query the table storage for all the requested games
+            return await TableStorage.AllGames().ContinueWith(t => {
+                var gameList = new List<ClientGameInfo>();
+                foreach (var game in t.Result)
+                {
+                    if (game.IsOpen)
+                    {
+                        gameList.Add(game.ToClientGameInfo());
+                    }
+                }
+                return gameList as IEnumerable<ClientGameInfo>;
+            });
         }
 
-        public async Task RequestGameInfo(IEnumerable<NetworkGameRequest> requests)
+        [FunctionName(nameof(RequestGameInfo))]
+        public async Task<IEnumerable<ClientGameInfo>> RequestGameInfo([SignalRTrigger] InvocationContext context,
+            NetworkGameRequestList requests)
         {
             var gameList = new ConcurrentBag<ClientGameInfo>();
 
             // query the table storage for all the requested games
             var tasks = new List<Task>();
-            foreach (var request in requests)
+            foreach (var request in requests.List)
             {
                 tasks.Add(TableStorage.FindGame(request.GameId).
                     ContinueWith(t =>
@@ -218,66 +272,90 @@ namespace ShogiServerless
                     }));
             }
 
-            Task.WaitAll(tasks.ToArray());
-            await Clients.Caller.ReceiveGameList(gameList.ToList());
+            return await Task.WhenAll(tasks.ToArray()).ContinueWith(t =>
+            {
+                return gameList as IEnumerable<ClientGameInfo>;
+            });
         }
 
-        public async Task JoinGame(Guid gameId, string playerName)
+        [FunctionName(nameof(JoinGame))]
+        public async Task JoinGame([SignalRTrigger] InvocationContext context, 
+            Guid gameId, string playerName, ILogger logger)
         {
-            // first disconnect from any games we're currently connected to
-            await DisconnectClientGame();
+            logger.LogInformation($"client '{context.ConnectionId}' named '{playerName}' requesting to join game '{gameId}'");
 
-            if (!OpenGames.TryRemove(gameId, out var gameInfo))
-            {
-                throw new HubException($"Failed to join game, game id not found: {gameId}");
-            }
+            var gameInfo = await TableStorage.FindGame(gameId)
+                ?? throw new HubException($"failed to find game: {gameId}");
 
-            GameInfo.PlayerInfo clientInfo;
+            var (oldPlayerInfo, newPlayerInfo) = gameInfo.AddPlayer(playerName);
+            gameInfo = TableStorage.AddOrUpdateGame(gameInfo)
+                ?? throw new HubException("Internal Storage Error: Unable to connect game");
 
-            if (gameInfo.BlackPlayer.PlayerId == Guid.Empty)
-            {
-                if (gameInfo.WhitePlayer.PlayerId == Guid.Empty)
-                {
-                    throw new HubException($"Failed to join game, game is abandoned: {gameId}");
-                }
+            logger.LogInformation($"'{context.ConnectionId}' sucessfully joined '{gameId}'");
 
-                clientInfo = gameInfo.BlackPlayer;
-            }
-            else if (gameInfo.WhitePlayer.PlayerId == Guid.Empty)
-            {
-                clientInfo = gameInfo.WhitePlayer;
-            }
-            else
-            {
-                throw new HubException($"Failed to join game, game is full: {gameId}");
-            }
+            logger.LogInformation($"sending all clients updated open game list");
+            await AllOpenGames().ContinueWith(t => Clients.All.ReceiveGameList(t.Result.ToList()));
 
-            var playerId = Guid.NewGuid();
-            (clientInfo.PlayerId, clientInfo.PlayerName) = (playerId, playerName);
+            // join the group
+            logger.LogInformation($"adding '{context.ConnectionId}' to '{gameId}' group");
+            await Groups.AddToGroupAsync(context.ConnectionId, gameInfo.Id.ToString());
 
-            var updatedGameInfo = TableStorage.AddOrUpdateGame(gameInfo);
-            if (updatedGameInfo == null)
-            {
-                (clientInfo.PlayerId, clientInfo.PlayerName) = (Guid.Empty, string.Empty);
-                OpenGames[gameId] = gameInfo;
-                throw new HubException("Internal Storage Error: Unable to connect game");
-            }
+            // signal other player game has started
+            logger.LogInformation($"signal player '{oldPlayerInfo}' game start for '{gameId}'");
+            await Clients.GroupExcept(gameInfo.Id.ToString(), context.ConnectionId).
+                ReceiveGameStart(gameInfo.Game.ToJsonString(), gameInfo.Id, oldPlayerInfo.PlayerId);
 
-            gameInfo = updatedGameInfo;
-            ClientMap[playerId] = (Clients.Caller, Context.ConnectionId);
-            ClientPlayerId = playerId;
-            ClientGame = gameInfo;
-
-            await Clients.All.ReceiveGameList(AllOpenGames());
-
-            var blackClient = ClientMap.GetValueOrDefault(gameInfo.BlackPlayer.PlayerId).Client;
-            if (blackClient != null)
-                await blackClient.ReceiveGameStart(gameInfo.Game, gameId, gameInfo.BlackPlayer.PlayerId, Player.Black, gameInfo.WhitePlayer.PlayerName);
-
-            var whiteClient = ClientMap.GetValueOrDefault(gameInfo.WhitePlayer.PlayerId).Client;
-            if (whiteClient != null)
-                await whiteClient.ReceiveGameStart(gameInfo.Game, gameId, gameInfo.WhitePlayer.PlayerId, Player.White, gameInfo.BlackPlayer.PlayerName);
+            // signal joining player game has started
+            logger.LogInformation($"signal player '{newPlayerInfo}' game start for '{gameId}'");
+            await Clients.Client(context.ConnectionId).
+                ReceiveGameStart(gameInfo.Game.ToJsonString(), gameInfo.Id, newPlayerInfo.PlayerId);
         }
+
+#if DEBUG
+        [FunctionName(nameof(Echo))]
+        public async Task Echo([SignalRTrigger] InvocationContext context, string message, ILogger logger)
+        {
+            logger.LogInformation($"echoing '{message}' back to '{context.ConnectionId}'");
+            await Clients.Client(context.ConnectionId).Echo(message);
+        }
+
+        [FunctionName(nameof(TestGameStart))]
+        public async Task TestGameStart([SignalRTrigger] InvocationContext context, string serializedGame, ILogger logger)
+        {
+            var game = serializedGame.ToTaikyokuShogi();
+            logger.LogInformation($"testing GameStart message for '{context.ConnectionId}'");
+            await Clients.Client(context.ConnectionId).ReceiveGameStart(game.ToJsonString(), Guid.NewGuid(), Guid.NewGuid());
+        }
+#endif
+
+        [FunctionName(nameof(OnConnected))]
+        public void OnConnected([SignalRTrigger] InvocationContext context, ILogger logger)
+        {
+            logger.LogInformation($"{context.ConnectionId} has connected");
+        }
+
+        [FunctionName(nameof(OnDisconnected))]
+        public void OnDisconnected([SignalRTrigger] InvocationContext context, ILogger logger)
+        {
+            logger.LogInformation($"{context.ConnectionId} has disconnected");
+        }
+
+        [FunctionName("negotiate")]
+        public async Task<SignalRConnectionInfo> Negotiate([HttpTrigger(AuthorizationLevel.Anonymous)] HttpRequest req)
+            => await NegotiateAsync(new NegotiationOptions());
+
+#if false
+        // database of games looking for players
+        private static readonly ConcurrentDictionary<Guid, GameInfo> OpenGames = new ConcurrentDictionary<Guid, GameInfo>();
+
+        // map players to their connections
+        private static readonly ConcurrentDictionary<Guid, (IShogiClient Client, string ClientId)> ClientMap = new ConcurrentDictionary<Guid, (IShogiClient Client, string ClientId)>();
+        private static readonly object ClientMapLock = new object();
+
+
+        private GameInfo ClientGame { get => (GameInfo)Context.Items["ClientGame"]; set => Context.Items["ClientGame"] = value; }
+
+        private Guid ClientPlayerId { get => Context.Items["ClientPlayerId"] as Guid? ?? Guid.Empty; set => Context.Items["ClientPlayerId"] = value; }
 
         public async Task RejoinGame(Guid gameId, Guid playerId)
         {
@@ -395,86 +473,5 @@ namespace ShogiServerless
         }
 #endif
 
-
-        [FunctionName(nameof(RequestAllOpenGameInfo))]
-        public async Task RequestAllOpenGameInfo([SignalRTrigger] InvocationContext invocationContext)
-        {
-            await Clients.Client(invocationContext.ConnectionId).SendAsync("ReceiveGameList", new List<ClientGameInfo>());
-        }
-
-        [FunctionName(nameof(RequestGameInfo))]
-        public async Task RequestGameInfo([SignalRTrigger] InvocationContext invocationContext, IEnumerable<NetworkGameRequest> requests)
-        {
-            var gameList = new ConcurrentBag<ClientGameInfo>();
-
-            // query the table storage for all the requested games
-            var tasks = new List<Task>();
-            foreach (var request in requests)
-            {
-                tasks.Add(TableStorage.FindGame(request.GameId).
-                    ContinueWith(t =>
-                    {
-                        var gameInfo = t.Result;
-                        if (gameInfo != null)
-                            gameList.Add(gameInfo.ToClientGameInfo(request.RequestingPlayerId));
-                    }));
-            }
-            Task.WaitAll(tasks.ToArray());
-
-            await Clients.Client(invocationContext.ConnectionId).SendAsync("ReceiveGameList", gameList.ToList());
-//            await Clients.Caller.ReceiveGameList(gameList.ToList());
-        }
-
-
-        [FunctionName(nameof(OnConnected))]
-        public void OnConnected([SignalRTrigger] InvocationContext invocationContext, ILogger logger)
-        {
-            logger.LogInformation($"{invocationContext.ConnectionId} has connected");
-        }
-
-        [FunctionName(nameof(OnDisconnected))]
-        public void OnDisconnected([SignalRTrigger] InvocationContext invocationContext, ILogger logger)
-        {
-            logger.LogInformation($"{invocationContext.ConnectionId} has disconnected");
-        }
-
-        [FunctionName("SignalRConnected")]
-        public async Task Run([SignalRTrigger("chat", "connections", "connected", ConnectionStringSetting = "AzureSignalRConnectionString")] InvocationContext invocationContext, ILogger logger)
-        {
-            logger.LogInformation($"{invocationContext.ConnectionId} connected");
-        }
-
-        [FunctionName("negotiate")]
-        public SignalRConnectionInfo Negotiate([HttpTrigger(AuthorizationLevel.Anonymous)] HttpRequest req)
-        {
-            return Negotiate();
-        }
-#endif
-
     }
-
-    class MyTest
-    {
-        [FunctionName("negotiate")]
-        public static SignalRConnectionInfo Negotiate(
-        [HttpTrigger(AuthorizationLevel.Anonymous)] HttpRequest req,
-        [SignalRConnectionInfo(HubName = "ShogiHub")] SignalRConnectionInfo connectionInfo)
-        {
-            return connectionInfo;
-        }
-
-        [FunctionName(nameof(OnConnected))]
-        public static async Task OnConnected([SignalRTrigger("ShogiHub", "connections", "connected", ConnectionStringSetting = "AzureSignalRConnectionString")] InvocationContext invocationContext, ILogger logger)
-        {
-            logger.LogInformation($"Received RequestAllOpenGameInfo from {invocationContext.ConnectionId}.");
-        }
-
-        [FunctionName(nameof(RequestAllOpenGameInfo))]
-        public static async Task RequestAllOpenGameInfo([SignalRTrigger("ShogiHub", "messages", "RequestAllOpenGameInfo", ConnectionStringSetting = "AzureSignalRConnectionString")] InvocationContext invocationContext, ILogger logger)
-        {
-            logger.LogInformation($"Received RequestAllOpenGameInfo from {invocationContext.ConnectionId}.");
-        }
-
-    }
-
 }

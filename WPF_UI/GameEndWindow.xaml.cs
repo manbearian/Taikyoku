@@ -24,7 +24,7 @@ namespace WPF_UI
             InitializeComponent();
         }
 
-        public void ShowDialog(GameEndType gameEndType, Player? winner)
+        public void ShowDialog(GameEndType gameEndType, PlayerColor? winner)
         {
             upperTextBox.Text = gameEndType switch
             {
@@ -36,8 +36,8 @@ namespace WPF_UI
 
             lowerTextBox.Text = winner switch
             {
-                Player.White => "White Wins!",
-                Player.Black => "Black Wins!",
+                PlayerColor.White => "White Wins!",
+                PlayerColor.Black => "Black Wins!",
                 null => "Draw!",
                 _ => throw new NotSupportedException(),
             };

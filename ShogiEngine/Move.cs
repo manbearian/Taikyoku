@@ -2441,8 +2441,8 @@ namespace ShogiEngine
 
             return piece.Owner switch
             {
-                Player.Black => endLoc.Y < 11 ? PromotionType.May : PromotionType.None,
-                Player.White => endLoc.Y >= TaikyokuShogi.BoardHeight - 11 ? PromotionType.May : PromotionType.None,
+                PlayerColor.Black => endLoc.Y < 11 ? PromotionType.May : PromotionType.None,
+                PlayerColor.White => endLoc.Y >= TaikyokuShogi.BoardHeight - 11 ? PromotionType.May : PromotionType.None,
                 _ => throw new NotSupportedException()
             };
         }
@@ -2483,7 +2483,7 @@ namespace ShogiEngine
         // Compute a target move and add it to the list of moves if it is legal. Returns the computed location regardless
         public (int X, int Y)? Add((int X, int Y) startLoc, int direction, int distance, MoveType type, bool captureOnly = false)
         {
-            var targetLoc = Movement.ComputeMove(startLoc, direction, Piece.Owner == Player.Black ? distance : -distance);
+            var targetLoc = Movement.ComputeMove(startLoc, direction, Piece.Owner == PlayerColor.Black ? distance : -distance);
 
             if (!targetLoc.HasValue)
                 return null;

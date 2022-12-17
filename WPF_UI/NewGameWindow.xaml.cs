@@ -31,7 +31,7 @@ namespace WPF_UI
 
         public Guid PlayerId { get; private set; }
 
-        public Player? LocalPlayer { get; private set; }
+        public PlayerColor? LocalPlayer { get; private set; }
 
         public string? Opponent { get; private set; }
 
@@ -66,21 +66,37 @@ namespace WPF_UI
             NewGameButton.IsEnabled = false;
         }
 
-        private void RecieveGameStart(object sender, ReceiveGameStartEventArgs e) =>
+        private void RecieveGameStart(object sender, ReceiveGameStartEventArgs e)
+        {
+            if (GameId == Guid.Empty || PlayerId == Guid.Empty)
+            {
+                MessageBox.Show("race condition, game started before we were ready; what do i do???");
+            }
+            else if (GameId != e.GameId)
+            {
+                // game start for unknown game; ignore
+                // TODO: log this???
+                return;
+            }
+            else if (PlayerId != e.PlayerId)
+            {
+                // game start for the wrong player; ignore
+                // TODO: log this?
+                return;
+            }
+
             Dispatcher.Invoke(() =>
             {
                 Game = e.Game;
-                GameId = e.GameId;
-                PlayerId = e.PlayerId;
-                LocalPlayer = e.Player;
-                Opponent = e.Opponent;
-                DialogResult = true;
-                NetworkGame = true;
                 Close();
             });
+        }
 
         private async void NewGameButton_Click(object sender, RoutedEventArgs e)
         {
+            GameId = Guid.Empty;
+            PlayerId = Guid.Empty;
+
             // todo: pick up game options from UI
             var gameOptions = TaikyokuShogiOptions.None;
 
@@ -91,6 +107,8 @@ namespace WPF_UI
             }
             else if (NetworkRadioButton.IsChecked == true)
             {
+                Game ??= new TaikyokuShogi(gameOptions);
+
                 Properties.Settings.Default.PlayerName = NameBox.Text;
                 Properties.Settings.Default.Save();
 
@@ -102,9 +120,8 @@ namespace WPF_UI
                     // lock the UI while we wait for a response
                     SetUIForWaitForConnection();
 
-                    await Connection.ConnectAsync().
-                        ContinueWith(_ => Connection.RequestNewGame(playerName, gameOptions, localPlayerIsBlack, Game));
-
+                    await Connection.ConnectAsync();
+                    (GameId, PlayerId) = await Connection.RequestNewGame(playerName, localPlayerIsBlack, Game);
                     return;
                 }
                 catch (Exception)
@@ -150,7 +167,7 @@ namespace WPF_UI
 
         private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
         {
-            Connection.OnReceiveGameStart -= RecieveGameStart;
+           Connection.OnReceiveGameStart -= RecieveGameStart;
         }
     }
 }

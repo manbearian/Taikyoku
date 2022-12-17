@@ -244,13 +244,13 @@ namespace ShogiEngine
                 for (int j = 0; j < board.GetLength(1); ++j)
                     board[i, j] = null;
 
-            SetupPlayer(Player.Black);
-            SetupPlayer(Player.White);
+            SetupPlayer(PlayerColor.Black);
+            SetupPlayer(PlayerColor.White);
 
-            void SetupPlayer(Player player)
+            void SetupPlayer(PlayerColor player)
             {
-                int row(int i) => player == Player.Black ? TaikyokuShogi.BoardWidth - i - 1 : i;
-                int col(int i) => player == Player.Black ? i : TaikyokuShogi.BoardHeight - i - 1;
+                int row(int i) => player == PlayerColor.Black ? TaikyokuShogi.BoardWidth - i - 1 : i;
+                int col(int i) => player == PlayerColor.Black ? i : TaikyokuShogi.BoardHeight - i - 1;
 
                 for (int i = 0; i < InitialBoardData.Length; ++i)
                 {

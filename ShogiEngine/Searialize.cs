@@ -7,7 +7,16 @@ using System.Text.Json.Serialization;
 
 namespace ShogiEngine
 {
-    internal class TaikyokuJsonConverter : JsonConverter<TaikyokuShogi>
+    public static class SearializatinExtensions
+    {
+        public static TaikyokuShogi ToTaikyokuShogi(this string serializedGame) =>
+            JsonSerializer.Deserialize<TaikyokuShogi>(serializedGame) ?? throw new JsonException("failed to deserialize");
+
+        public static string ToJsonString(this TaikyokuShogi game) =>
+            JsonSerializer.Serialize(game) ?? throw new JsonException("failed to serialize");
+    }
+
+    public class TaikyokuJsonConverter : JsonConverter<TaikyokuShogi>
     {
         public override TaikyokuShogi Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
@@ -16,8 +25,8 @@ namespace ShogiEngine
 
             Piece?[,] pieces = new Piece?[TaikyokuShogi.BoardWidth, TaikyokuShogi.BoardHeight];
             MoveRecorder moveRecorder = new MoveRecorder();
-            Player? currentPlayer = null;
-            Player? winner = null;
+            PlayerColor? currentPlayer = null;
+            PlayerColor? winner = null;
             GameEndType? ending = null;
             TaikyokuShogiOptions gameOptions = TaikyokuShogiOptions.None;
 
@@ -61,7 +70,7 @@ namespace ShogiEngine
 
                     case "CurrentPlayer":
                         reader.Read();
-                        currentPlayer = reader.GetEnum<Player>();
+                        currentPlayer = reader.GetEnum<PlayerColor>();
                         break;
 
                     case "Ending":
@@ -71,7 +80,7 @@ namespace ShogiEngine
 
                     case "Winner":
                         reader.Read();
-                        winner = reader.GetEnum<Player>();
+                        winner = reader.GetEnum<PlayerColor>();
                         break;
 
                     case "Options":
@@ -170,7 +179,7 @@ namespace ShogiEngine
                 throw new JsonException();
 
             reader.Read();
-            var owner = Enum.Parse<Player>(reader.GetString() ?? throw new JsonException());
+            var owner = Enum.Parse<PlayerColor>(reader.GetString() ?? throw new JsonException());
 
             reader.Read();
             var pieceId = reader.GetPieceIdentity() ?? throw new JsonException();
