@@ -156,8 +156,9 @@ namespace WPF_UI
                     await Connection.JoinGame(gameInfo.GameId, NameBox.Text);
                 }
             }
-            catch (HubException)
+            catch (Exception ex) when (Connection.ExceptionFilter(ex))
             {
+                // TODO: log error? report to uesr?
                 ResetUI();
             }
         }
@@ -185,21 +186,8 @@ namespace WPF_UI
                     });
                 }
             }
-            catch (System.Net.Http.HttpRequestException)
+            catch (Exception ex) when (Connection.ExceptionFilter(ex))
             {
-                // bad connection, timeout, etc.
-                // TODO: log error? report to uesr?
-                Close();
-            }
-            catch (System.Net.Sockets.SocketException)
-            {
-                // bad connection, timeout, etc.
-                // TODO: log error? report to uesr?
-                Close();
-            }
-            catch (HubException)
-            {
-                // server couldn't find/load game
                 // TODO: log error? report to uesr?
                 Close();
             }

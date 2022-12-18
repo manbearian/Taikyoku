@@ -1,15 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Net.Http;
+using System.Net.Sockets;
 using System.Threading.Tasks;
 
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.AspNetCore.SignalR.Client;
 
 using ShogiEngine;
 using ShogiComms;
-using System.Linq;
-using System.Text.Json.Nodes;
-using System.Text.Json;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace ShogiClient
 {
@@ -105,8 +104,19 @@ namespace ShogiClient
         public void Dispose() =>
             _connection.DisposeAsync().Wait();
 
-        public async Task ConnectAsync() =>
-            await _connection.StartAsync();
+        public async Task ConnectAsync()
+        {
+            try
+            {
+                await _connection.StartAsync();
+            }
+            catch (HttpRequestException)
+            {
+                // When Debugging it's posisble that the server hasn't been stood up yet
+                // Sit here for 6 seconds (enough time to fully launch the Azure Functions) and try again
+                await Task.Delay(6000).ContinueWith(t =>  _connection.StartAsync());
+            }
+        }
 
         public async Task<IEnumerable<ClientGameInfo>> RequestAllOpenGameInfo() =>
             await _connection.InvokeAsync<IEnumerable<ClientGameInfo>>("RequestAllOpenGameInfo");
@@ -137,6 +147,17 @@ namespace ShogiClient
 
         public async Task TestGameStart(TaikyokuShogi game) => await _connection.InvokeAsync("TestGameStart", game.ToJsonString());
 #endif
+
+        // Helper for identifying possible connection Exceptions
+        public static bool ExceptionFilter(Exception e) =>
+           e switch
+           {
+               _ when e is HubException => true,               // Marshalled exception from the hub.
+               _ when e is InvalidOperationException => true,  // Connection failure
+               _ when e is SocketException => true,            // Connection faliure
+               _ when e is HttpRequestException => true,       // Connection faliure
+               _ => false
+           };
     }
 
     public static class ClientGameInfoExtension

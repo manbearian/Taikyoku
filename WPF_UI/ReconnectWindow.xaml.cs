@@ -68,14 +68,9 @@ namespace WPF_UI
                 await Connection.ConnectAsync();
                 await Connection.RequestRejoinGame(GameId, PlayerId);
             }
-            catch (System.Net.Sockets.SocketException)
+            catch (Exception ex) when (Connection.ExceptionFilter(ex))
             {
-                // bad connection, timeout, etc.
-                Close();
-            }
-            catch (Microsoft.AspNetCore.SignalR.HubException)
-            {
-                // server couldn't find/load game
+                // TODO: log error? report to uesr?
                 Close();
             }
         }
