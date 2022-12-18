@@ -28,7 +28,7 @@ namespace WPF_UI
 
         public string? OpponentName { get; private set; }
 
-        public IEnumerable<(Guid GameId, Guid PlayerId)>? KnownGames { get; set; }
+        public IEnumerable<(Guid GameId, Guid PlayerId, PlayerColor myColor)>? KnownGames { get; set; }
 
         public IEnumerable<(Guid GameId, Guid PlayerId)> DeadGames { get; private set; } = Enumerable.Empty<(Guid GameId, Guid PlayerId)>();
 
@@ -99,12 +99,16 @@ namespace WPF_UI
             if (IsShowingKnownGames)
             {
                 // mark any games unknown to the server as dead
-                DeadGames = KnownGames.EmptyIfNull().Where(knownGame => gameList.All(g => g.GameId != knownGame.GameId)).ToList(); // copy list
+                DeadGames = KnownGames.
+                    EmptyIfNull().
+                    Where(knownGame => gameList.All(g => g.GameId != knownGame.GameId)).
+                    Select(elem => (elem.GameId, elem.PlayerId)).
+                    ToList(); // copy list
             }
 
             if (gameList.Any())
             {
-                var orderedList = gameList.OrderByDescending(elem => elem.LastPlayed).ThenByDescending(elem => elem.Created).ThenBy(elem => elem.UnassignedColor());
+                var orderedList = gameList.OrderByDescending(elem => elem.LastPlayed).ThenByDescending(elem => elem.Created);
 
                 foreach (var game in orderedList)
                 {
@@ -244,7 +248,13 @@ namespace WPF_UI
 
             public string DisplayString
             {
-                get => $"vs {_info.WaitingPlayerName()} ({_info.UnassignedColor().Opponent()})\tLast Played: {_info.LastPlayed.ToLocalTime()}\tCreated: {_info.Created.ToLocalTime()}";
+                get
+                {
+                    var gameName = _info.IsOpen() ?
+                        $"vs. {_info.WaitingPlayerName()} ({_info.UnassignedColor().Opponent()})" :
+                        $"{_info.BlackName} vs. {_info.WhiteName}";
+                    return $"{gameName}\tLast Played: {_info.LastPlayed.ToLocalTime()}\tCreated: {_info.Created.ToLocalTime()}";
+                } 
             }
 
             public static implicit operator ClientGameInfo(ClientGameInfoWrapper wrapper) =>

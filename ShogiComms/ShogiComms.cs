@@ -61,6 +61,8 @@ namespace ShogiComms
         public DateTime LastPlayed { get; set; }
 
         public GameStatus Status { get; set; }
+
+        public bool IsOpen() => BlackName == null || WhiteName == null;
     }
 
     public class Location

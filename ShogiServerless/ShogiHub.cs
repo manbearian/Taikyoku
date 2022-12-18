@@ -32,7 +32,7 @@ namespace ShogiServerless
 
         Task ReceiveGameStart(string serializedGame, ClientGameInfo gameInfo, Guid playerId);
 
-        Task ReceiveGameUpdate(string serializedGame, Guid id);
+        Task ReceiveGameUpdate(string serializedGame, Guid gameId);
 
         // indicate the other player disconncted
         Task ReceiveGameDisconnect(Guid id);
@@ -121,7 +121,7 @@ namespace ShogiServerless
                     _ => throw new HubException("unknown player")
                 };
 
-            // Convert the saved state of this game into information that the client can comsume
+            // Convert the saved state of this game into information that the client can consume
             public ClientGameInfo ToClientGameInfo() =>
                 new ClientGameInfo()
                 {
@@ -260,7 +260,8 @@ namespace ShogiServerless
 
         [FunctionName(nameof(JoinGame))]
         public async Task JoinGame([SignalRTrigger] InvocationContext context, 
-            Guid gameId, string playerName, ILogger logger)
+            Guid gameId, string playerName,
+            ILogger logger)
         {
             logger.LogInformation($"client '{context.ConnectionId}' named '{playerName}' requesting to join game '{gameId}'");
 
@@ -289,6 +290,54 @@ namespace ShogiServerless
             logger.LogInformation($"signal player '{newPlayerInfo}' game start for '{gameId}'");
             await Clients.Client(context.ConnectionId).
                 ReceiveGameStart(gameInfo.Game.ToJsonString(), gameInfo.ToClientGameInfo(), newPlayerInfo.PlayerId);
+        }
+
+        [FunctionName(nameof(RejoinGame))]
+        public async Task RejoinGame([SignalRTrigger] InvocationContext context,
+            Guid gameId, Guid playerId,
+            ILogger logger)
+        {
+            var gameInfo = await TableStorage.FindGame(gameId)
+                ?? throw new HubException($"failed to find game: {gameId}");
+
+            logger.LogInformation($"adding '{context.ConnectionId}' to '{gameId}' group");
+            await Groups.AddToGroupAsync(context.ConnectionId, gameInfo.Id.ToString());
+
+            logger.LogInformation($"signal other player there is a reconnect for '{gameId}'");
+            await Clients.GroupExcept(gameInfo.Id.ToString(), context.ConnectionId).ReceiveGameReconnect(gameId);
+
+            logger.LogInformation($"signal this player there is a game start for '{gameId}'");
+            await Clients.Client(context.ConnectionId).ReceiveGameStart(gameInfo.Game.ToJsonString(), gameInfo.ToClientGameInfo(), playerId);
+        }
+
+        // Record updated game state into persistant storage and notify any attached clients
+        private async Task UpdateGame(GameInfo gameInfo)
+        {
+            gameInfo = TableStorage.AddOrUpdateGame(gameInfo)
+                ?? throw new HubException("Interal Server error: cannot record move");
+            await Clients.Group(gameInfo.Id.ToString()).ReceiveGameUpdate(gameInfo.Game.ToJsonString(), gameInfo.Id);
+        }
+
+        public async Task MakeMove([SignalRTrigger] InvocationContext context,
+            Guid gameId, Guid playerId, Location startLoc, Location endLoc, Location midLoc, bool promote)
+        {
+            var gameInfo = await TableStorage.FindGame(gameId)
+                ?? throw new HubException($"failed to find game: {gameId}");
+
+            if (gameInfo.Game.CurrentPlayer != gameInfo.GetPlayerColor(playerId))
+                throw new HubException("illegal move: wrong client requested the move");
+
+            try
+            {
+                gameInfo.Game.MakeMove(((int, int))startLoc, ((int, int))endLoc, ((int, int)?)midLoc, promote);
+                gameInfo.LastPlayed = DateTime.Now;
+            }
+            catch (InvalidOperationException e)
+            {
+                throw new HubException("invalid move: unable to complete move", e);
+            }
+
+            await UpdateGame(gameInfo);
         }
 
 #if DEBUG
@@ -344,69 +393,10 @@ namespace ShogiServerless
 
         private Guid ClientPlayerId { get => Context.Items["ClientPlayerId"] as Guid? ?? Guid.Empty; set => Context.Items["ClientPlayerId"] = value; }
 
-        public async Task RejoinGame(Guid gameId, Guid playerId)
-        {
-            // first disconnect from any games we're currently connected to
-            await DisconnectClientGame();
-
-            var gameInfo = await TableStorage.FindGame(gameId);
-            ClientGame = gameInfo ?? throw new HubException($"Failed to join game; game id not found: {gameId}");
-            ClientPlayerId = playerId;
-            ClientMap[playerId] = (Clients.Caller, Context.ConnectionId);
-
-            var requestedPlayer = gameInfo.GetPlayerColor(playerId);
-            var otherPlayerInfo = gameInfo.GetPlayerInfo(requestedPlayer.Opponent());
-
-            var otherClient = ClientMap.GetValueOrDefault(otherPlayerInfo.PlayerId).Client;
-            if (otherClient != null)
-                await otherClient.ReceiveGameReconnect(gameId);
-            await Clients.Caller.ReceiveGameStart(gameInfo.Game, gameId, playerId, requestedPlayer, otherPlayerInfo.PlayerName);
-        }
-
         public async Task CancelGame()
         {
             OpenGames.TryRemove(ClientGame.Id, out _);
             await Clients.All.ReceiveGameList(AllOpenGames());
-        }
-
-        // Record updated game state into persistant storage and notify any attached clients
-        private async Task UpdateGame(GameInfo gameInfo)
-        {
-            gameInfo = TableStorage.AddOrUpdateGame(gameInfo)
-                ?? throw new HubException("Interal Server error: cannot record move");
-            ClientGame = gameInfo;
-
-            var blackClient = ClientMap.GetValueOrDefault(gameInfo.BlackPlayer.PlayerId).Client;
-            if (blackClient != null)
-                await blackClient.ReceiveGameUpdate(gameInfo.Game, gameInfo.Id);
-
-            var whiteClient = ClientMap.GetValueOrDefault(gameInfo.WhitePlayer.PlayerId).Client;
-            if (whiteClient != null)
-                await whiteClient.ReceiveGameUpdate(gameInfo.Game, gameInfo.Id);
-        }
-
-        public async Task RequestMove(Location startLoc, Location endLoc, Location midLoc, bool promote)
-        {
-            var gameInfo = ClientGame;
-            var playerId = ClientPlayerId;
-
-            if (gameInfo == null)
-                throw new HubException("illegal move: no game in progress");
-
-            if (gameInfo.Game.CurrentPlayer != gameInfo.GetPlayerColor(playerId))
-                throw new HubException("illegal move: wrong client requested the move");
-
-            try
-            {
-                gameInfo.Game.MakeMove(((int, int))startLoc, ((int, int))endLoc, ((int, int)?)midLoc, promote);
-                gameInfo.LastPlayed = DateTime.Now;
-            }
-            catch (InvalidOperationException e)
-            {
-                throw new HubException("invalid move: unable to complete move", e);
-            }
-
-            await UpdateGame(gameInfo);
         }
 
         public async Task RequestResign()

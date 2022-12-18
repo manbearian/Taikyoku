@@ -11,8 +11,8 @@
     <Setting Name="NetworkGameList" Type="System.Collections.Hashtable" Scope="User">
       <Value Profile="(Default)" />
     </Setting>
-    <Setting Name="LastGame" Type="System.Guid" Scope="User">
-      <Value Profile="(Default)">00000000-0000-0000-0000-000000000000</Value>
+    <Setting Name="LastGame" Type="WPF_UI.Properties.NetworkGameState" Scope="User">
+      <Value Profile="(Default)" />
     </Setting>
   </Settings>
 </SettingsFile>

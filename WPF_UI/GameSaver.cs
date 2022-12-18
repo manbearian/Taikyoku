@@ -6,6 +6,7 @@ using System.Linq;
 using System.Text.Json;
 
 using ShogiEngine;
+using WPF_UI.Properties;
 
 namespace WPF_UI
 {
@@ -15,7 +16,7 @@ namespace WPF_UI
 
         // For network games, save enough information to query the server about the game
         //  todo: should we cache other information?
-        public static void RecordNetworkGame(Guid gameId, Guid playerId)
+        public static void RecordNetworkGame(Guid gameId, Guid playerId, PlayerColor myColor)
         {
             Contract.Assert(gameId != Guid.Empty && playerId != Guid.Empty);
 
@@ -25,8 +26,8 @@ namespace WPF_UI
             {
                 Properties.Settings.Default.Reload();
                 if (Properties.Settings.Default.NetworkGameList == null)
-                    Properties.Settings.Default.NetworkGameList = new HashSet<(Guid GameId, Guid PlayerId)>();
-                Properties.Settings.Default.NetworkGameList.Add((gameId, playerId));
+                    Properties.Settings.Default.NetworkGameList = new HashSet<NetworkGameState>();
+                Properties.Settings.Default.NetworkGameList.Add(new NetworkGameState(gameId, playerId, myColor));
                 Properties.Settings.Default.Save();
                 gameSaverLock.ReleaseMutex();
             }
@@ -44,11 +45,12 @@ namespace WPF_UI
             if (gameSaverLock.WaitOne(TimeSpan.FromSeconds(1)))
             {
                 Properties.Settings.Default.Reload();
-                Properties.Settings.Default.NetworkGameList.Remove((gameId, playerId));
+                Properties.Settings.Default.NetworkGameList.RemoveWhere(g => g.GameId == gameId && g.PlayerId == playerId);
                 Properties.Settings.Default.Save();
                 gameSaverLock.ReleaseMutex();
 
-                if (Properties.Settings.Default.LastNetworkGameState == (gameId, playerId))
+                if (Properties.Settings.Default.LastNetworkGameState?.GameId == gameId
+                    && Properties.Settings.Default.LastNetworkGameState?.PlayerId == playerId)
                 {
                     ClearMostRecentGame();
                 }
@@ -60,21 +62,21 @@ namespace WPF_UI
             }
         }
 
-        public static IEnumerable<(Guid GameId, Guid PlayerId)> GetNetworkGames()
+        public static IEnumerable<NetworkGameState> GetNetworkGames()
         {
             // don't need the mutex here, just show whatever is available
             Properties.Settings.Default.Reload();
             return Properties.Settings.Default.NetworkGameList;
         }
 
-        public static void RecordGameState(TaikyokuShogi game, (Guid gameId, Guid playerId)? networkGameInfo = null)
+        public static void RecordGameState(TaikyokuShogi game, NetworkGameState? networkGameInfo = null)
         {
             Properties.Settings.Default.LastGameState = networkGameInfo == null ? game.Serialize() : null;
             Properties.Settings.Default.LastNetworkGameState = networkGameInfo;
             Properties.Settings.Default.Save();
         }
 
-        public static (TaikyokuShogi? GameState, (Guid gameId, Guid playerId)? NetworkGameInfo) LoadMostRecentGame()
+        public static (TaikyokuShogi? GameState, NetworkGameState? NetworkGameInfo) LoadMostRecentGame()
         {
             var lastGameState = Properties.Settings.Default.LastGameState;
             var lastNetworkGameState = Properties.Settings.Default.LastNetworkGameState;

@@ -49,9 +49,9 @@ namespace WPF_UI.Properties {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        public global::System.Collections.Generic.HashSet<(global::System.Guid GameId, global::System.Guid PlayerId)> NetworkGameList {
+        public global::System.Collections.Generic.HashSet<NetworkGameState> NetworkGameList {
             get {
-                return ((global::System.Collections.Generic.HashSet<(global::System.Guid GameId, global::System.Guid PlayerId)>)(this["NetworkGameList"]));
+                return ((global::System.Collections.Generic.HashSet<NetworkGameState>)(this["NetworkGameList"]));
             }
             set {
                 this["NetworkGameList"] = value;
@@ -69,14 +69,13 @@ namespace WPF_UI.Properties {
             }
         }
 
-
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        public (global::System.Guid GameId, global::System.Guid PlayerId)? LastNetworkGameState
+        public NetworkGameState LastNetworkGameState
         {
             get
             {
-                return (((global::System.Guid GameId, global::System.Guid PlayerId)?)this["LastNetworkGameState"]);
+                return ((NetworkGameState)this["LastNetworkGameState"]);
             }
             set
             {

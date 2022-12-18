@@ -33,12 +33,12 @@ namespace WPF_UI
 
         public string? Opponent { get; private set; }
 
-        public ReconnectWindow(Guid gameId, Guid playerId)
+        public ReconnectWindow(Guid gameId, Guid playerId, PlayerColor myColor)
         {
             InitializeComponent();
 
             Connection = new Connection();
-            (GameId, PlayerId) = (gameId, playerId);
+            (GameId, PlayerId, LocalPlayer) = (gameId, playerId, myColor);
 
             Connection.OnReceiveGameStart += RecieveGameStart;
         }

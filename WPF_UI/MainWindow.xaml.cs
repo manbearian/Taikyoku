@@ -20,6 +20,8 @@ using System.Windows.Shapes;
 using ShogiEngine;
 using ShogiClient;
 
+using WPF_UI.Properties;
+
 namespace WPF_UI
 {
     /// <summary>
@@ -90,7 +92,7 @@ namespace WPF_UI
             borders.Add(borderRight);
 
             TaikyokuShogi? savedGame = null;
-            (Guid GameId, Guid PlayerId)? networkGameState = null;
+            NetworkGameState? networkGameState = null;
 
             try
             {
@@ -106,7 +108,7 @@ namespace WPF_UI
             {
                 // todo: this prevents the main window from drawing while connection
                 // is in progress. I think it might be better to draw the window first?
-                var window = new ReconnectWindow(networkGameState.Value.GameId, networkGameState.Value.PlayerId);
+                var window = new ReconnectWindow(networkGameState.GameId, networkGameState.PlayerId, networkGameState.MyColor);
                 if (window.ShowDialog() == true)
                 {
                     Contract.Assert(window.Game != null, "DialogReult true => Game != null");
@@ -140,8 +142,8 @@ namespace WPF_UI
                 Contract.Assert(GameId != Guid.Empty);
                 Contract.Assert(PlayerId != Guid.Empty);
 
-                GameSaver.RecordNetworkGame(GameId, PlayerId);
-
+                GameSaver.RecordNetworkGame(GameId, PlayerId, LocalPlayer ?? throw new NullReferenceException());
+                 
                 // todo: there's a race condition here as the other player could make a move and even disconnect before we set this event handler
                 //       perhaps we should poll the state after setting this up.
                 NetworkConnection.OnReceiveGameUpdate += OnReceiveUpdate;
@@ -263,7 +265,7 @@ namespace WPF_UI
             // save the game on exit
             if (Game != null)
             {
-                GameSaver.RecordGameState(Game, IsNetworkGame ? (GameId, PlayerId) : null as (Guid, Guid)?);
+                GameSaver.RecordGameState(Game, IsNetworkGame ? new NetworkGameState(GameId, PlayerId, LocalPlayer ?? throw new Exception()) : null);
             }
         }
 
@@ -276,7 +278,7 @@ namespace WPF_UI
                 {
                     Contract.Assert(window.Game != null, "DialogResult == true => Game != null");
 
-                    (NetworkConnection, LocalPlayer, GameId, PlayerId, OpponentName) = window.NetworkGame ? 
+                    (NetworkConnection, LocalPlayer, GameId, PlayerId, OpponentName) = window.NetworkGame ?
                         (window.Connection, window.LocalPlayer, window.GameId, window.PlayerId, window.OpponentName)
                         : (null, null, Guid.Empty, Guid.Empty, null);
 
@@ -317,7 +319,11 @@ namespace WPF_UI
             }
             else if (e.Source == myGamesMenuItem)
             {
-                var window = new ConnectionWindow() { KnownGames = GameSaver.GetNetworkGames().EmptyIfNull().Where(elem => elem != (GameId, PlayerId)) };
+                var window = new ConnectionWindow()
+                {
+                    KnownGames = GameSaver.GetNetworkGames().EmptyIfNull().Select(elem => (elem.GameId, elem.PlayerId, elem.MyColor))
+                };
+                
 
                 if (window.ShowDialog() == true)
                 {
