@@ -437,7 +437,7 @@ namespace WPF_UI
             if (e.GameId != GameId)
                 return;
 
-            StatusBarTextBlock1.Text = $"vs. {OpponentName} (opponent disconnected)";
+            Dispatcher.Invoke(() => StatusBarTextBlock1.Text = $"vs. {OpponentName} (opponent disconnected)");
         }
 
         void OnReceiveGameReconnect(object sender, ReceiveGameConnectionEventArgs e)
@@ -446,7 +446,7 @@ namespace WPF_UI
             if (e.GameId != GameId)
                 return;
 
-            StatusBarTextBlock1.Text = $"vs. {OpponentName}";
+            Dispatcher.Invoke(() => StatusBarTextBlock1.Text = $"vs. {OpponentName}");
         }
 
         void ShowPieceInfo(object sender, MouseEventArgs e)
