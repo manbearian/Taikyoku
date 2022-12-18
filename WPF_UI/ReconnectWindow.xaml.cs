@@ -47,10 +47,11 @@ namespace WPF_UI
             Dispatcher.Invoke(() =>
             {
                 // ignore spurious game events
-                if (e.GameId != GameId)
+                if (e.GameInfo.GameId != GameId)
                     return;
 
                 Game = e.Game;
+                Opponent = LocalPlayer == PlayerColor.Black ? e.GameInfo.BlackName : e.GameInfo.WhiteName;
                 DialogResult = true;
                 Close();
             });

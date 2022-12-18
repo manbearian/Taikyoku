@@ -30,7 +30,7 @@ namespace ShogiServerless
     {
         Task ReceiveGameList(List<ClientGameInfo> list);
 
-        Task ReceiveGameStart(string serializedGame, Guid gameId,  Guid playerId);
+        Task ReceiveGameStart(string serializedGame, ClientGameInfo gameInfo, Guid playerId);
 
         Task ReceiveGameUpdate(string serializedGame, Guid id);
 
@@ -51,17 +51,12 @@ namespace ShogiServerless
         {
             internal class PlayerInfo
             {
-                public PlayerInfo() { }
+                public PlayerInfo(string name) => PlayerName = name;
+                public PlayerInfo(string name, Guid id) => (PlayerName, PlayerId) = (name, id);
 
-                public PlayerInfo(string name)
-                {
-                    PlayerId = Guid.NewGuid();
-                    PlayerName = name;
-                }
+                public Guid PlayerId { get; } = Guid.NewGuid();
 
-                public Guid PlayerId { get; set; } = Guid.Empty;
-
-                public string PlayerName { get; set; } = string.Empty;
+                public string PlayerName { get; } = string.Empty;
 
                 public override string ToString() => $"<{PlayerName}-{PlayerId}>";
 
@@ -77,11 +72,11 @@ namespace ShogiServerless
 
             public DateTime LastPlayed { get; set; }
 
-            public PlayerInfo BlackPlayer { get; private set; } = new PlayerInfo();
+            public PlayerInfo? BlackPlayer { get; private set; } = null;
 
-            public PlayerInfo WhitePlayer { get; private set; } = new PlayerInfo();
+            public PlayerInfo? WhitePlayer { get; private set; } = null;
 
-            public bool IsOpen { get => BlackPlayer.PlayerId == Guid.Empty || WhitePlayer.PlayerId == Guid.Empty; }
+            public bool IsOpen { get => BlackPlayer == null || WhitePlayer == null; }
 
             public GameInfo(TaikyokuShogi game, string playerName, PlayerColor color)
             {
@@ -94,37 +89,31 @@ namespace ShogiServerless
                 (((ITableEntity)this).PartitionKey, ((ITableEntity)this).RowKey) = (string.Empty, Id.ToString());
             }
 
-            public PlayerColor GetPlayerColor(Guid playerId) => 
-                playerId == BlackPlayer.PlayerId ? PlayerColor.Black :
-                    (playerId == WhitePlayer.PlayerId ? PlayerColor.White :
-                        throw new HubException("unknown player"));
-
             public (PlayerInfo oldPlayer, PlayerInfo newPlayer) AddPlayer(string name)
             {
-                if (BlackPlayer.PlayerId == Guid.Empty)
+                if (BlackPlayer == null && WhitePlayer != null)
                 {
-                    if (WhitePlayer.PlayerId == Guid.Empty)
-                    {
-                        throw new HubException($"Failed to join game, game is abandoned: {Id}");
-                    }
-
                     BlackPlayer = new PlayerInfo(name);
                     return (WhitePlayer, BlackPlayer);
                 }
-                else if (WhitePlayer.PlayerId == Guid.Empty)
+                
+                if (WhitePlayer == null && BlackPlayer != null)
                 {
                     WhitePlayer = new PlayerInfo(name);
                     return (BlackPlayer, WhitePlayer);
                 }
                 
-                throw new HubException($"Failed to join game, game is full: {Id}");
+                throw new HubException($"Failed to join game: {Id}");
             }
 
-            public PlayerInfo GetPlayerInfo(Guid playerId) => GetPlayerInfo(GetPlayerColor(playerId));
+            public PlayerColor GetPlayerColor(Guid playerId) => 
+                playerId == BlackPlayer?.PlayerId ? PlayerColor.Black :
+                    (playerId == WhitePlayer?.PlayerId ? PlayerColor.White :
+                        throw new HubException("unknown player"));
 
-            public PlayerInfo GetOtherPlayerInfo(Guid playerId) => GetPlayerInfo(GetPlayerColor(playerId).Opponent());
+            public PlayerInfo GetPlayerInfo(Guid playerId) => GetPlayerInfo(GetPlayerColor(playerId)) ?? throw new Exception("unkonwn player");
 
-            public PlayerInfo GetPlayerInfo(PlayerColor player) =>
+            public PlayerInfo? GetPlayerInfo(PlayerColor player) =>
                 player switch
                 {
                     PlayerColor.Black => BlackPlayer,
@@ -132,28 +121,15 @@ namespace ShogiServerless
                     _ => throw new HubException("unknown player")
                 };
 
-            public ClientGameInfo ToClientGameInfo() => ToClientGameInfo(Guid.Empty);
-
             // Convert the saved state of this game into information that the client can comsume
-            public ClientGameInfo ToClientGameInfo(Guid requestingPlayerId) =>
+            public ClientGameInfo ToClientGameInfo() =>
                 new ClientGameInfo()
                 {
                     GameId = Id,
                     Created = Created,
                     LastPlayed = LastPlayed,
-                    ClientColor = GetPlayerColor(requestingPlayerId).ToString(),
-                    BlackName = BlackPlayer.PlayerName,
-                    WhiteName = WhitePlayer.PlayerName,
-
-                    // we don't generally want to send the client-ids off of the server to avoid
-                    // leaking these (having someone else's client-id would allow spoofing) but
-                    // we need to send back the requesting client's player-id so it can map back
-                    // to its game request in the case where it has recorded both players in the
-                    // game within the same client.
-                    //  e.g. client requests game status as a set of (game-id, player-id) pairs,
-                    //  so it might request both (3, 0) and (3, 1) we must send it back the
-                    //  player-id so it can differentiate the results.
-                    RequestingPlayerId = requestingPlayerId,
+                    BlackName = BlackPlayer?.PlayerName,
+                    WhiteName = WhitePlayer?.PlayerName
                 };
 
             //
@@ -171,10 +147,10 @@ namespace ShogiServerless
                     ["Id"] = new EntityProperty(Id),
                     ["Created"] = new EntityProperty(Created),
                     ["LastPlayed"] = new EntityProperty(LastPlayed),
-                    ["BlackPlayer_PlayerId"] = new EntityProperty(BlackPlayer.PlayerId),
-                    ["BlackPlayer_PlayerName"] = new EntityProperty(BlackPlayer.PlayerName),
-                    ["WhitePlayer_PlayerId"] = new EntityProperty(WhitePlayer.PlayerId),
-                    ["WhitePlayer_PlayerName"] = new EntityProperty(WhitePlayer.PlayerName)
+                    ["BlackPlayer_PlayerId"] = new EntityProperty(BlackPlayer?.PlayerId ?? Guid.Empty),
+                    ["BlackPlayer_PlayerName"] = new EntityProperty(BlackPlayer?.PlayerName ?? ""),
+                    ["WhitePlayer_PlayerId"] = new EntityProperty(WhitePlayer?.PlayerId ?? Guid.Empty),
+                    ["WhitePlayer_PlayerName"] = new EntityProperty(WhitePlayer?.PlayerName ?? "")
                 };
             }
 
@@ -184,10 +160,13 @@ namespace ShogiServerless
                 Id = properties["Id"].GuidValue ?? throw new Exception("Cannot deserialize");
                 Created = properties["Created"].DateTime ?? throw new Exception("Cannot deserialize");
                 LastPlayed = properties["LastPlayed"].DateTime ?? throw new Exception("Cannot deserialize");
-                BlackPlayer.PlayerId = properties["BlackPlayer_PlayerId"].GuidValue ?? throw new Exception("Cannot deserialize");
-                BlackPlayer.PlayerName = properties["BlackPlayer_PlayerName"].StringValue;
-                WhitePlayer.PlayerId = properties["WhitePlayer_PlayerId"].GuidValue ?? throw new Exception("Cannot deserialize");
-                WhitePlayer.PlayerName = properties["WhitePlayer_PlayerName"].StringValue;
+
+                var blackId = properties["BlackPlayer_PlayerId"].GuidValue ?? throw new Exception("Cannot deserialize");
+                if (blackId != Guid.Empty)
+                    BlackPlayer = new PlayerInfo(properties["BlackPlayer_PlayerName"].StringValue ?? throw new Exception("Cannot deserialize"), blackId);
+                var whiteId = properties["WhitePlayer_PlayerId"].GuidValue ?? throw new Exception("Cannot deserialize");
+                if (whiteId != Guid.Empty)
+                    WhitePlayer = new PlayerInfo(properties["WhitePlayer_PlayerName"].StringValue ?? throw new Exception("Cannot deserialize"), whiteId);
             }
 
             string? ITableEntity.PartitionKey { get; set; }
@@ -233,7 +212,8 @@ namespace ShogiServerless
             logger.LogInformation($"adding client to game group");
             await Groups.AddToGroupAsync(context.ConnectionId, gameInfo.Id.ToString());
 
-            return new GamePlayerPair(gameInfo.Id, asBlackPlayer ? gameInfo.BlackPlayer.PlayerId : gameInfo.WhitePlayer.PlayerId);
+            var playerId = gameInfo.GetPlayerInfo(asBlackPlayer ? PlayerColor.Black : PlayerColor.White)?.PlayerId ?? throw new HubException("bad game state");
+            return new GamePlayerPair(gameInfo.Id, playerId);
         }
 
         [FunctionName(nameof(RequestAllOpenGameInfo))]
@@ -268,7 +248,7 @@ namespace ShogiServerless
                     {
                         var gameInfo = t.Result;
                         if (gameInfo != null)
-                            gameList.Add(gameInfo.ToClientGameInfo(request.RequestingPlayerId));
+                            gameList.Add(gameInfo.ToClientGameInfo());
                     }));
             }
 
@@ -303,12 +283,12 @@ namespace ShogiServerless
             // signal other player game has started
             logger.LogInformation($"signal player '{oldPlayerInfo}' game start for '{gameId}'");
             await Clients.GroupExcept(gameInfo.Id.ToString(), context.ConnectionId).
-                ReceiveGameStart(gameInfo.Game.ToJsonString(), gameInfo.Id, oldPlayerInfo.PlayerId);
+                ReceiveGameStart(gameInfo.Game.ToJsonString(), gameInfo.ToClientGameInfo(), oldPlayerInfo.PlayerId);
 
             // signal joining player game has started
             logger.LogInformation($"signal player '{newPlayerInfo}' game start for '{gameId}'");
             await Clients.Client(context.ConnectionId).
-                ReceiveGameStart(gameInfo.Game.ToJsonString(), gameInfo.Id, newPlayerInfo.PlayerId);
+                ReceiveGameStart(gameInfo.Game.ToJsonString(), gameInfo.ToClientGameInfo(), newPlayerInfo.PlayerId);
         }
 
 #if DEBUG
@@ -324,7 +304,14 @@ namespace ShogiServerless
         {
             var game = serializedGame.ToTaikyokuShogi();
             logger.LogInformation($"testing GameStart message for '{context.ConnectionId}'");
-            await Clients.Client(context.ConnectionId).ReceiveGameStart(game.ToJsonString(), Guid.NewGuid(), Guid.NewGuid());
+
+            var info = new ClientGameInfo()
+            {
+                GameId = Guid.NewGuid(),
+                BlackName = "blackPlayerFakeName",
+                WhiteName = "whitePlayerFakeName"
+            };
+            await Clients.Client(context.ConnectionId).ReceiveGameStart(game.ToJsonString(), info, Guid.NewGuid());
         }
 #endif
 

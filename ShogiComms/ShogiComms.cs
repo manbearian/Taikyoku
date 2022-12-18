@@ -52,13 +52,9 @@ namespace ShogiComms
     {
         public Guid GameId { get; set; }
 
-        public string ClientColor { get; set; } = string.Empty;
+        public string? BlackName { get; set; } = null;
 
-        public Guid RequestingPlayerId { get; set; }
-
-        public string BlackName { get; set; } = string.Empty;
-
-        public string WhiteName { get; set; } = string.Empty;
+        public string? WhiteName { get; set; } = null;
 
         public DateTime Created { get; set; }
 

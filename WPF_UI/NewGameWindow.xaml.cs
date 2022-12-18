@@ -33,7 +33,7 @@ namespace WPF_UI
 
         public PlayerColor? LocalPlayer { get; private set; }
 
-        public string? Opponent { get; private set; }
+        public string? OpponentName { get; private set; }
 
         private bool WaitingForConnection { get => !NewGameButton.IsEnabled; }
 
@@ -72,7 +72,7 @@ namespace WPF_UI
             {
                 MessageBox.Show("race condition, game started before we were ready; what do i do???");
             }
-            else if (GameId != e.GameId)
+            else if (GameId != e.GameInfo.GameId)
             {
                 // game start for unknown game; ignore
                 // TODO: log this???
@@ -85,9 +85,19 @@ namespace WPF_UI
                 return;
             }
 
+            if (LocalPlayer == null)
+            {
+                // sometihng went horribly wrong
+                // TODO: log this?
+                return;
+            }
+
             Dispatcher.Invoke(() =>
             {
+                NetworkGame = true;
+                OpponentName = LocalPlayer == PlayerColor.Black ? e.GameInfo.WhiteName : e.GameInfo.BlackName;
                 Game = e.Game;
+                DialogResult = true;
                 Close();
             });
         }
@@ -112,7 +122,7 @@ namespace WPF_UI
                 Properties.Settings.Default.PlayerName = NameBox.Text;
                 Properties.Settings.Default.Save();
 
-                var localPlayerIsBlack = ColorBox.SelectedIndex == 0;
+                LocalPlayer = ColorBox.SelectedIndex == 0 ? PlayerColor.Black : PlayerColor.White;
                 var playerName = NameBox.Text;
 
                 try
@@ -121,7 +131,7 @@ namespace WPF_UI
                     SetUIForWaitForConnection();
 
                     await Connection.ConnectAsync();
-                    (GameId, PlayerId) = await Connection.RequestNewGame(playerName, localPlayerIsBlack, Game);
+                    (GameId, PlayerId) = await Connection.RequestNewGame(playerName, LocalPlayer == PlayerColor.Black, Game);
                     return;
                 }
                 catch (Exception)

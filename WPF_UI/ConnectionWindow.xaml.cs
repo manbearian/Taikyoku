@@ -76,7 +76,7 @@ namespace WPF_UI
 
         private void RecieveGameStart(object sender, ReceiveGameStartEventArgs e)
         {
-            if (GameId != e.GameId)
+            if (GameId != e.GameInfo.GameId)
             {
                 // game start for unknown game; ignore
                 // TODO: log this???
@@ -98,12 +98,13 @@ namespace WPF_UI
 
             if (IsShowingKnownGames)
             {
-                RecordDeadGames(gameList.Select(elem => (elem.GameId, elem.RequestingPlayerId)));
+                // mark any games unknown to the server as dead
+                DeadGames = KnownGames.EmptyIfNull().Where(knownGame => gameList.All(g => g.GameId != knownGame.GameId)).ToList(); // copy list
             }
 
             if (gameList.Any())
             {
-                var orderedList = gameList.OrderByDescending(elem => elem.LastPlayed).ThenByDescending(elem => elem.Created).ThenBy(elem => elem.ClientColor);
+                var orderedList = gameList.OrderByDescending(elem => elem.LastPlayed).ThenByDescending(elem => elem.Created).ThenBy(elem => elem.UnassignedColor());
 
                 foreach (var game in orderedList)
                 {
@@ -120,9 +121,6 @@ namespace WPF_UI
                 GamesList.DisplayMemberPath = null;
                 GamesList.IsEnabled = false;
             }
-
-            void RecordDeadGames(IEnumerable<(Guid GameId, Guid PlayerId)> serverKnownGames) =>
-                DeadGames = KnownGames.EmptyIfNull().Except(serverKnownGames).ToList(); // make a copy of the enumeration
         }
 
         private async void JoinGameButton_Click(object sender, RoutedEventArgs e)
@@ -136,20 +134,21 @@ namespace WPF_UI
 
             var gameInfo = (ClientGameInfo)(ClientGameInfoWrapper)selectedItem;
             GameId = gameInfo.GameId;
-            LocalPlayer = gameInfo.PlayerColor();
-            OpponentName = gameInfo.OpponentName();
 
             try
             {
                 if (IsShowingKnownGames)
                 {
-                    await Connection.RequestRejoinGame(gameInfo.GameId, gameInfo.RequestingPlayerId);
+                    var playerId = KnownGames.EmptyIfNull().First(game => game.GameId == gameInfo.GameId).PlayerId;
+                    await Connection.RequestRejoinGame(gameInfo.GameId, playerId);
                 }
                 else
                 {
                     Properties.Settings.Default.PlayerName = NameBox.Text;
                     Properties.Settings.Default.Save();
 
+                    LocalPlayer = gameInfo.UnassignedColor();
+                    OpponentName = gameInfo.WaitingPlayerName();
                     await Connection.JoinGame(gameInfo.GameId, NameBox.Text);
                 }
             }
@@ -217,7 +216,7 @@ namespace WPF_UI
                 else
                 {
                     var gameInfo = (ClientGameInfo)(ClientGameInfoWrapper)GamesList.SelectedItem;
-                    NameBox.Text = $"{gameInfo.PlayerName()} ({gameInfo.PlayerColor()})";
+                    NameBox.Text = $"{gameInfo.BlackName} vs. {gameInfo.WhiteName}";
                 }
             }
         }
@@ -245,7 +244,7 @@ namespace WPF_UI
 
             public string DisplayString
             {
-                get => $"vs {_info.OpponentName()} ({_info.OpponentColor()})\tLast Played: {_info.LastPlayed.ToLocalTime()}\tCreated: {_info.Created.ToLocalTime()}";
+                get => $"vs {_info.WaitingPlayerName()} ({_info.UnassignedColor().Opponent()})\tLast Played: {_info.LastPlayed.ToLocalTime()}\tCreated: {_info.Created.ToLocalTime()}";
             }
 
             public static implicit operator ClientGameInfo(ClientGameInfoWrapper wrapper) =>

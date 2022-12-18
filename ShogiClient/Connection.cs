@@ -26,12 +26,12 @@ namespace ShogiClient
     {
         public TaikyokuShogi Game { get; }
 
-        public Guid GameId { get; }
+        public ClientGameInfo GameInfo { get; }
 
         public Guid PlayerId { get; }
 
-        public ReceiveGameStartEventArgs(TaikyokuShogi game, Guid gameId, Guid playerId) =>
-            (Game, GameId, PlayerId) = (game, gameId, playerId);
+        public ReceiveGameStartEventArgs(TaikyokuShogi game, ClientGameInfo gameInfo, Guid playerId) =>
+            (Game, GameInfo, PlayerId) = (game, gameInfo, playerId);
     }
 
     public class ReceiveGameConnectionEventArgs : EventArgs
@@ -86,8 +86,8 @@ namespace ShogiClient
             _connection.On<List<ClientGameInfo>>("ReceiveGameList", gameList =>
                 OnReceiveGameList?.Invoke(this, new ReceiveGameListEventArgs(gameList)));
 
-            _connection.On<string, Guid, Guid>("ReceiveGameStart", (serializedGame, gameId, playerId) =>
-                OnReceiveGameStart?.Invoke(this, new ReceiveGameStartEventArgs(serializedGame.ToTaikyokuShogi(), gameId, playerId)));
+            _connection.On<string, ClientGameInfo, Guid>("ReceiveGameStart", (serializedGame, gameInfo, playerId) =>
+                OnReceiveGameStart?.Invoke(this, new ReceiveGameStartEventArgs(serializedGame.ToTaikyokuShogi(), gameInfo, playerId)));
 
             _connection.On<string, Guid>("ReceiveGameUpdate", (serializedGame, gameId) =>
                 OnReceiveGameUpdate?.Invoke(this, new ReceiveGameUpdateEventArgs(serializedGame.ToTaikyokuShogi(), gameId)));
@@ -141,19 +141,25 @@ namespace ShogiClient
 
     public static class ClientGameInfoExtension
     {
-        public static PlayerColor PlayerColor(this ClientGameInfo gameInfo) => Enum.TryParse<PlayerColor>(gameInfo.ClientColor, out var player) ? player : throw new NotSupportedException();
+        public static PlayerColor UnassignedColor(this ClientGameInfo gameInfo)
+        {
+            if (gameInfo.BlackName == null && gameInfo.WhiteName == null)
+                throw new Exception("bad state--no players");
+            if (gameInfo.BlackName == null)
+                return PlayerColor.Black;
+            if (gameInfo.WhiteName == null)
+                return PlayerColor.White;
+            throw new Exception("bad state--full game");
+        }
 
-        public static string PlayerName(this ClientGameInfo gameInfo, PlayerColor? player = null) =>
-            player switch
-            {
-                ShogiEngine.PlayerColor.Black => gameInfo.BlackName,
-                ShogiEngine.PlayerColor.White => gameInfo.WhiteName,
-                null => gameInfo.PlayerName(gameInfo.PlayerColor()),
-                _ => throw new NotSupportedException()
-            };
+        public static string WaitingPlayerName(this ClientGameInfo gameInfo) => 
+            gameInfo.PlayerName(gameInfo.UnassignedColor().Opponent());
 
-        public static PlayerColor OpponentColor(this ClientGameInfo gameInfo) => gameInfo.PlayerColor().Opponent();
-
-        public static string OpponentName(this ClientGameInfo gameInfo) => gameInfo.PlayerName(gameInfo.OpponentColor());
+        public static string PlayerName(this ClientGameInfo gameInfo, PlayerColor player) => player switch
+        {
+            PlayerColor.Black => gameInfo.BlackName ?? throw new Exception("no black player"),
+            PlayerColor.White => gameInfo.WhiteName ?? throw new Exception("no whhite player"),
+            _ => throw new NotSupportedException()
+        };
     }
 }

@@ -111,18 +111,18 @@ namespace ServerTest
         }
 
         [Fact]
-        public void TestGameStart()
+        public void TestReceiveGameStart()
         {
             AutoResetEvent receivedEvent = new(false);
             Guid gameId = Guid.Empty;
             TaikyokuShogi? game = null;
 
             using var c = new Connection();
-            c.OnReceiveGameStart += (sender, e) => { gameId = e.GameId; game = e.Game; receivedEvent.Set(); };
+            c.OnReceiveGameStart += (sender, e) => { gameId = e.GameInfo.GameId; game = e.Game; receivedEvent.Set(); };
 
             Assert.True(c.ConnectAsync().Wait(TIMEOUT));
 
-            output.WriteLine("testing game start...");
+            output.WriteLine("testing game start (via debug API)...");
             bool success = c.TestGameStart(new TaikyokuShogi()).Wait(TIMEOUT);
             Assert.True(success);
             output.WriteLine("...request returned");
@@ -162,8 +162,8 @@ namespace ServerTest
 
             using var c1 = new Connection();
             c1.OnReceiveGameStart += (sender, e) => {
-                output.WriteLine($"game start for initiating player: '{e.GameId}'/'{e.PlayerId}'");
-                Assert.Equal(gameId, e.GameId);
+                output.WriteLine($"game start for initiating player: '{e.GameInfo.GameId}'/'{e.PlayerId}'");
+                Assert.Equal(gameId, e.GameInfo.GameId);
                 Assert.Equal(playerId, e.PlayerId);
                 Assert.NotNull(e.Game);
                 game1 = e.Game;
@@ -173,8 +173,8 @@ namespace ServerTest
             using var c2 = new Connection();
             c2.OnReceiveGameStart += (sender, e) =>
             {
-                output.WriteLine($"game start for joining player: '{e.GameId}'/'{e.PlayerId}'");
-                Assert.Equal(gameId, e.GameId);
+                output.WriteLine($"game start for joining player: '{e.GameInfo.GameId}'/'{e.PlayerId}'");
+                Assert.Equal(gameId, e.GameInfo.GameId);
                 Assert.NotEqual(Guid.Empty, e.PlayerId);
                 Assert.NotNull(e.Game);
                 game2 = e.Game;
