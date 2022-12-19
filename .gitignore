@@ -341,3 +341,7 @@ ASALocalRun/
 
 # BeatPulse healthcheck temp database
 healthchecksdb
+
+# Azure Storage emulator
+__azurite_db*.json
+__blobstorage__/
