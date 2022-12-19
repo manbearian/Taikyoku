@@ -223,12 +223,15 @@ namespace ShogiServerless
             }
         }
 
-        private void MapConnection(string connectionId, Guid gameId, Guid playerId)
+        private void MapConnection(string connectionId, Guid gameId, Guid playerId, ILogger logger)
         {
-           var staleConnection = _connectionMap.MapConnection(connectionId, gameId, playerId);
+            logger.LogInformation($"mapping '{connectionId}' to '{gameId}-{playerId}'");
+
+            var staleConnection = _connectionMap.MapConnection(connectionId, gameId, playerId);
             if (staleConnection != null)
             {
-                ClientManager.CloseConnectionAsync(staleConnection);
+                logger.LogInformation($"closing stale connection '{staleConnection}'");
+                ClientManager.CloseConnectionAsync(staleConnection, "new connection created");
             }
         }
 
@@ -267,8 +270,7 @@ namespace ShogiServerless
 
             var playerId = gameInfo.GetPlayerInfo(asBlackPlayer ? PlayerColor.Black : PlayerColor.White)?.PlayerId ?? throw new HubException("bad game state");
 
-            logger.LogInformation($"mapping '{context.ConnectionId}' to '{gameInfo.Id}-{playerId}");
-            MapConnection(context.ConnectionId, gameInfo.Id, playerId);
+            MapConnection(context.ConnectionId, gameInfo.Id, playerId, logger);
 
             return new GamePlayerPair(gameInfo.Id, playerId);
         }
@@ -335,8 +337,7 @@ namespace ShogiServerless
             await AllOpenGames().ContinueWith(t => Clients.All.ReceiveGameList(t.Result.ToList()));
 
             // add new connection to the map
-            logger.LogInformation($"mapping '{context.ConnectionId}' to '{gameId}-{newPlayerInfo.PlayerId}'");
-            MapConnection(context.ConnectionId, gameId, newPlayerInfo.PlayerId);
+            MapConnection(context.ConnectionId, gameId, newPlayerInfo.PlayerId, logger);
 
             // signal other player game has started
             var otherConnection = _connectionMap.GetConnection(gameId, oldPlayerInfo.PlayerId);
@@ -373,8 +374,7 @@ namespace ShogiServerless
             else
                 throw new HubException($"unknown player '{playerId}' attempting to join '{gameId}'");
 
-            logger.LogInformation($"mapping '{context.ConnectionId}' to '{gameId}-{playerId}'");
-            MapConnection(context.ConnectionId, gameId, playerId);
+            MapConnection(context.ConnectionId, gameId, playerId, logger);
 
             if (otherPlayerId != Guid.Empty)
             {
