@@ -193,7 +193,8 @@ namespace ShogiServerless
                 }
             }
 
-            public void MapConnection(string connectionId, Guid gameId, Guid playerId)
+            // Returns connectionId of the previous connection mapped to (gameId, playerId) if it exists
+            public string? MapConnection(string connectionId, Guid gameId, Guid playerId)
             {
                 lock (_lock)
                 {
@@ -201,25 +202,33 @@ namespace ShogiServerless
                     //
                     // INITIAL         map(A, g, p)             map(B, x, y)
                     //  A => (x, y)      A => (g, p)              A => (x, y)  <-- stale
-                    //  (x,y) => A       (x,y) => A  <--- stale   (x, y) => B
+                    //  (x,y) => A       (x,y) => A  <-- stale    (x, y) => B
                     //                   (g,p) => A               B => (x, y)
                     //
                     if (_connectionToPlayer.TryGetValue(connectionId, out var oldGamePlayerPair))
                     {
-                        // TODO: signal connection that is being terminated
                         _playerToConnection.Remove(oldGamePlayerPair);
                     }
 
                     if (_playerToConnection.TryGetValue((gameId, playerId), out var oldConnection))
                     {
-                        // TODO: signal connection that is being terminated
                         _connectionToPlayer.Remove(oldConnection);
                     }
 
                     // map new values: Connection <=> (Game, Player)
                     _connectionToPlayer[connectionId] = (gameId, playerId);
                     _playerToConnection[(gameId, playerId)] = connectionId;
+                    return oldConnection;
                 }
+            }
+        }
+
+        private void MapConnection(string connectionId, Guid gameId, Guid playerId)
+        {
+           var staleConnection = _connectionMap.MapConnection(connectionId, gameId, playerId);
+            if (staleConnection != null)
+            {
+                ClientManager.CloseConnectionAsync(staleConnection);
             }
         }
 
@@ -259,7 +268,7 @@ namespace ShogiServerless
             var playerId = gameInfo.GetPlayerInfo(asBlackPlayer ? PlayerColor.Black : PlayerColor.White)?.PlayerId ?? throw new HubException("bad game state");
 
             logger.LogInformation($"mapping '{context.ConnectionId}' to '{gameInfo.Id}-{playerId}");
-            _connectionMap.MapConnection(context.ConnectionId, gameInfo.Id, playerId);
+            MapConnection(context.ConnectionId, gameInfo.Id, playerId);
 
             return new GamePlayerPair(gameInfo.Id, playerId);
         }
@@ -327,7 +336,7 @@ namespace ShogiServerless
 
             // add new connection to the map
             logger.LogInformation($"mapping '{context.ConnectionId}' to '{gameId}-{newPlayerInfo.PlayerId}'");
-            _connectionMap.MapConnection(context.ConnectionId, gameId, newPlayerInfo.PlayerId);
+            MapConnection(context.ConnectionId, gameId, newPlayerInfo.PlayerId);
 
             // signal other player game has started
             var otherConnection = _connectionMap.GetConnection(gameId, oldPlayerInfo.PlayerId);
@@ -365,7 +374,7 @@ namespace ShogiServerless
                 throw new HubException($"unknown player '{playerId}' attempting to join '{gameId}'");
 
             logger.LogInformation($"mapping '{context.ConnectionId}' to '{gameId}-{playerId}'");
-            _connectionMap.MapConnection(context.ConnectionId, gameId, playerId);
+            MapConnection(context.ConnectionId, gameId, playerId);
 
             if (otherPlayerId != Guid.Empty)
             {
