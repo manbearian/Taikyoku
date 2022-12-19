@@ -35,10 +35,10 @@ namespace ShogiServerless
         Task ReceiveGameUpdate(string serializedGame, Guid gameId);
 
         // indicate the other player disconncted
-        Task ReceiveGameDisconnect(Guid id);
+        Task ReceiveGameDisconnect(Guid gameId);
 
         // indicate that the other player reconnected
-        Task ReceiveGameReconnect(Guid id);
+        Task ReceiveGameReconnect(Guid gameId);
 
         Task Echo(string message);
     }
@@ -180,41 +180,49 @@ namespace ShogiServerless
 
         internal class ConnectionMap
         {
-            private ConcurrentDictionary<string, (Guid GameId, Guid PlayerId)> _connectionToPlayer { get; } = new ConcurrentDictionary<string, (Guid GameId, Guid PlayerId)>();
-            private ConcurrentDictionary<(Guid GameId, Guid PlayerId), string> _playerToConnection { get; } = new ConcurrentDictionary<(Guid GameId, Guid PlayerId), string>();
+            private Dictionary<string, (Guid GameId, Guid PlayerId)> _connectionToPlayer { get; } = new Dictionary<string, (Guid GameId, Guid PlayerId)>();
+            private Dictionary<(Guid GameId, Guid PlayerId), string> _playerToConnection { get; } = new Dictionary<(Guid GameId, Guid PlayerId), string>();
+
+            private object _lock = new object();
 
             public string? GetConnection(Guid gameId, Guid playerId)
             {
-                if (_playerToConnection.TryGetValue((gameId, playerId), out var connectionId))
-                    return connectionId;
-                return null;
+                lock (_lock)
+                {
+                    if (_playerToConnection.TryGetValue((gameId, playerId), out var connectionId))
+                        return connectionId;
+                    return null;
+                }
             }
 
 
             public void MapConnection(string connectionId, Guid gameId, Guid playerId)
             {
-                // remove stale valuesq
-                if (_connectionToPlayer.TryGetValue(connectionId, out var oldGamePlayerPair))
+                lock (_lock)
                 {
-                    if (_playerToConnection.TryGetValue((oldGamePlayerPair.GameId, oldGamePlayerPair.PlayerId), out var staleConnection) && staleConnection != null)
+                    // remove stale values
+                    if (_connectionToPlayer.TryGetValue(connectionId, out var oldGamePlayerPair))
                     {
-                        // TODO: signal connection that is being terminated
-                        _connectionToPlayer.TryRemove(staleConnection, out var _);
+                        if (_playerToConnection.TryGetValue((oldGamePlayerPair.GameId, oldGamePlayerPair.PlayerId), out var staleConnection) && staleConnection != null)
+                        {
+                            // TODO: signal connection that is being terminated
+                            _connectionToPlayer.Remove(staleConnection);
+                        }
                     }
-                }
 
-                if (_playerToConnection.TryGetValue((gameId, playerId), out var oldConnection))
-                {
-                    if (_connectionToPlayer.TryGetValue(oldConnection, out var staleGamePlayerPair))
+                    if (_playerToConnection.TryGetValue((gameId, playerId), out var oldConnection))
                     {
-                        // TODO: signal connection that is being terminated
-                        _playerToConnection.Remove(staleGamePlayerPair, out var _);
+                        if (_connectionToPlayer.TryGetValue(oldConnection, out var staleGamePlayerPair))
+                        {
+                            // TODO: signal connection that is being terminated
+                            _playerToConnection.Remove(staleGamePlayerPair);
+                        }
                     }
-                }
 
-                // map new values: Connection <=> (Game, Player)
-                _connectionToPlayer.GetOrAdd(connectionId, (gameId, playerId));
-                _playerToConnection.GetOrAdd((gameId, playerId), connectionId);
+                    // map new values: Connection <=> (Game, Player)
+                    _connectionToPlayer[connectionId] = (gameId, playerId);
+                    _playerToConnection[(gameId, playerId)] = connectionId;
+                }
             }
         }
 
