@@ -189,34 +189,31 @@ namespace ShogiServerless
             {
                 lock (_lock)
                 {
-                    if (_playerToConnection.TryGetValue((gameId, playerId), out var connectionId))
-                        return connectionId;
-                    return null;
+                    return (_playerToConnection.TryGetValue((gameId, playerId), out var connectionId)) ? connectionId : null; 
                 }
             }
-
 
             public void MapConnection(string connectionId, Guid gameId, Guid playerId)
             {
                 lock (_lock)
                 {
                     // remove stale values
+                    //
+                    // INITIAL         map(A, g, p)             map(B, x, y)
+                    //  A => (x, y)      A => (g, p)              A => (x, y)  <-- stale
+                    //  (x,y) => A       (x,y) => A  <--- stale   (x, y) => B
+                    //                   (g,p) => A               B => (x, y)
+                    //
                     if (_connectionToPlayer.TryGetValue(connectionId, out var oldGamePlayerPair))
                     {
-                        if (_playerToConnection.TryGetValue((oldGamePlayerPair.GameId, oldGamePlayerPair.PlayerId), out var staleConnection) && staleConnection != null)
-                        {
-                            // TODO: signal connection that is being terminated
-                            _connectionToPlayer.Remove(staleConnection);
-                        }
+                        // TODO: signal connection that is being terminated
+                        _playerToConnection.Remove(oldGamePlayerPair);
                     }
 
                     if (_playerToConnection.TryGetValue((gameId, playerId), out var oldConnection))
                     {
-                        if (_connectionToPlayer.TryGetValue(oldConnection, out var staleGamePlayerPair))
-                        {
-                            // TODO: signal connection that is being terminated
-                            _playerToConnection.Remove(staleGamePlayerPair);
-                        }
+                        // TODO: signal connection that is being terminated
+                        _connectionToPlayer.Remove(oldConnection);
                     }
 
                     // map new values: Connection <=> (Game, Player)
