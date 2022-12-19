@@ -321,7 +321,7 @@ namespace WPF_UI
             {
                 var window = new ConnectionWindow()
                 {
-                    KnownGames = GameSaver.GetNetworkGames().EmptyIfNull().Select(elem => (elem.GameId, elem.PlayerId, elem.MyColor))
+                    KnownGames = GameSaver.GetNetworkGames().EmptyIfNull()
                 };
                 
 

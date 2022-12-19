@@ -4,10 +4,12 @@ using ShogiComms;
 using ShogiEngine;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using WPF_UI.Properties;
 
 namespace WPF_UI
 {
@@ -28,7 +30,7 @@ namespace WPF_UI
 
         public string? OpponentName { get; private set; }
 
-        public IEnumerable<(Guid GameId, Guid PlayerId, PlayerColor myColor)>? KnownGames { get; set; }
+        public IEnumerable<NetworkGameState>? KnownGames { get; set; }
 
         public IEnumerable<(Guid GameId, Guid PlayerId)> DeadGames { get; private set; } = Enumerable.Empty<(Guid GameId, Guid PlayerId)>();
 
@@ -112,7 +114,12 @@ namespace WPF_UI
 
                 foreach (var game in orderedList)
                 {
-                    GamesList.Items.Add(new ClientGameInfoWrapper(game));
+                    var localMapping = KnownGames.EmptyIfNull().Where(g => g.GameId == game.GameId);
+                    Contract.Assert(localMapping.Count() == 1 || localMapping.Count() == 2);
+                    foreach (var localInfo in localMapping)
+                    {
+                        GamesList.Items.Add(new ClientGameInfoWrapper(game, localInfo));
+                    }
                 }
 
                 GamesList.DisplayMemberPath = "DisplayString";
@@ -136,20 +143,22 @@ namespace WPF_UI
 
             SetUIForWaitForConnection();
 
-            var gameInfo = (ClientGameInfo)(ClientGameInfoWrapper)selectedItem;
+            var gameInfo = ((ClientGameInfoWrapper)selectedItem).GameInfo;
+            var localInfo = ((ClientGameInfoWrapper)selectedItem).LocalInfo;
             GameId = gameInfo.GameId;
 
             try
             {
                 if (IsShowingKnownGames)
                 {
-                    var playerId = KnownGames.EmptyIfNull().First(game => game.GameId == gameInfo.GameId).PlayerId;
-                    await Connection.RequestRejoinGame(gameInfo.GameId, playerId);
+                    LocalPlayer = localInfo.MyColor;
+                    OpponentName = LocalPlayer == PlayerColor.Black ? gameInfo.WhiteName : gameInfo.BlackName;
+                    await Connection.RequestRejoinGame(gameInfo.GameId, localInfo.PlayerId);
                 }
                 else
                 {
-                    Properties.Settings.Default.PlayerName = NameBox.Text;
-                    Properties.Settings.Default.Save();
+                    Settings.Default.PlayerName = NameBox.Text;
+                    Settings.Default.Save();
 
                     LocalPlayer = gameInfo.UnassignedColor();
                     OpponentName = gameInfo.WaitingPlayerName();
@@ -207,7 +216,7 @@ namespace WPF_UI
                 }
                 else
                 {
-                    var gameInfo = (ClientGameInfo)(ClientGameInfoWrapper)GamesList.SelectedItem;
+                    var gameInfo = ((ClientGameInfoWrapper)GamesList.SelectedItem).GameInfo;
                     NameBox.Text = $"{gameInfo.BlackName} vs. {gameInfo.WhiteName}";
                 }
             }
@@ -230,23 +239,25 @@ namespace WPF_UI
 
         class ClientGameInfoWrapper
         {
-            private readonly ClientGameInfo _info;
+            public ClientGameInfo GameInfo { get; }
+            public NetworkGameState LocalInfo { get; }
 
-            public ClientGameInfoWrapper(ClientGameInfo info) => _info = info;
+            public ClientGameInfoWrapper(ClientGameInfo gameInfo, NetworkGameState localInfo) => (GameInfo, LocalInfo) = (gameInfo, localInfo);
 
             public string DisplayString
             {
                 get
                 {
-                    var gameName = _info.IsOpen() ?
-                        $"vs. {_info.WaitingPlayerName()} ({_info.UnassignedColor().Opponent()})" :
-                        $"{_info.BlackName} vs. {_info.WhiteName}";
-                    return $"{gameName}\tLast Played: {_info.LastPlayed.ToLocalTime()}\tCreated: {_info.Created.ToLocalTime()}";
+                    var gameName = "";
+                    if (GameInfo.IsOpen())
+                        gameName = $"vs. {GameInfo.WaitingPlayerName()} ({GameInfo.UnassignedColor().Opponent()})";
+                    else if (LocalInfo.MyColor == PlayerColor.Black)
+                        gameName = $"vs. {GameInfo.WhiteName} (white)";
+                    else
+                        gameName = $"vs. {GameInfo.BlackName} (black)";
+                    return $"{gameName}\tLast Played: {GameInfo.LastPlayed.ToLocalTime()}\tCreated: {GameInfo.Created.ToLocalTime()}";
                 } 
             }
-
-            public static implicit operator ClientGameInfo(ClientGameInfoWrapper wrapper) =>
-                wrapper._info;
         }
     }
 }

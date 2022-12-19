@@ -118,7 +118,7 @@ namespace WPF_UI.Properties
 
     [TypeConverter(typeof(NetworkGameStateConverter))]
     [SettingsSerializeAs(SettingsSerializeAs.String)]
-    internal sealed class NetworkGameState : IEquatable<NetworkGameState>
+    public sealed class NetworkGameState : IEquatable<NetworkGameState>
     {
         public Guid GameId { get; } = Guid.Empty;
         public Guid PlayerId { get; } = Guid.Empty;
