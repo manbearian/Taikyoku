@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -45,6 +46,7 @@ namespace ShogiEngine
         CapricornAlternative =         0x40,
     }
 
+    [TypeConverter(typeof(TaikyokuStringConverter))]
     [JsonConverter(typeof(TaikyokuJsonConverter))]
     public class TaikyokuShogi
     {

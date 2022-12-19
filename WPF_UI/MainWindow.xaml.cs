@@ -104,7 +104,7 @@ namespace WPF_UI
             }
 
             // reconnect to the server for network games
-            if (networkGameState != null)
+            if (!(networkGameState is null))
             {
                 // todo: this prevents the main window from drawing while connection
                 // is in progress. I think it might be better to draw the window first?

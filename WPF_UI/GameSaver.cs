@@ -24,12 +24,16 @@ namespace WPF_UI
             //   (e.g. white and black players in same game on same machine, but differnet clients)
             if (gameSaverLock.WaitOne(TimeSpan.FromSeconds(1)))
             {
-                Properties.Settings.Default.Reload();
-                if (Properties.Settings.Default.NetworkGameList == null)
-                    Properties.Settings.Default.NetworkGameList = new HashSet<NetworkGameState>();
-                Properties.Settings.Default.NetworkGameList.Add(new NetworkGameState(gameId, playerId, myColor));
-                Properties.Settings.Default.Save();
+
+                Settings.Default.Reload();
+
+                // TODO: we're still getting duplicates?!!?
+                var origList = Settings.Default.NetworkGameList.NetworkGameStates.EmptyIfNull();
+                var newList = origList.Append(new NetworkGameState(gameId, playerId, myColor)).Distinct();
+                Settings.Default.NetworkGameList = new NetworkGameStateList(newList);
+                Settings.Default.Save();
                 gameSaverLock.ReleaseMutex();
+
             }
             else
             {
@@ -44,13 +48,15 @@ namespace WPF_UI
             //   (e.g. white and black players in same game on same machine, but differnet clients)
             if (gameSaverLock.WaitOne(TimeSpan.FromSeconds(1)))
             {
-                Properties.Settings.Default.Reload();
-                Properties.Settings.Default.NetworkGameList.RemoveWhere(g => g.GameId == gameId && g.PlayerId == playerId);
-                Properties.Settings.Default.Save();
+                Settings.Default.Reload();
+
+                var updatedList = Settings.Default.NetworkGameList.NetworkGameStates.EmptyIfNull().Where(g => g.GameId != gameId || g.PlayerId != playerId);
+                Settings.Default.NetworkGameList = new NetworkGameStateList(updatedList);
+                Settings.Default.Save();
                 gameSaverLock.ReleaseMutex();
 
-                if (Properties.Settings.Default.LastNetworkGameState?.GameId == gameId
-                    && Properties.Settings.Default.LastNetworkGameState?.PlayerId == playerId)
+                if (Settings.Default.LastNetworkGameState?.GameId == gameId
+                    && Settings.Default.LastNetworkGameState?.PlayerId == playerId)
                 {
                     ClearMostRecentGame();
                 }
@@ -65,26 +71,26 @@ namespace WPF_UI
         public static IEnumerable<NetworkGameState> GetNetworkGames()
         {
             // don't need the mutex here, just show whatever is available
-            Properties.Settings.Default.Reload();
-            return Properties.Settings.Default.NetworkGameList;
+            Settings.Default.Reload();
+            return Settings.Default.NetworkGameList.NetworkGameStates;
         }
 
         public static void RecordGameState(TaikyokuShogi game, NetworkGameState? networkGameInfo = null)
         {
-            Properties.Settings.Default.LastGameState = networkGameInfo == null ? game.Serialize() : null;
-            Properties.Settings.Default.LastNetworkGameState = networkGameInfo;
-            Properties.Settings.Default.Save();
+            Settings.Default.LastGameState = networkGameInfo is null ? game.Serialize() : null;
+            Settings.Default.LastNetworkGameState = networkGameInfo;
+            Settings.Default.Save();
         }
 
         public static (TaikyokuShogi? GameState, NetworkGameState? NetworkGameInfo) LoadMostRecentGame()
         {
-            var lastGameState = Properties.Settings.Default.LastGameState;
-            var lastNetworkGameState = Properties.Settings.Default.LastNetworkGameState;
+            var lastGameState = Settings.Default.LastGameState;
+            var lastNetworkGameState = Settings.Default.LastNetworkGameState;
 
-            if (lastNetworkGameState != null)
+            if (!(lastNetworkGameState is null))
                 return (null, lastNetworkGameState);
 
-            if (lastGameState != null)
+            if (!(lastGameState is null))
                 return (TaikyokuShogi.Deserlialize(lastGameState), null);
 
             return (null, null);
@@ -92,8 +98,8 @@ namespace WPF_UI
 
         public static void ClearMostRecentGame()
         {
-            Properties.Settings.Default.LastNetworkGameState = null;
-            Properties.Settings.Default.LastGameState = null;
+            Settings.Default.LastNetworkGameState = null;
+            Settings.Default.LastGameState = null;
         }
     }
 

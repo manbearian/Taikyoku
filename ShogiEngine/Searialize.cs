@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -15,6 +16,31 @@ namespace ShogiEngine
         public static string ToJsonString(this TaikyokuShogi game) =>
             JsonSerializer.Serialize(game) ?? throw new JsonException("failed to serialize");
     }
+
+    internal sealed class TaikyokuStringConverter : TypeConverter
+    {
+        public override bool CanConvertFrom(ITypeDescriptorContext? context, Type sourceType) =>
+            sourceType == typeof(string);
+
+        public override object? ConvertFrom(ITypeDescriptorContext? context, System.Globalization.CultureInfo? culture, object? value)
+        {
+            if (value is string valueAsString)
+            {
+                return JsonSerializer.Deserialize<TaikyokuShogi>(valueAsString);
+            }
+            return base.ConvertFrom(context, culture, value ?? throw new NullReferenceException());
+        }
+
+        public override object? ConvertTo(ITypeDescriptorContext? context, System.Globalization.CultureInfo? culture, object? value, Type destinationType)
+        {
+            if (destinationType == typeof(string))
+            {
+                return JsonSerializer.Serialize(value);
+            }
+            return base.ConvertTo(context, culture, value, destinationType);
+        }
+    }
+
 
     public class TaikyokuJsonConverter : JsonConverter<TaikyokuShogi>
     {

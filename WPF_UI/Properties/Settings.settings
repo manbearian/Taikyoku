@@ -8,10 +8,13 @@
     <Setting Name="PlayerName" Type="System.String" Scope="User">
       <Value Profile="(Default)" />
     </Setting>
-    <Setting Name="NetworkGameList" Type="System.Collections.Hashtable" Scope="User">
+    <Setting Name="NetworkGameList" Type="WPF_UI.Properties.NetworkGameStateList" Scope="User">
       <Value Profile="(Default)" />
     </Setting>
-    <Setting Name="LastGame" Type="WPF_UI.Properties.NetworkGameState" Scope="User">
+    <Setting Name="LastGameState" Type="System.Byte[]" Scope="User">
+      <Value Profile="(Default)" />
+    </Setting>
+    <Setting Name="LastNetworkGameState" Type="WPF_UI.Properties.NetworkGameState" Scope="User">
       <Value Profile="(Default)" />
     </Setting>
   </Settings>

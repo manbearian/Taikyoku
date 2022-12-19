@@ -12,7 +12,7 @@ namespace WPF_UI.Properties {
     
     
     [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
-    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.VisualStudio.Editors.SettingsDesigner.SettingsSingleFileGenerator", "16.8.1.0")]
+    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.VisualStudio.Editors.SettingsDesigner.SettingsSingleFileGenerator", "17.5.0.0")]
     internal sealed partial class Settings : global::System.Configuration.ApplicationSettingsBase {
         
         private static Settings defaultInstance = ((Settings)(global::System.Configuration.ApplicationSettingsBase.Synchronized(new Settings())));
@@ -49,9 +49,9 @@ namespace WPF_UI.Properties {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        public global::System.Collections.Generic.HashSet<NetworkGameState> NetworkGameList {
+        public global::WPF_UI.Properties.NetworkGameStateList NetworkGameList {
             get {
-                return ((global::System.Collections.Generic.HashSet<NetworkGameState>)(this["NetworkGameList"]));
+                return ((global::WPF_UI.Properties.NetworkGameStateList)(this["NetworkGameList"]));
             }
             set {
                 this["NetworkGameList"] = value;
@@ -62,23 +62,20 @@ namespace WPF_UI.Properties {
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         public byte[] LastGameState {
             get {
-                return ((byte[])this["LastGameState"]);
+                return ((byte[])(this["LastGameState"]));
             }
             set {
                 this["LastGameState"] = value;
             }
         }
-
+        
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        public NetworkGameState LastNetworkGameState
-        {
-            get
-            {
-                return ((NetworkGameState)this["LastNetworkGameState"]);
+        public global::WPF_UI.Properties.NetworkGameState LastNetworkGameState {
+            get {
+                return ((global::WPF_UI.Properties.NetworkGameState)(this["LastNetworkGameState"]));
             }
-            set
-            {
+            set {
                 this["LastNetworkGameState"] = value;
             }
         }
