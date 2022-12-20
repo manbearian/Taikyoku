@@ -1,15 +1,16 @@
 using Xunit;
+using Xunit.Abstractions;
 
 
-using ShogiClient;
 using System;
 using System.Threading;
 using System.Security.Principal;
 using System.Diagnostics;
-using Xunit.Abstractions;
-using ShogiEngine;
 using System.Threading.Tasks;
 using System.Linq;
+
+using ShogiClient;
+using ShogiEngine;
 
 namespace ServerTest
 {
@@ -38,7 +39,7 @@ namespace ServerTest
 
     public class UnitTest1 : IClassFixture<MyFixture>
     {
-        const int TIMEOUT = 5000;
+        private int TIMEOUT { get => Debugger.IsAttached ? int.MaxValue : 5000; }
 
         private readonly ITestOutputHelper output;
         public UnitTest1(ITestOutputHelper output) => this.output = output;
@@ -64,7 +65,7 @@ namespace ServerTest
 
             // creating some new games
             const int GAME_COUNT = 10;
-            Guid[] newGames = new Guid[10]; 
+            Guid[] newGames = new Guid[10];
             output.WriteLine($"creating {GAME_COUNT} new games...");
             for (int i = 0; i < GAME_COUNT; ++i)
             {
@@ -78,7 +79,8 @@ namespace ServerTest
             }
 
             output.WriteLine("requesting all open game info...");
-            Assert.True(c.RequestAllOpenGameInfo().ContinueWith(t => {
+            Assert.True(c.RequestAllOpenGameInfo().ContinueWith(t =>
+            {
                 var list = t.Result;
                 output.WriteLine($"game data received with {list.Count()} items");
                 foreach (var gameId in newGames)
@@ -118,12 +120,13 @@ namespace ServerTest
             TaikyokuShogi game = new();
 
             using var c = new Connection(Guid.NewGuid(), Guid.NewGuid(), PlayerColor.Black);
-            c.OnReceiveGameStart += (sender, e) => {
+            c.OnReceiveGameStart += (sender, e) =>
+            {
                 output.WriteLine($"...game start received: '{e}'");
                 Assert.Equal(e.GameInfo.GameId, c.GameId);
                 Assert.Equal(e.PlayerId, c.PlayerId);
                 Assert.True(e.Game.BoardStateEquals(game));
-                receivedEvent.Set(); 
+                receivedEvent.Set();
             };
 
             Assert.True(c.ConnectAsync().Wait(TIMEOUT));
@@ -141,7 +144,7 @@ namespace ServerTest
 
         [Fact]
         public void TestCreateGame()
-        { 
+        {
             using var c = new Connection();
             Assert.True(c.ConnectAsync().Wait(TIMEOUT));
 
@@ -161,7 +164,8 @@ namespace ServerTest
             TaikyokuShogi? game2 = null;
 
             using var c1 = new Connection();
-            c1.OnReceiveGameStart += (sender, e) => {
+            c1.OnReceiveGameStart += (sender, e) =>
+            {
                 output.WriteLine($"game start for initiating player: '{e.GameInfo.GameId}'/'{e.PlayerId}'");
                 Assert.Equal(c1.GameId, e.GameInfo.GameId);
                 Assert.Equal(c1.PlayerId, e.PlayerId);
@@ -211,7 +215,8 @@ namespace ServerTest
             AutoResetEvent startEvent2 = new(false);
 
             var c1 = new Connection();
-            c1.OnReceiveGameStart += (sender, e) => {
+            c1.OnReceiveGameStart += (sender, e) =>
+            {
                 output.WriteLine($"game start for initiating player: '{e.GameInfo.GameId}'/'{e.PlayerId}'");
                 startEvent1.Set();
             };
@@ -378,6 +383,119 @@ namespace ServerTest
 
             c1.Dispose();
             c2.Dispose();
+        }
+
+        [Fact]
+        public void TestDisconnect()
+        {
+            AutoResetEvent e1 = new(false);
+
+            var (c1, c2) = SetupGame();
+
+            c2.OnReceiveGameDisconnect += (sender, e) =>
+            {
+                output.WriteLine($"player2 received disconnect message: '{e.GameId}'");
+                e1.Set();
+            };
+
+            output.WriteLine($"closing client connection for player 1");
+            c1.Dispose();
+
+            Assert.True(e1.WaitOne(TIMEOUT));
+
+            c2.Dispose();
+        }
+
+        // Test scenarios around moving connection from game1 to game2
+        [Fact]
+        public void TestSecondConnect()
+        {
+            AutoResetEvent gAp2DisconnectEvent = new(false);
+            AutoResetEvent gBp2DisconnectEvent = new(false);
+            AutoResetEvent gBp2ReconnectEvent = new(false);
+            AutoResetEvent gBp1UpdateEvent = new(false);
+            AutoResetEvent gBp2UpdateEvent = new(false);
+
+            var (c1, c2) = SetupGame();
+            var (c3, c4) = SetupGame();
+
+            Guid gameA = c1.GameId;
+            Guid playerA1 = c1.PlayerId;
+            Guid playerA2 = c2.PlayerId;
+
+            Guid gameB = c3.GameId;
+            Guid playerB1 = c3.PlayerId;
+            Guid playerB2 = c4.PlayerId;
+
+            c1.OnReceiveGameDisconnect += (sender, e) => Assert.True(false);
+            c2.OnReceiveGameDisconnect += (sender, e) =>
+            {
+                output.WriteLine($"c1 received disconnect message: '{e.GameId}'");
+                Assert.Equal(e.GameId, gameA);
+                gAp2DisconnectEvent.Set();
+            };
+            c3.OnReceiveGameDisconnect += (sender, e) => Assert.True(false);
+            c4.OnReceiveGameDisconnect += (sender, e) =>
+            {
+                output.WriteLine($"c4 received disconnect message: '{e.GameId}'");
+                Assert.Equal(e.GameId, gameB);
+                gBp2DisconnectEvent.Set();
+            };
+
+            c1.OnReceiveGameReconnect += (sender, e) => Assert.True(false);
+            c2.OnReceiveGameReconnect += (sender, e) => Assert.True(false);
+            c3.OnReceiveGameReconnect += (sender, e) => Assert.True(false);
+            c4.OnReceiveGameReconnect += (sender, e) =>
+            {
+                output.WriteLine($"c4 received reconect message: '{e.GameId}'");
+                Assert.Equal(e.GameId, gameB);
+                gBp2ReconnectEvent.Set();
+            };
+
+            c1.OnReceiveGameUpdate += (sender, e) =>
+            {
+                output.WriteLine($"c1 received game update: '{e.GameId}'");
+                Assert.Equal(e.GameId, gameB);
+                gBp1UpdateEvent.Set();
+            };
+            c2.OnReceiveGameUpdate += (sender, e) => Assert.True(false);
+            c3.OnReceiveGameUpdate += (sender, e) => Assert.True(false);
+            c4.OnReceiveGameUpdate += (sender, e) =>
+            {
+                output.WriteLine($"c4 received game update: '{e.GameId}'");
+                Assert.Equal(e.GameId, gameB);
+                gBp2UpdateEvent.Set();
+            };
+
+
+            output.WriteLine($"changing connection1 from Game A, Player 1 to Game B, Player 1");
+            c1.SetGameInfo(gameB, playerB1, PlayerColor.Black);
+            Assert.True(c1.RequestRejoinGame().Wait(TIMEOUT));
+
+            output.WriteLine("waiting for game disconnect events....");
+            Assert.True(WaitHandle.WaitAll(new WaitHandle[] { gAp2DisconnectEvent, gBp2DisconnectEvent }, TIMEOUT));
+            output.WriteLine("...both games updated");
+
+            output.WriteLine("waiting for game reconnect event....");
+            Assert.True(gBp2ReconnectEvent.WaitOne(TIMEOUT));
+            output.WriteLine("...both games updated");
+
+            output.WriteLine("attempting move via stale connection ...");
+            Assert.ThrowsAsync<TaskCanceledException>(() => c3.RequestMove((5, 24), (6, 23), null, false));
+            output.WriteLine("...move failed (as expected)");
+
+            output.WriteLine("black attemps _illegal_ move...");
+            Assert.True(c1.RequestMove((5, 24), (6, 23), null, false).Wait(TIMEOUT));
+            output.WriteLine("...move completed");
+
+            output.WriteLine("waiting for game update events....");
+            Assert.True(WaitHandle.WaitAll(new WaitHandle[] { gBp1UpdateEvent, gBp2UpdateEvent }, TIMEOUT));
+            output.WriteLine("...both games updated");
+
+            c1.Dispose();
+            c2.Dispose();
+            c3.Dispose();
+            c4.Dispose();
         }
     }
 }

@@ -121,6 +121,9 @@ namespace ShogiServerless
                     _ => throw new HubException("unknown player")
                 };
 
+            public PlayerInfo? GetOtherPlayerInfo(Guid playerId) =>
+                GetPlayerInfo(GetPlayerColor(playerId).Opponent());
+
             // Convert the saved state of this game into information that the client can consume
             public ClientGameInfo ToClientGameInfo() =>
                 new ClientGameInfo()
@@ -183,18 +186,46 @@ namespace ShogiServerless
             private Dictionary<string, (Guid GameId, Guid PlayerId)> _connectionToPlayer { get; } = new Dictionary<string, (Guid GameId, Guid PlayerId)>();
             private Dictionary<(Guid GameId, Guid PlayerId), string> _playerToConnection { get; } = new Dictionary<(Guid GameId, Guid PlayerId), string>();
 
-            private object _lock = new object();
+            private readonly object _lock = new object();
 
-            public string? GetConnection(Guid gameId, Guid playerId)
+            public bool TryGetConnection(Guid gameId, Guid playerId, out string connectionId)
             {
                 lock (_lock)
                 {
-                    return (_playerToConnection.TryGetValue((gameId, playerId), out var connectionId)) ? connectionId : null; 
+                    var success = _playerToConnection.TryGetValue((gameId, playerId), out var value);
+                    connectionId = success ? value ?? string.Empty : string.Empty;
+                    return success;
                 }
             }
 
-            // Returns connectionId of the previous connection mapped to (gameId, playerId) if it exists
-            public string? MapConnection(string connectionId, Guid gameId, Guid playerId)
+            public bool TryGetPlayer(string connectionId, out Guid gameId, out Guid playerId)
+            {
+                lock (_lock)
+                {
+                    var success = _connectionToPlayer.TryGetValue(connectionId, out var pair);
+                    (gameId, playerId) = success ? pair : (Guid.Empty, Guid.Empty);
+                    return success;
+                }
+            }
+
+            // remove connectionId from mappings
+            // Returns previous connection mapping to (gameId, playerId) if it exists
+            public (Guid GameId, Guid PlayerId)? UnmapConnection(string connectionId)
+            {
+                lock (_lock)
+                {
+                    if (_connectionToPlayer.TryGetValue(connectionId, out var oldGamePlayerPair))
+                    {
+                        _playerToConnection.Remove(oldGamePlayerPair);
+                        _connectionToPlayer.Remove(connectionId);
+                    }
+                    return oldGamePlayerPair == (Guid.Empty, Guid.Empty) ? null as (Guid, Guid)? : oldGamePlayerPair;
+                }
+            }
+
+            // Creates the mapping: connectionId <==> (game, player)
+            // Returns previous mamppings for both connectionId and (game, player)
+            public (string? OldConnection, (Guid GameId, Guid PlayerId)? OldGamePlayerPair) MapConnection(string connectionId, Guid gameId, Guid playerId)
             {
                 lock (_lock)
                 {
@@ -218,21 +249,76 @@ namespace ShogiServerless
                     // map new values: Connection <=> (Game, Player)
                     _connectionToPlayer[connectionId] = (gameId, playerId);
                     _playerToConnection[(gameId, playerId)] = connectionId;
-                    return oldConnection;
+                    return (oldConnection, oldGamePlayerPair == (Guid.Empty, Guid.Empty) ? null as (Guid, Guid)? : oldGamePlayerPair);
                 }
             }
         }
 
-        private void MapConnection(string connectionId, Guid gameId, Guid playerId, ILogger logger)
+        private async Task SignalDisconnectToOpponent(Guid gameId, Guid playerId, ILogger logger)
         {
-            logger.LogInformation($"mapping '{connectionId}' to '{gameId}-{playerId}'");
+            var gameInfo = await TableStorage.FindGame(gameId)
+                ?? throw new HubException($"failed to find game: {gameId}");
+            var otherPlayerInfo = gameInfo.GetOtherPlayerInfo(playerId);
 
-            var staleConnection = _connectionMap.MapConnection(connectionId, gameId, playerId);
-            if (staleConnection != null)
+            if (otherPlayerInfo != null &&
+                    TryGetConnection(gameId, otherPlayerInfo.PlayerId, out var otherConnection, logger))
             {
-                logger.LogInformation($"closing stale connection '{staleConnection}'");
-                ClientManager.CloseConnectionAsync(staleConnection, "new connection created");
+                logger.LogInformation($"sending disconnect to '{otherConnection}' for '{gameId}'/'{otherPlayerInfo.PlayerId}'");
+                await Clients.Client(otherConnection).ReceiveGameDisconnect(gameInfo.Id);
             }
+        }
+
+        private async Task UnmapConnection(string connectionId, ILogger logger)
+        {
+            logger.LogInformation($"unmapping connection '{connectionId}'");
+            var stalePair = _connectionMap.UnmapConnection(connectionId);
+
+            if (stalePair != null)
+            {
+                Guid gameId = stalePair.Value.GameId;
+                Guid playerId = stalePair.Value.PlayerId;
+                await SignalDisconnectToOpponent(gameId, playerId, logger);
+            }
+        }
+
+        private async Task MapConnection(string connectionId, Guid gameId, Guid playerId, ILogger logger)
+        {
+            logger.LogInformation($"mapping '{connectionId}' to '{gameId}/{playerId}'");
+
+            var (oldConnection, oldGamePlayerPair) = _connectionMap.MapConnection(connectionId, gameId, playerId);
+
+            if (oldGamePlayerPair != null)
+            {
+                var oldGameId = (Guid)oldGamePlayerPair?.GameId!;
+                var oldPlayerId = (Guid)oldGamePlayerPair?.PlayerId!;
+                logger.LogInformation($"'{connectionId}' previously mapped to '{oldGameId}'/'{oldPlayerId}'");
+                await SignalDisconnectToOpponent(oldGameId, oldPlayerId, logger);
+            }
+
+            if (oldConnection != null)
+            {
+                logger.LogInformation($"'{gameId}'/'{playerId}' prevoiusly mapped to '{connectionId}'");
+                await SignalDisconnectToOpponent(gameId, playerId, logger);
+
+                logger.LogInformation($"closing stale connection '{oldConnection}'");
+                await ClientManager.CloseConnectionAsync(oldConnection, "new connection created");
+            }
+        }
+
+        private static bool TryGetConnection(Guid gameId, Guid playerId, out string connectionId, ILogger logger)
+        {
+            bool result = _connectionMap.TryGetConnection(gameId, playerId, out connectionId);
+            logger.LogInformation(result ? $"mapped '{gameId}/{playerId}' to '{connectionId}'"
+                : $"no connection map found for '{gameId}/{playerId}'");
+            return result;
+        }
+
+        private static bool TryGetPlayer(string connectionId, out Guid gameId, out Guid playerId, ILogger logger)
+        {
+            bool result = _connectionMap.TryGetPlayer(connectionId, out gameId, out playerId);
+            logger.LogInformation(result ? $"mapped '{connectionId}' to '{gameId}/{playerId}'"
+                : $"no connection map found for '{connectionId}'");
+            return result;
         }
 
         private static async Task<IEnumerable<ClientGameInfo>> AllOpenGames() =>
@@ -249,7 +335,7 @@ namespace ShogiServerless
                 return gameList as IEnumerable<ClientGameInfo>;
             });
 
-        private static ConnectionMap _connectionMap = new ConnectionMap();
+        private static readonly ConnectionMap _connectionMap = new ConnectionMap();
 
         public ShogiHub() : base() { }
 
@@ -270,7 +356,7 @@ namespace ShogiServerless
 
             var playerId = gameInfo.GetPlayerInfo(asBlackPlayer ? PlayerColor.Black : PlayerColor.White)?.PlayerId ?? throw new HubException("bad game state");
 
-            MapConnection(context.ConnectionId, gameInfo.Id, playerId, logger);
+            await MapConnection(context.ConnectionId, gameInfo.Id, playerId, logger);
 
             return new GamePlayerPair(gameInfo.Id, playerId);
         }
@@ -337,19 +423,14 @@ namespace ShogiServerless
             await AllOpenGames().ContinueWith(t => Clients.All.ReceiveGameList(t.Result.ToList()));
 
             // add new connection to the map
-            MapConnection(context.ConnectionId, gameId, newPlayerInfo.PlayerId, logger);
+            await MapConnection(context.ConnectionId, gameId, newPlayerInfo.PlayerId, logger);
 
             // signal other player game has started
-            var otherConnection = _connectionMap.GetConnection(gameId, oldPlayerInfo.PlayerId);
-            if (otherConnection != null)
+            if (TryGetConnection(gameId, oldPlayerInfo.PlayerId, out var otherConnection, logger))
             {
                 logger.LogInformation($"signal player '{oldPlayerInfo}' game start for '{gameId}'");
                 await Clients.Client(otherConnection).
                     ReceiveGameStart(gameInfo.Game.ToJsonString(), gameInfo.ToClientGameInfo(), oldPlayerInfo.PlayerId);
-            }
-            else
-            {
-                logger.LogInformation($"other player not connected to game '{gameId}'");
             }
 
             // signal joining player game has started
@@ -365,29 +446,17 @@ namespace ShogiServerless
         {
             var gameInfo = await TableStorage.FindGame(gameId)
                 ?? throw new HubException($"failed to find game: {gameId}");
+            var otherPlayerInfo = gameInfo.GetOtherPlayerInfo(playerId);
 
-            Guid otherPlayerId = Guid.Empty;
-            if (gameInfo.WhitePlayer?.PlayerId == playerId)
-                otherPlayerId = gameInfo.BlackPlayer?.PlayerId ?? Guid.Empty;
-            else if (gameInfo.BlackPlayer?.PlayerId == playerId)
-                otherPlayerId = gameInfo.WhitePlayer?.PlayerId ?? Guid.Empty;
-            else
-                throw new HubException($"unknown player '{playerId}' attempting to join '{gameId}'");
+            await MapConnection(context.ConnectionId, gameId, playerId, logger);
 
-            MapConnection(context.ConnectionId, gameId, playerId, logger);
-
-            if (otherPlayerId != Guid.Empty)
+            if (otherPlayerInfo != null)
             {
-                logger.LogInformation($"other player for '{gameId}' is '{otherPlayerId}'");
-                var otherConnection = _connectionMap.GetConnection(gameId, otherPlayerId);
-                if (otherConnection != null)
+                logger.LogInformation($"other player for '{gameId}' is '{otherPlayerInfo.PlayerId}'");
+                if (TryGetConnection(gameId, otherPlayerInfo.PlayerId, out var otherConnection, logger))
                 {
                     logger.LogInformation($"signal other connection '{otherConnection}' there is a reconnect for '{gameId}'");
                     await Clients.Client(otherConnection).ReceiveGameReconnect(gameId);
-                } else
-                {
-                    logger.LogInformation($"no connection for '{gameId}-{otherPlayerId}'");
-
                 }
             }
             else
@@ -409,37 +478,30 @@ namespace ShogiServerless
             var blackPlayerId = gameInfo.BlackPlayer?.PlayerId ?? throw new HubException("game in bad state; missing black player");
             var whitePlayerId = gameInfo.WhitePlayer?.PlayerId ?? throw new HubException("game in bad state; missing white player");
 
-            logger.LogInformation($"Black player is '{gameInfo.Id}-{blackPlayerId}'");
-            logger.LogInformation($"White player is '{gameInfo.Id}-{whitePlayerId}'");
+            logger.LogInformation($"Black player is '{gameInfo.Id}/{blackPlayerId}'");
+            logger.LogInformation($"White player is '{gameInfo.Id}/{whitePlayerId}'");
 
-            var connectionBlack = _connectionMap.GetConnection(gameInfo.Id, blackPlayerId);
-            if (connectionBlack != null)
+            if (TryGetConnection(gameInfo.Id, blackPlayerId, out var connectionBlack, logger))
             {
-                logger.LogInformation($"Updating black player'{gameInfo.Id}-{blackPlayerId}' at '{connectionBlack}'");
+                logger.LogInformation($"Updating black player'{gameInfo.Id}/{blackPlayerId}' at '{connectionBlack}'");
                 await Clients.Client(connectionBlack).ReceiveGameUpdate(gameInfo.Game.ToJsonString(), gameInfo.Id);
             }
-            else
-            {
-                logger.LogInformation($"no connection for black player '{gameInfo.Id}-{blackPlayerId}'");
-            }
 
-            var connectionWhite = _connectionMap.GetConnection(gameInfo.Id, whitePlayerId);
-            if (connectionWhite != null)
+            if (TryGetConnection(gameInfo.Id, whitePlayerId, out var connectionWhite, logger))
             {
-                logger.LogInformation($"Updating white Player '{gameInfo.Id}-{whitePlayerId}' at '{connectionWhite}'");
+                logger.LogInformation($"Updating white Player '{gameInfo.Id}/{whitePlayerId}' at '{connectionWhite}'");
                 await Clients.Client(connectionWhite).ReceiveGameUpdate(gameInfo.Game.ToJsonString(), gameInfo.Id);
-            }
-            else
-            {
-                logger.LogInformation($"no connection for white player '{gameInfo.Id}-{whitePlayerId}'");
             }
         }
 
         [FunctionName(nameof(MakeMove))]
         public async Task MakeMove([SignalRTrigger] InvocationContext context,
-            Guid gameId, Guid playerId, Location startLoc, Location endLoc, Location midLoc, bool promote,
+            Location startLoc, Location endLoc, Location midLoc, bool promote,
             ILogger logger)
         {
+            if (!TryGetPlayer(context.ConnectionId, out var gameId, out var playerId, logger))
+                return;
+
             var gameInfo = await TableStorage.FindGame(gameId)
                 ?? throw new HubException($"failed to find game: {gameId}");
 
@@ -458,6 +520,22 @@ namespace ShogiServerless
 
             await UpdateGame(gameInfo, logger);
         }
+
+        [FunctionName(nameof(Resign))]
+        public async Task Resign([SignalRTrigger] InvocationContext context, ILogger logger)
+        {
+            if (!TryGetPlayer(context.ConnectionId, out var gameId, out var playerId, logger))
+                return;
+
+            var gameInfo = await TableStorage.FindGame(gameId)
+                ?? throw new HubException($"failed to find game: {gameId}");
+
+            gameInfo.Game.Resign(gameInfo.GetPlayerColor(playerId));
+            gameInfo.LastPlayed = DateTime.Now;
+
+            await UpdateGame(gameInfo, logger);
+        }
+
 
 #if DEBUG
         [FunctionName(nameof(Echo))]
@@ -492,8 +570,9 @@ namespace ShogiServerless
         }
 
         [FunctionName(nameof(OnDisconnected))]
-        public void OnDisconnected([SignalRTrigger] InvocationContext context, ILogger logger)
+        public async Task OnDisconnected([SignalRTrigger] InvocationContext context, ILogger logger)
         {
+            await UnmapConnection(context.ConnectionId, logger);
             logger.LogInformation($"{context.ConnectionId} has disconnected");
         }
 
@@ -509,55 +588,6 @@ namespace ShogiServerless
             await Clients.All.ReceiveGameList(AllOpenGames());
         }
 
-        public async Task RequestResign()
-        {
-            var gameInfo = ClientGame;
-            var playerId = ClientPlayerId;
-
-            if (gameInfo == null)
-                throw new HubException("illegal move: no game in progress");
-
-            gameInfo.Game.Resign(gameInfo.GetPlayerColor(playerId));
-            gameInfo.LastPlayed = DateTime.Now;
-
-            await UpdateGame(gameInfo);
-        }
-
-        private async Task DisconnectClientGame()
-        {
-            var gameInfo = ClientGame;
-            var playerId = ClientPlayerId;
-
-            if (gameInfo == null)
-                return;
-
-            if (OpenGames.ContainsKey(gameInfo.Id))
-            {
-                // if the game is pending (no opponent connected yet) remove it from list of pending games
-                await CancelGame();
-                return;
-            }
-
-            // TODO: when upgrading to .net 5 we can use overload of TryRemove that takes a value and remove this lock
-            lock (ClientMapLock)
-            {
-                // remove this client from the map if it is still relavant (see RACE below)
-                // RACE: a new client can connect as this player before the disconnection of the older client occurs
-                if (ClientMap[playerId] == (Clients.Caller, Context.ConnectionId))
-                    ClientMap.TryRemove(playerId, out _);
-            }
-
-            var otherPlayerInfo = gameInfo.GetOtherPlayerInfo(playerId);
-            var otherClient = ClientMap.GetValueOrDefault(otherPlayerInfo.PlayerId).Client;
-            if (otherClient != null)
-                await otherClient.ReceiveGameDisconnect(gameInfo.Id);
-        }
-
-        public override async Task OnDisconnectedAsync(Exception exception)
-        {
-            await DisconnectClientGame();
-            await base.OnDisconnectedAsync(exception);
-        }
 #endif
 
     }
