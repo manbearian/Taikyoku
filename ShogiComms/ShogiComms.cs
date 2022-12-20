@@ -73,12 +73,18 @@ namespace ShogiComms
 
         public Location() { }
 
+        // i'm using (-1,-1) when marshalling because null is invalid
+        private bool isValid() => (X >= 0 && Y >= 0);
+
+        public static Location Invalid { get; } = new Location() { X = -1, Y = -1 };
+
         public static explicit operator Location((int X, int Y) loc) => new Location() {X = loc.X, Y = loc.Y };
 
-        public static explicit operator Location?((int X, int Y)? loc) => loc is null ? null : (Location)loc.Value;
+        public static explicit operator Location((int X, int Y)? loc) => loc is null ? Invalid : (Location)loc.Value;
 
         public static explicit operator (int X, int Y)(Location loc) => (loc.X, loc.Y);
 
-        public static explicit operator (int X, int Y)?(Location loc) => loc is null ? null as (int, int)? : (loc.X, loc.Y);
+        public static explicit operator (int X, int Y)?(Location loc) => 
+            !loc.isValid() ? null as (int, int)? : (loc.X, loc.Y);
     }
 }

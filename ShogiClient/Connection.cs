@@ -167,7 +167,7 @@ namespace ShogiClient
             await _connection.InvokeAsync("CancelGame");
 
         public async Task RequestMove((int X, int Y) startLoc, (int X, int Y) endLoc, (int X, int Y)? midLoc, bool promote) =>
-            await _connection.InvokeAsync("MakeMove", GameId, PlayerId, (Location)startLoc, (Location)endLoc, (Location?)midLoc, promote);
+            await _connection.InvokeAsync("MakeMove", GameId, PlayerId, (Location)startLoc, (Location)endLoc, (Location)midLoc, promote);
 
         public async Task RequestResign() =>
             await _connection.InvokeAsync("RequestResign");

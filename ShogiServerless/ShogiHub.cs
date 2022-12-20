@@ -435,6 +435,7 @@ namespace ShogiServerless
             }
         }
 
+        [FunctionName(nameof(MakeMove))]
         public async Task MakeMove([SignalRTrigger] InvocationContext context,
             Guid gameId, Guid playerId, Location startLoc, Location endLoc, Location midLoc, bool promote,
             ILogger logger)

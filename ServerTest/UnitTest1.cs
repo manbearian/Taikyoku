@@ -29,7 +29,7 @@ namespace ServerTest
             }) ?? throw new Exception("process failed to start");
 
             // wait for server to launch
-            Thread.Sleep(6000);
+            Thread.Sleep(6500);
         }
 
         public void Dispose() => serverProcess?.Close();
@@ -203,6 +203,71 @@ namespace ServerTest
             output.WriteLine("...game started for both players");
 
             Assert.True(game1?.BoardStateEquals(game2 ?? throw new NullReferenceException()));
+        }
+
+        [Fact]
+        public void TestMakeMove()
+        {
+            AutoResetEvent startEvent1 = new(false);
+            AutoResetEvent startEvent2 = new(false);
+            AutoResetEvent updateEvent1 = new(false);
+            AutoResetEvent updateEvent2 = new(false);
+
+            TaikyokuShogi? game1 = null;
+            TaikyokuShogi? game2 = null;
+
+            using var c1 = new Connection();
+            c1.OnReceiveGameStart += (sender, e) => {
+                output.WriteLine($"game start for initiating player: '{e.GameInfo.GameId}'/'{e.PlayerId}'");
+                game1 = e.Game;
+                startEvent1.Set();
+            };
+            c1.OnReceiveGameUpdate += (sender, e) =>
+            {
+                output.WriteLine($"game updated for player1: '{e.GameId}'");
+                game1 = e.Game;
+                updateEvent1.Set();
+            };
+            Assert.True(c1.ConnectAsync().Wait(TIMEOUT));
+
+            output.WriteLine("creating a new game...");
+            Assert.True(c1.RequestNewGame("test-player", true, new TaikyokuShogi()).ContinueWith(t =>
+            {
+                output.WriteLine($"new game '{c1.GameId}' created; player is '{c1.PlayerId}'");
+            }).Wait(TIMEOUT));
+
+            output.WriteLine("joining a second playerto the game...");
+            using var c2 = new Connection(c1.GameId, Guid.Empty, PlayerColor.Black);
+            c2.OnReceiveGameStart += (sender, e) =>
+            {
+                output.WriteLine($"game start for joining player: '{e.GameInfo.GameId}'/'{e.PlayerId}'");
+                game2 = e.Game;
+                startEvent2.Set();
+            };
+            c2.OnReceiveGameUpdate += (sender, e) =>
+            {
+                output.WriteLine($"game updated for player2: '{e.GameId}'");
+                game2 = e.Game;
+                updateEvent2.Set();
+            };
+            Assert.True(c2.ConnectAsync().Wait(TIMEOUT));
+
+            Assert.True(c2.JoinGame("other-player").Wait(TIMEOUT));
+
+            output.WriteLine("waiting for game start events....");
+            Assert.True(WaitHandle.WaitAll(new WaitHandle[] { startEvent1, startEvent2 }, TIMEOUT));
+            output.WriteLine("...game started for both players");
+
+            output.WriteLine("black moves (0,0) -> (1,1)...");
+            Assert.True(c1.RequestMove((0, 0), (1, 1), null, false).Wait(TIMEOUT));
+            output.WriteLine("...move completed");
+
+
+            output.WriteLine("waiting for game update events....");
+            Assert.True(WaitHandle.WaitAll(new WaitHandle[] { updateEvent1, updateEvent2 }, TIMEOUT));
+            output.WriteLine("...both games updated");
+
+            Assert.True(game1?.BoardStateEquals(game2 ?? throw new NullReferenceException()) ?? false);
         }
     }
 }
