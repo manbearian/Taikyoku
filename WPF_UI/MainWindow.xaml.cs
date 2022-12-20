@@ -373,8 +373,8 @@ namespace WPF_UI
             else if (e.Source == rotateMenuItem)
             {
                 gameBoard.IsRotated = rotateMenuItem.IsChecked;
-                Properties.Settings.Default.RotateBoard = rotateMenuItem.IsChecked;
-                Properties.Settings.Default.Save();
+                Settings.Default.RotateBoard = rotateMenuItem.IsChecked;
+                Settings.Default.Save();
             }
             else if (e.Source == debugModeMenuItem)
             {

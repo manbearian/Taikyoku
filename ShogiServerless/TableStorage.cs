@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 
 using Microsoft.Azure.Cosmos.Table;
+
 using static ShogiServerless.ShogiHub;
 
 namespace ShogiServerless
@@ -20,25 +21,25 @@ namespace ShogiServerless
             _cloudTableClient = storageAccount.CreateCloudTableClient(new TableClientConfiguration());
         }
 
-        public ShogiHub.GameInfo? AddOrUpdateGame(ShogiHub.GameInfo gameInfo)
+        public GameInfo? AddOrUpdateGame(GameInfo gameInfo)
         {
             try
             {
                 var table = _cloudTableClient.GetTableReference(RunningGameTableName);
                 table.CreateIfNotExists();
 
-                var lookupOp = TableOperation.Retrieve<ShogiHub.GameInfo>("", gameInfo.Id.ToString());
-                var oldGameInfo = table.Execute(lookupOp).Result as ShogiHub.GameInfo;
+                var lookupOp = TableOperation.Retrieve<GameInfo>("", gameInfo.Id.ToString());
+                var oldGameInfo = table.Execute(lookupOp).Result as GameInfo;
 
                 // game was recorded as ending; don't update things
                 // this can happen if our opponent conceded while we were making a move
-                if (oldGameInfo?.Game.Ending != null)
+                if (oldGameInfo?.Game.Ending is not null)
                     return oldGameInfo;
 
                 // todo: validate what happens here if the game was updated between the read and write
                 // theoretically it should fail, but what we really want to do is retry the write.
                 var updateOp = TableOperation.InsertOrReplace(gameInfo);
-                return table.Execute(updateOp).Result as ShogiHub.GameInfo;
+                return table.Execute(updateOp).Result as GameInfo;
             }
             catch(StorageException)
             {
@@ -48,19 +49,19 @@ namespace ShogiServerless
             return null;
         }
 
-        public async Task<IEnumerable<ShogiHub.GameInfo>> AllGames()
+        public async Task<IEnumerable<GameInfo>> AllGames()
         {
             try
             {
                 var table = _cloudTableClient.GetTableReference(RunningGameTableName);
                 TableContinuationToken? token = null;
-                var entities = new List<ShogiHub.GameInfo>();
+                var entities = new List<GameInfo>();
                 do
                 {
-                    var queryResult = await table.ExecuteQuerySegmentedAsync(new TableQuery<ShogiHub.GameInfo>(), token);
+                    var queryResult = await table.ExecuteQuerySegmentedAsync(new TableQuery<GameInfo>(), token);
                     entities.AddRange(queryResult.Results);
                     token = queryResult.ContinuationToken;
-                } while (token != null);
+                } while (token is not null);
 
                 return entities;
             }
@@ -69,20 +70,20 @@ namespace ShogiServerless
 
             }
 
-            return new List<ShogiHub.GameInfo>();
+            return new List<GameInfo>();
         }
 
-        public async Task<ShogiHub.GameInfo?> FindGame(Guid gameId)
+        public async Task<GameInfo?> FindGame(Guid gameId)
         {
             try
             {
                 var table = _cloudTableClient.GetTableReference(RunningGameTableName);
 
-                var tableOp = TableOperation.Retrieve<ShogiHub.GameInfo>("", gameId.ToString());
+                var tableOp = TableOperation.Retrieve<GameInfo>("", gameId.ToString());
 
                 // Execute the operation.
                 var result = await table.ExecuteAsync(tableOp);
-                return result.Result as ShogiHub.GameInfo;
+                return result.Result as GameInfo;
             }
             catch (StorageException)
             {

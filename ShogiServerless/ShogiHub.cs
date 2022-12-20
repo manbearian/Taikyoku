@@ -76,7 +76,7 @@ namespace ShogiServerless
 
             public PlayerInfo? WhitePlayer { get; private set; } = null;
 
-            public bool IsOpen { get => BlackPlayer == null || WhitePlayer == null; }
+            public bool IsOpen { get => BlackPlayer is null || WhitePlayer is null; }
 
             public GameInfo(TaikyokuShogi game, string playerName, PlayerColor color)
             {
@@ -91,13 +91,13 @@ namespace ShogiServerless
 
             public (PlayerInfo oldPlayer, PlayerInfo newPlayer) AddPlayer(string name)
             {
-                if (BlackPlayer == null && WhitePlayer != null)
+                if (BlackPlayer is null && WhitePlayer is not null)
                 {
                     BlackPlayer = new PlayerInfo(name);
                     return (WhitePlayer, BlackPlayer);
                 }
                 
-                if (WhitePlayer == null && BlackPlayer != null)
+                if (WhitePlayer is null && BlackPlayer is not null)
                 {
                     WhitePlayer = new PlayerInfo(name);
                     return (BlackPlayer, WhitePlayer);
@@ -219,7 +219,7 @@ namespace ShogiServerless
                         _playerToConnection.Remove(oldGamePlayerPair);
                         _connectionToPlayer.Remove(connectionId);
                     }
-                    return oldGamePlayerPair == (Guid.Empty, Guid.Empty) ? null as (Guid, Guid)? : oldGamePlayerPair;
+                    return oldGamePlayerPair == (Guid.Empty, Guid.Empty) ? null : oldGamePlayerPair;
                 }
             }
 
@@ -249,7 +249,7 @@ namespace ShogiServerless
                     // map new values: Connection <=> (Game, Player)
                     _connectionToPlayer[connectionId] = (gameId, playerId);
                     _playerToConnection[(gameId, playerId)] = connectionId;
-                    return (oldConnection, oldGamePlayerPair == (Guid.Empty, Guid.Empty) ? null as (Guid, Guid)? : oldGamePlayerPair);
+                    return (oldConnection, oldGamePlayerPair == (Guid.Empty, Guid.Empty) ? null : oldGamePlayerPair);
                 }
             }
         }
@@ -260,7 +260,7 @@ namespace ShogiServerless
                 ?? throw new HubException($"failed to find game: {gameId}");
             var otherPlayerInfo = gameInfo.GetOtherPlayerInfo(playerId);
 
-            if (otherPlayerInfo != null &&
+            if (otherPlayerInfo is not null &&
                     TryGetConnection(gameId, otherPlayerInfo.PlayerId, out var otherConnection, logger))
             {
                 logger.LogInformation($"sending disconnect to '{otherConnection}' for '{gameId}'/'{otherPlayerInfo.PlayerId}'");
@@ -273,10 +273,10 @@ namespace ShogiServerless
             logger.LogInformation($"unmapping connection '{connectionId}'");
             var stalePair = _connectionMap.UnmapConnection(connectionId);
 
-            if (stalePair != null)
+            if (stalePair is not null)
             {
-                Guid gameId = stalePair.Value.GameId;
-                Guid playerId = stalePair.Value.PlayerId;
+                Guid gameId = (Guid)stalePair?.GameId!;
+                Guid playerId = (Guid)stalePair?.PlayerId!;
                 await SignalDisconnectToOpponent(gameId, playerId, logger);
             }
         }
@@ -287,7 +287,7 @@ namespace ShogiServerless
 
             var (oldConnection, oldGamePlayerPair) = _connectionMap.MapConnection(connectionId, gameId, playerId);
 
-            if (oldGamePlayerPair != null)
+            if (oldGamePlayerPair is not null)
             {
                 var oldGameId = (Guid)oldGamePlayerPair?.GameId!;
                 var oldPlayerId = (Guid)oldGamePlayerPair?.PlayerId!;
@@ -295,7 +295,7 @@ namespace ShogiServerless
                 await SignalDisconnectToOpponent(oldGameId, oldPlayerId, logger);
             }
 
-            if (oldConnection != null)
+            if (oldConnection is not null)
             {
                 logger.LogInformation($"'{gameId}'/'{playerId}' prevoiusly mapped to '{connectionId}'");
                 await SignalDisconnectToOpponent(gameId, playerId, logger);
@@ -392,7 +392,7 @@ namespace ShogiServerless
                     ContinueWith(t =>
                     {
                         var gameInfo = t.Result;
-                        if (gameInfo != null)
+                        if (gameInfo is not null)
                             gameList.Add(gameInfo.ToClientGameInfo());
                     }));
             }
@@ -450,7 +450,7 @@ namespace ShogiServerless
 
             await MapConnection(context.ConnectionId, gameId, playerId, logger);
 
-            if (otherPlayerInfo != null)
+            if (otherPlayerInfo is not null)
             {
                 logger.LogInformation($"other player for '{gameId}' is '{otherPlayerInfo.PlayerId}'");
                 if (TryGetConnection(gameId, otherPlayerInfo.PlayerId, out var otherConnection, logger))

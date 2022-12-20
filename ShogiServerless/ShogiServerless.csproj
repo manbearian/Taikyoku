@@ -2,7 +2,7 @@
   <PropertyGroup>
     <TargetFramework>net6.0</TargetFramework>
 	<AzureFunctionsVersion>v4</AzureFunctionsVersion>
-    <LangVersion>8.0</LangVersion>
+    <LangVersion>10.0</LangVersion>
     <Nullable>enable</Nullable>
     <AssemblyName>ShogiServerless</AssemblyName>
   </PropertyGroup>

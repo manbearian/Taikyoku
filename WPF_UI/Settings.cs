@@ -83,7 +83,7 @@ namespace WPF_UI.Properties
             {
                 string[] parts = valueAsString.Split(new char[] { ';' });
 
-                List<NetworkGameState> list = new List<NetworkGameState>();
+                List<NetworkGameState> list = new();
                 foreach (string part in parts)
                 {
                     // serialziation has a trailing ';'
@@ -118,18 +118,11 @@ namespace WPF_UI.Properties
 
     [TypeConverter(typeof(NetworkGameStateConverter))]
     [SettingsSerializeAs(SettingsSerializeAs.String)]
-    public sealed class NetworkGameState : IEquatable<NetworkGameState>
+    public sealed record class NetworkGameState : IEquatable<NetworkGameState>
     {
         public Guid GameId { get; } = Guid.Empty;
         public Guid PlayerId { get; } = Guid.Empty;
         public PlayerColor MyColor { get; }
-
-        public bool Equals(NetworkGameState? other) => (GameId, PlayerId, MyColor) == (other?.GameId, other?.PlayerId, other?.MyColor);
-        public override bool Equals(object? obj) => Equals(obj as NetworkGameState);
-        public override int GetHashCode() => (GameId, PlayerId, MyColor).GetHashCode();
-
-        public static bool operator ==(NetworkGameState lhs, NetworkGameState rhs) => lhs?.Equals(rhs) ?? lhs is null && rhs is null;
-        public static bool operator !=(NetworkGameState lhs, NetworkGameState rhs) => !(lhs == rhs);
 
         public NetworkGameState() => MyColor = PlayerColor.Black;
 

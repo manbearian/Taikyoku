@@ -196,11 +196,11 @@ namespace ShogiClient
     {
         public static PlayerColor UnassignedColor(this ClientGameInfo gameInfo)
         {
-            if (gameInfo.BlackName == null && gameInfo.WhiteName == null)
+            if (gameInfo.BlackName is null && gameInfo.WhiteName is null)
                 throw new Exception("bad state--no players");
-            if (gameInfo.BlackName == null)
+            if (gameInfo.BlackName is null)
                 return PlayerColor.Black;
-            if (gameInfo.WhiteName == null)
+            if (gameInfo.WhiteName is null)
                 return PlayerColor.White;
             throw new Exception("bad state--full game");
         }

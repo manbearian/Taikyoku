@@ -32,8 +32,7 @@ namespace ShogiComms
 
     public static class NetworkGameRequestListExtensions
     {
-        public static NetworkGameRequestList ToNetworkGameRequestList(this IEnumerable<NetworkGameRequest> list) =>
-            new NetworkGameRequestList(list);
+        public static NetworkGameRequestList ToNetworkGameRequestList(this IEnumerable<NetworkGameRequest> list) => new (list);
     }
 
     // Workaround for returning named tuples from Hub which was causing silent failure
