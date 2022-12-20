@@ -248,7 +248,7 @@ namespace WPF_UI
             {
                 get
                 {
-                    var gameName = "";
+                    string gameName;
                     if (GameInfo.IsOpen())
                         gameName = $"vs. {GameInfo.WaitingPlayerName()} ({GameInfo.UnassignedColor().Opponent()})";
                     else if (LocalInfo.MyColor == PlayerColor.Black)
