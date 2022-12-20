@@ -38,7 +38,7 @@ namespace EngineTest
                 {
                     var game = new TaikyokuShogi();
                     game.Debug_SetPiece(testPiece, startLoc);
-                    if (otherPieces != null)
+                    if (otherPieces is not null)
                     {
                         foreach (var kvp in otherPieces)
                         {
@@ -55,7 +55,7 @@ namespace EngineTest
                         Assert.Null(game.GetPiece(startLoc));
                         Assert.Equal(testPiece, game.GetPiece(newLoc));
 
-                        if (otherPieces != null)
+                        if (otherPieces is not null)
                         {
                             foreach (var kvp in otherPieces.Where(kvp => kvp.Key != newLoc))
                             {
@@ -69,7 +69,7 @@ namespace EngineTest
                         Assert.Equal(testPiece, game.GetPiece(startLoc));
                         Assert.Equal(capturePiece, game.GetPiece(newLoc));
 
-                        if (otherPieces != null)
+                        if (otherPieces is not null)
                         {
                             foreach (var kvp in otherPieces)
                             {
@@ -88,8 +88,10 @@ namespace EngineTest
             var testPiece = new Piece(PlayerColor.Black, PieceIdentity.Pawn);
 
             // validate can only move up one square
-            var validMoves = new HashSet<(int, int)>();
-            validMoves.Add(Movement.ComputeMove(startLoc, Movement.Up, 1).Value);
+            var validMoves = new HashSet<(int, int)>
+            {
+                Movement.ComputeMove(startLoc, Movement.Up, 1).Value
+            };
             ValidateMoves(testPiece, startLoc, validMoves);
 
             var upOne = Movement.ComputeMove(startLoc, Movement.Up, 1).Value;
@@ -118,7 +120,7 @@ namespace EngineTest
                 for (int i = 1; i < Movement.Unlimited; ++i)
                 {
                     var newLoc = Movement.ComputeMove(startLoc, direction, i);
-                    if (newLoc == null)
+                    if (newLoc is null)
                         break;
                     validMoves.Add(newLoc.Value);
                 }
@@ -138,7 +140,7 @@ namespace EngineTest
                 for (int j = 0; j <= i; ++j)
                 {
                     var newLoc = Movement.ComputeMove(startLoc, i, j + 1);
-                    if (newLoc == null)
+                    if (newLoc is null)
                         break;
                     validMoves.Add(newLoc.Value);
                 }
@@ -156,7 +158,7 @@ namespace EngineTest
                 for (int j = 0; j < i; ++j)
                 {
                     var newLoc = Movement.ComputeMove(startLoc, i, j + 1);
-                    if (newLoc == null)
+                    if (newLoc is null)
                         break;
                     validMoves.Add(newLoc.Value);
                 }

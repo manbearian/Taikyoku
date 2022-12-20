@@ -2436,7 +2436,7 @@ namespace ShogiEngine
 
         public static PromotionType CheckPromotion(Piece piece, (int X, int Y) startLoc, (int X, int Y) endLoc, bool _capture /* ignored in Taikyoku Shogi */)
         {
-            if (piece.Promote() == null)
+            if (piece.Promote() is null)
                 return PromotionType.None;
 
             return piece.Owner switch
@@ -2489,7 +2489,7 @@ namespace ShogiEngine
                 return null;
 
             var existingPiece = Game.GetPiece(targetLoc.Value);
-            if (existingPiece != null)
+            if (existingPiece is not null)
             {
                 if (existingPiece?.Owner != Piece.Owner || (targetLoc == StartLoc && (type == MoveType.Area || type == MoveType.Igui)))
                 {
@@ -2512,12 +2512,12 @@ namespace ShogiEngine
             for (int i = 1; i <= range; ++i)
             {
                 var move = Add(loc, direction, i, type, captureOnly);
-                if (move == null)
+                if (move is null)
                     break;
 
                 var existingPiece = Game.GetPiece(move.Value);
 
-                if (type == MoveType.Hook && existingPiece == null)
+                if (type == MoveType.Hook && existingPiece is null)
                 {
                     var (left, right) = Rotate90(direction);
                     AddRange(move.Value, left, Movement.Unlimited, MoveType.Standard);
@@ -2525,14 +2525,14 @@ namespace ShogiEngine
                 }
                 else if (type == MoveType.RangedCapture)
                 {
-                    if (existingPiece != null)
+                    if (existingPiece is not null)
                     {
                         captureOnly = true;
                         if (Piece.Rank > existingPiece.Rank)
                             break;
                     }
                 }
-                else if (type != MoveType.Jump && existingPiece != null)
+                else if (type != MoveType.Jump && existingPiece is not null)
                 {
                     break;
                 }
@@ -2563,7 +2563,7 @@ namespace ShogiEngine
             var legalMoves = new MoveGenerator(game, piece, loc);
             var movement = game.GetMovement(piece.Id);
 
-            if (midLoc != null)
+            if (midLoc is not null)
             {
                 // An area-move (double-capture) or Igui (capture-in-place)
 
@@ -2601,7 +2601,7 @@ namespace ShogiEngine
                 for (int i = 0; i < movement.JumpRange[direction].JumpDistances?.Length; ++i)
                 {
                     var jumpLoc = legalMoves.Add(loc, direction, movement.JumpRange[direction].JumpDistances[i] + 1, MoveType.Jump);
-                    if (jumpLoc != null && game.GetPiece(jumpLoc.Value) == null)
+                    if (jumpLoc is not null && game.GetPiece(jumpLoc.Value) is null)
                     {
                         legalMoves.AddRange(jumpLoc.Value, direction, movement.JumpRange[direction].RangeAfter, MoveType.Standard);
                     }

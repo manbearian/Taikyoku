@@ -38,7 +38,7 @@ namespace WPF_UI
         Connection? NetworkConnection = null;
         string? OpponentName = null;
 
-        private bool IsNetworkGame { get => NetworkConnection != null; }
+        private bool IsNetworkGame { get => NetworkConnection is not null; }
 
         private void ClearNetworkInfo() => (NetworkConnection, OpponentName) = (null, string.Empty);
 
@@ -101,7 +101,7 @@ namespace WPF_UI
                 var window = new ReconnectWindow(networkGameState.GameId, networkGameState.PlayerId, networkGameState.MyColor);
                 if (window.ShowDialog() == true)
                 {
-                    Contract.Assert(window.Game != null, "DialogReult true => Game != null");
+                    Contract.Assert(window.Game is not null, "DialogReult true => Game != null");
 
                     NetworkConnection = window.Connection;
                     OpponentName = window.Opponent ?? string.Empty;
@@ -123,8 +123,8 @@ namespace WPF_UI
         {
             if (IsNetworkGame)
             {
-                Contract.Assert(NetworkConnection != null);
-                Contract.Assert(OpponentName != null);
+                Contract.Assert(NetworkConnection is not null);
+                Contract.Assert(OpponentName is not null);
                 Contract.Assert(NetworkConnection.GameId != Guid.Empty);
                 Contract.Assert(NetworkConnection.PlayerId != Guid.Empty);
 
@@ -176,7 +176,7 @@ namespace WPF_UI
             corners.ForEach(corner => { corner.Fill = fillColor; });
             borders.ForEach(border => { border.FillColor = fillColor; border.TextColor = textColor; border.InvalidateVisual(); });
 
-            playMenu.IsEnabled = player != null;
+            playMenu.IsEnabled = player is not null;
 
             if (IsNetworkGame)
             {
@@ -191,7 +191,7 @@ namespace WPF_UI
 
         private void SaveGame(string path)
         {
-            if (Game == null)
+            if (Game is null)
                 return;
 
             using var stream = File.Open(path, FileMode.Create, FileAccess.Write, FileShare.None);
@@ -221,7 +221,7 @@ namespace WPF_UI
         {
             if (IsNetworkGame)
             {
-                StatusBarTextBlock2.Text = (eventArgs.Winner == null) ?
+                StatusBarTextBlock2.Text = (eventArgs.Winner is null) ?
                     "Draw!" : ((eventArgs.Winner == NetworkConnection?.Color) ? "You win!" : "You lost");
             }
             else
@@ -247,12 +247,12 @@ namespace WPF_UI
             _pieceInfoWindow?.Close();
 
             // save the game on exit
-            if (Game != null)
+            if (Game is not null)
             {
                 NetworkGameState? networkInfo = null;
                 if (IsNetworkGame)
                 {
-                    Contract.Assert(NetworkConnection != null);
+                    Contract.Assert(NetworkConnection is not null);
                     networkInfo = new NetworkGameState(NetworkConnection.GameId, NetworkConnection.PlayerId, NetworkConnection.Color);
                 }
                 GameSaver.RecordGameState(Game, networkInfo);
@@ -266,7 +266,7 @@ namespace WPF_UI
                 var window = new NewGameWindow();
                 if (window.ShowDialog() == true)
                 {
-                    Contract.Assert(window.Game != null, "DialogResult == true => Game != null");
+                    Contract.Assert(window.Game is not null, "DialogResult == true => Game != null");
 
                     (NetworkConnection, OpponentName) = window.NetworkGame ?
                         (window.Connection, window.OpponentName)
@@ -317,7 +317,7 @@ namespace WPF_UI
 
                 if (window.ShowDialog() == true)
                 {
-                    Contract.Assert(window.Game != null, "DialogResult == true => Game != null");
+                    Contract.Assert(window.Game is not null, "DialogResult == true => Game != null");
 
                     NetworkConnection = window.Connection;
                     OpponentName = window.OpponentName;
@@ -335,7 +335,7 @@ namespace WPF_UI
                 var window = new ConnectionWindow();
                 if (window.ShowDialog() == true)
                 {
-                    Contract.Assert(window.Game != null, "DialogResult == true => Game != null");
+                    Contract.Assert(window.Game is not null, "DialogResult == true => Game != null");
 
                     NetworkConnection = window.Connection;
                     OpponentName = window.OpponentName;
@@ -347,7 +347,7 @@ namespace WPF_UI
                 var window = new NewGameWindow() { Game = Game };
                 if (window.ShowDialog() == true)
                 {
-                    Contract.Assert(window.Game != null, "DialogResult == true => Game != null");
+                    Contract.Assert(window.Game is not null, "DialogResult == true => Game != null");
 
                     NetworkConnection = window.Connection;
                     OpponentName = window.OpponentName;
@@ -363,7 +363,7 @@ namespace WPF_UI
                 Game?.Resign(NetworkConnection?.Color ?? Game.CurrentPlayer ?? throw new NotSupportedException());
                 if (IsNetworkGame)
                 {
-                    Contract.Assert(NetworkConnection != null);
+                    Contract.Assert(NetworkConnection is not null);
                     await NetworkConnection.RequestResign();
                 }
                 gameBoard.InvalidateVisual();
@@ -426,7 +426,7 @@ namespace WPF_UI
 
         void ShowPieceInfo(object sender, MouseEventArgs e)
         {
-            if (Game == null)
+            if (Game is null)
                 return;
 
             if (e.Source is MenuItem)
@@ -434,7 +434,7 @@ namespace WPF_UI
 
             var loc = gameBoard.GetBoardLoc(e.GetPosition(gameBoard));
 
-            if (loc == null)
+            if (loc is null)
             {
                 _pieceInfoWindow?.Hide();
                 return;
@@ -442,7 +442,7 @@ namespace WPF_UI
 
             var piece = Game.GetPiece(loc.Value);
 
-            if (piece == null)
+            if (piece is null)
             {
                 _pieceInfoWindow?.Hide();
                 return;

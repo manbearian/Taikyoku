@@ -139,7 +139,7 @@ namespace WPF_UI
 
         private void Window_SourceInitialized(object sender, EventArgs e)
         {
-            if (Game != null)
+            if (Game is not null)
             {
                 // if the window creator has set "Game" then we're connecting an existing game rather than creating a new one
                 SetUIForConnectExistingGame();

@@ -259,7 +259,7 @@ namespace ShogiEngine
                     for (int j = 0; j < pieces.Length; ++j)
                     {
                         var piece = PieceMap[pieces[j]];
-                        if (piece != null)
+                        if (piece is not null)
                             board[col(j), row(i)] = new Piece(player, piece.Value);
                     }
                 }

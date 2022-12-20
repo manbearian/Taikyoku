@@ -46,7 +46,7 @@ namespace WPF_UI
             get => _addingPiece;
             set
             {
-                Cursor = value == null ? Cursors.Arrow : Cursors.Cross;
+                Cursor = value is null ? Cursors.Arrow : Cursors.Cross;
                 _addingPiece = value;
                 _removingPiece = false;
             }
@@ -81,7 +81,7 @@ namespace WPF_UI
 
             Dispatcher.Invoke(() =>
             {
-                IsEnabled = Game.CurrentPlayer != null && (networkConnection == null || Game.CurrentPlayer == networkConnection.Color);
+                IsEnabled = Game.CurrentPlayer is not null && (networkConnection is null || Game.CurrentPlayer == networkConnection.Color);
                 IsRotated = networkConnection?.Color == PlayerColor.White;
                 InvalidateVisual();
             });
@@ -89,7 +89,7 @@ namespace WPF_UI
             OnPlayerChange?.Invoke(this, new PlayerChangeEventArgs(null, Game.CurrentPlayer));
 
             // check if we loaded up a game that has ended
-            if (Game.Ending != null)
+            if (Game.Ending is not null)
             {
                 OnGameEnd?.Invoke(this, new GameEndEventArgs(Game.Ending.Value, Game.Winner));
             }
@@ -97,7 +97,7 @@ namespace WPF_UI
 
         public void ClearBoard()
         {
-            if (Game == null)
+            if (Game is null)
                 return;
 
             for (int i = 0; i < TaikyokuShogi.BoardHeight; ++i)
@@ -124,10 +124,10 @@ namespace WPF_UI
                 (BoardWidth - 1 - (int)(p.X / SpaceWidth), BoardHeight - 1 - (int)(p.Y / SpaceHeight))
                     : ((int)(p.X / SpaceWidth), (int)(p.Y / SpaceHeight));
 
-            return (x < 0 || x >= BoardWidth || y < 0 || y >= BoardHeight) ? null as (int, int)? : (x, y);
+            return (x < 0 || x >= BoardWidth || y < 0 || y >= BoardHeight) ? null : (x, y);
         }
 
-        public Rect BoardLocToRect((int X, int Y) loc) => new Rect(loc.X * SpaceWidth, loc.Y * SpaceHeight, SpaceWidth, SpaceHeight);
+        public Rect BoardLocToRect((int X, int Y) loc) => new (loc.X * SpaceWidth, loc.Y * SpaceHeight, SpaceWidth, SpaceHeight);
 
         private void RightClickHandler(object sender, MouseButtonEventArgs e)
         {
@@ -140,19 +140,19 @@ namespace WPF_UI
 
         private void LeftClickHandler(object sender, MouseButtonEventArgs e)
         {
-            if (Game == null)
+            if (Game is null)
                 return;
 
             var loc = GetBoardLoc(e.GetPosition(this));
 
-            if (loc == null)
+            if (loc is null)
                 return;
 
             var clickedPiece = Game.GetPiece(loc.Value);
 
-            if (AddingPiece != null)
+            if (AddingPiece is not null)
             {
-                if (clickedPiece == null)
+                if (clickedPiece is null)
                 {
                     Game.Debug_SetPiece(AddingPiece, loc.Value);
                 }
@@ -161,7 +161,7 @@ namespace WPF_UI
             }
             else if (RemovingPiece)
             {
-                if (clickedPiece != null)
+                if (clickedPiece is not null)
                 {
                     Game.Debug_SetPiece(null, loc.Value);
                 }
@@ -174,9 +174,9 @@ namespace WPF_UI
 
                 RemovingPiece = false;
             }
-            else if (Selected == null)
+            else if (Selected is null)
             {
-                Selected = clickedPiece != null ? loc : null;
+                Selected = clickedPiece is not null ? loc : null;
                 Selected2 = null;
             }
             else
@@ -185,7 +185,7 @@ namespace WPF_UI
 
                 if (selectedPiece.Owner == Game.CurrentPlayer)
                 {
-                    if (Selected2 == null
+                    if (Selected2 is null
                         && Game.GetLegalMoves(selectedPiece, Selected.Value).Where(move => move.Loc == loc.Value).Any(move => move.Type == MoveType.Igui || move.Type == MoveType.Area))
                     {
                         Selected2 = loc;
@@ -211,14 +211,14 @@ namespace WPF_UI
                         }
                         else
                         {
-                            Selected = clickedPiece != null ? loc : null;
+                            Selected = clickedPiece is not null ? loc : null;
                             Selected2 = null;
                         }
                     }
                 }
                 else
                 {
-                    Selected = clickedPiece != null ? loc : null;
+                    Selected = clickedPiece is not null ? loc : null;
                     Selected2 = null;
                 }
             }
@@ -228,7 +228,7 @@ namespace WPF_UI
 
             void MakeMove((int X, int Y) startLoc, (int X, int Y) endLoc, (int X, int Y)? midLoc = null, bool promote = false)
             {
-                if (_networkConnection != null)
+                if (_networkConnection is not null)
                 {
                     Task.Run(() => _networkConnection.RequestMove(startLoc, endLoc, midLoc, promote));
                     IsEnabled = false;
@@ -239,7 +239,7 @@ namespace WPF_UI
 
                 Game.MakeMove(startLoc, endLoc, midLoc, promote);
  
-                if (Game.Ending != null)
+                if (Game.Ending is not null)
                 {
                     IsEnabled = false;
 
@@ -259,7 +259,7 @@ namespace WPF_UI
             if (ActualWidth == 0 || ActualHeight == 0)
                 return;
 
-            if (Game != null)
+            if (Game is not null)
             {
                 dc.PushTransform(new RotateTransform(_isRotated ? 180 : 0, ActualWidth / 2, ActualHeight / 2));
 
@@ -329,7 +329,7 @@ namespace WPF_UI
                     {
                         var piece = Game.GetPiece((i, j));
 
-                        if (piece != null)
+                        if (piece is not null)
                         {
                             DrawPiece(dc, pieceGeometry, (i, j), piece);
                         }
@@ -375,7 +375,7 @@ namespace WPF_UI
                     return rect;
                 }
 
-                if (Selected != null)
+                if (Selected is not null)
                 {
                     var loc = Selected.Value;
                     var selectedPiece = Game.GetKnownPiece(loc);
@@ -386,12 +386,12 @@ namespace WPF_UI
                     foreach (var move in moves)
                     {
                         var outlineBrush = Brushes.Transparent;
-                        if (Game.GetPiece(move.Loc) != null)
+                        if (Game.GetPiece(move.Loc) is not null)
                             outlineBrush = selectedPiece.Owner == Game.CurrentPlayer ? Brushes.Blue : Brushes.Red;
                         dc.DrawRectangle(selectedPiece.Owner == Game.CurrentPlayer ? Brushes.LightBlue : Brushes.Pink, new Pen(outlineBrush, 1.0), GetRect(move.Loc));
                     }
 
-                    if (Selected2 != null)
+                    if (Selected2 is not null)
                     {
                         var secondMoves = Game.GetLegalMoves(selectedPiece, loc, Selected2.Value);
 

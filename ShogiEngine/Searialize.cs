@@ -333,13 +333,13 @@ namespace ShogiEngine
 
         public static void Write_Internal(this Utf8JsonWriter writer, string? name, PieceIdentity? piece)
         {
-            if (piece == null)
+            if (piece is null)
             {
                 writer.WriteNull_Internal(name);
                 return;
             }
 
-            if (name == null)
+            if (name is null)
                 writer.WriteStringValue(piece.Value.ToString());
             else
                 writer.WriteString(name, piece.Value.ToString());
@@ -347,13 +347,13 @@ namespace ShogiEngine
 
         private static void Write_Internal(this Utf8JsonWriter writer, string? name, Piece? piece)
         {
-            if (piece == null)
+            if (piece is null)
             {
                 writer.WriteNull_Internal(name);
                 return;
             }
 
-            if (name == null)
+            if (name is null)
                 writer.WriteStartArray();
             else
                 writer.WriteStartArray(name);
@@ -368,13 +368,13 @@ namespace ShogiEngine
 
         private static void Write_Internal(this Utf8JsonWriter writer, string? name, (int X, int Y)? loc)
         {
-            if (loc == null)
+            if (loc is null)
             {
                 writer.WriteNull_Internal(name);
                 return;
             }
 
-            if (name == null)
+            if (name is null)
                 writer.WriteStartArray();
             else
                 writer.WriteStartArray(name);
@@ -387,7 +387,7 @@ namespace ShogiEngine
 
         public static void Write_Internal(this Utf8JsonWriter writer, string? name, IEnumerable<MoveRecorder.MoveDescription> moves)
         {
-            if (name == null)
+            if (name is null)
                 writer.WriteStartArray();
             else
                 writer.WriteStartArray(name);
@@ -423,7 +423,7 @@ namespace ShogiEngine
 
         private static void WriteNull_Internal(this Utf8JsonWriter writer, string? name)
         {
-            if (name == null)
+            if (name is null)
                 writer.WriteNullValue();
             else
                 writer.WriteNull(name);

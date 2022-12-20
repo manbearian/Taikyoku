@@ -660,7 +660,7 @@ namespace ShogiEngine
         public Piece? Promote()
         {
             var promotesTo = Id.PromotesTo();
-            if (promotesTo != null)
+            if (promotesTo is not null)
                 return new Piece(Owner, promotesTo.Value, true);
             return null;
         }

@@ -27,7 +27,7 @@ namespace WPF_UI
 
         public IEnumerable<(Guid GameId, Guid PlayerId)> DeadGames { get; private set; } = Enumerable.Empty<(Guid GameId, Guid PlayerId)>();
 
-        private bool IsShowingKnownGames { get => KnownGames != null; }
+        private bool IsShowingKnownGames { get => KnownGames is not null; }
 
         public ConnectionWindow()
         {
@@ -132,7 +132,7 @@ namespace WPF_UI
         {
             var selectedItem = GamesList.SelectedItem;
 
-            if (selectedItem == null)
+            if (selectedItem is null)
                 return;
 
             SetUIForWaitForConnection();

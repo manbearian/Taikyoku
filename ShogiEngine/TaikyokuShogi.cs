@@ -85,11 +85,11 @@ namespace ShogiEngine
                 case GameEndType.Checkmate:
                 case GameEndType.IllegalMove:
                 case GameEndType.Resignation:
-                    if (winner == null)
+                    if (winner is null)
                         throw new ArgumentException("Invalid Game Ending", nameof(ending));
                     break;
                 case null:
-                    if (winner != null)
+                    if (winner is not null)
                         throw new ArgumentException("Invalid Game Ending", nameof(winner));
                     break;
                 default:
@@ -156,7 +156,7 @@ namespace ShogiEngine
             var piece = GetPiece(startLoc);
 
             // nonsensicial moves are invalid
-            if (CurrentPlayer == null || piece == null)
+            if (CurrentPlayer is null || piece is null)
                 throw new InvalidOperationException("invalid move requested");
 
             // moving your oppontents piece is illegal
@@ -176,7 +176,7 @@ namespace ShogiEngine
 
             var capturedPieces = new List<(int X, int Y)>();
 
-            if (midLoc != null)
+            if (midLoc is not null)
             {
                 if (!moves.Any(move => move.Type == MoveType.Area || move.Type == MoveType.Igui))
                 {
@@ -185,7 +185,7 @@ namespace ShogiEngine
                 }
 
                 // capture any piece that got run over by the area-move
-                if (_boardState[midLoc.Value.X, midLoc.Value.Y] != null)
+                if (_boardState[midLoc.Value.X, midLoc.Value.Y] is not null)
                 {
                     capturedPieces.Add(midLoc.Value);
                 }
@@ -209,14 +209,14 @@ namespace ShogiEngine
                 {
                     int x = startLoc.X + xMultiplier * i;
                     int y = startLoc.Y + yMultiplier * i;
-                    if (_boardState[x, y] != null)
+                    if (_boardState[x, y] is not null)
                     {
                         capturedPieces.Add((x, y));
                     }
                 }
             }
 
-            if (_boardState[endLoc.X, endLoc.Y] != null)
+            if (_boardState[endLoc.X, endLoc.Y] is not null)
             {
                 capturedPieces.Add(endLoc);
             }
@@ -265,7 +265,7 @@ namespace ShogiEngine
 
                 foreach (var p in _boardState)
                 {
-                    if (p != null && p.Owner == CurrentPlayer?.Opponent() && IsRoyalty(p.Id))
+                    if (p is not null && p.Owner == CurrentPlayer?.Opponent() && IsRoyalty(p.Id))
                     {
                         return false;
                     }
@@ -282,7 +282,7 @@ namespace ShogiEngine
             var piece = GetKnownPiece(moveRecord.EndLoc);
 
             // unpromote
-            if (moveRecord.PromotedFrom != null)
+            if (moveRecord.PromotedFrom is not null)
                 piece = new Piece(piece.Owner, moveRecord.PromotedFrom.Value, false);
 
             // move back to start

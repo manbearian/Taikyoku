@@ -128,7 +128,7 @@ namespace WPF_UI
             for (int direction = 0; direction < moves.JumpRange.Length; ++direction)
             {
                 var jumpInfo = moves.JumpRange[direction];
-                if (jumpInfo.JumpDistances == null)
+                if (jumpInfo.JumpDistances is null)
                     continue;
 
                 if (jumpInfo.JumpDistances.FirstOrDefault() == Movement.Unlimited)
