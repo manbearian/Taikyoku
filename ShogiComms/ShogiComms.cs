@@ -37,7 +37,7 @@ namespace ShogiComms
     }
 
     // Workaround for returning named tuples from Hub which was causing silent failure
-    public class GamePlayerPair
+    public record class GamePlayerPair
     {
         public Guid GameId { get; set; } = Guid.Empty;
 
@@ -48,7 +48,7 @@ namespace ShogiComms
         public GamePlayerPair(Guid gameId, Guid playerId) => (GameId, PlayerId) = (gameId, playerId);
     }
 
-    public class ClientGameInfo
+    public record class ClientGameInfo
     {
         public Guid GameId { get; set; }
 
@@ -62,7 +62,7 @@ namespace ShogiComms
 
         public GameStatus Status { get; set; }
 
-        public bool IsOpen() => BlackName == null || WhiteName == null;
+        public bool IsOpen() => BlackName is null || WhiteName is null;
     }
 
     public class Location
@@ -78,13 +78,12 @@ namespace ShogiComms
 
         public static Location Invalid { get; } = new Location() { X = -1, Y = -1 };
 
-        public static explicit operator Location((int X, int Y) loc) => new Location() {X = loc.X, Y = loc.Y };
+        public static explicit operator Location((int X, int Y) loc) => new() { X = loc.X, Y = loc.Y };
 
         public static explicit operator Location((int X, int Y)? loc) => loc is null ? Invalid : (Location)loc.Value;
 
         public static explicit operator (int X, int Y)(Location loc) => (loc.X, loc.Y);
 
-        public static explicit operator (int X, int Y)?(Location loc) => 
-            !loc.isValid() ? null as (int, int)? : (loc.X, loc.Y);
+        public static explicit operator (int X, int Y)?(Location loc) => !loc.isValid() ? null : (loc.X, loc.Y);
     }
 }

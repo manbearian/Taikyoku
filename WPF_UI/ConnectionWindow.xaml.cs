@@ -97,7 +97,7 @@ namespace WPF_UI
 
             if (gameList.Any())
             {
-                var orderedList = gameList.OrderByDescending(elem => elem.LastPlayed).ThenByDescending(elem => elem.Created);
+                var orderedList = gameList.Distinct().OrderByDescending(elem => elem.LastPlayed).ThenByDescending(elem => elem.Created);
 
                 foreach (var game in orderedList)
                 {
