@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+
 using Xunit;
+using Xunit.Abstractions;
 
 using ShogiEngine;
 
@@ -9,11 +11,14 @@ namespace EngineTest
 {
     public class MoveValidation
     {
+        private readonly ITestOutputHelper output;
+        public MoveValidation(ITestOutputHelper output) => this.output = output;
 
         [Fact]
         public void NoPiece()
         {
-            var game = new TaikyokuShogi(); // empty board
+            var game = new TaikyokuShogi();
+            game.Debug_RemoveAllPieces(); // empty board
             var loc = (17, 17);
             Assert.Null(game.GetPiece(loc));
             Assert.Throws<InvalidOperationException>(() => game.MakeMove(loc, Movement.ComputeMove(loc, Movement.Up, 1).Value));
@@ -23,6 +28,7 @@ namespace EngineTest
         public void OtherPlayersPiece()
         {
             var game = new TaikyokuShogi();
+            game.Debug_RemoveAllPieces();
             var testPiece = new Piece(PlayerColor.White, PieceIdentity.Queen);
             var startLoc = (17, 17);
             game.Debug_SetPiece(testPiece, startLoc);
@@ -37,6 +43,7 @@ namespace EngineTest
                 for (int y = 0; y < TaikyokuShogi.BoardHeight; ++y)
                 {
                     var game = new TaikyokuShogi();
+                    game.Debug_RemoveAllPieces();
                     game.Debug_SetPiece(testPiece, startLoc);
                     if (otherPieces is not null)
                     {
@@ -52,6 +59,9 @@ namespace EngineTest
                     if (validMoves.Contains(newLoc))
                     {
                         game.MakeMove(startLoc, newLoc);
+                        if (game.Ending is not null)
+                            output.WriteLine($"failed to validate move {startLoc}->{newLoc}");
+                        Assert.Null(game.Ending);
                         Assert.Null(game.GetPiece(startLoc));
                         Assert.Equal(testPiece, game.GetPiece(newLoc));
 
@@ -65,7 +75,10 @@ namespace EngineTest
                     }
                     else
                     {
-                        Assert.Throws<InvalidOperationException>(() => game.MakeMove(startLoc, newLoc));
+                        game.MakeMove(startLoc, newLoc);
+                        if (game.Ending is null)
+                            output.WriteLine($"failed to validate *illegal* move {startLoc}->{newLoc}");
+                        Assert.Equal(GameEndType.IllegalMove, game.Ending);
                         Assert.Equal(testPiece, game.GetPiece(startLoc));
                         Assert.Equal(capturePiece, game.GetPiece(newLoc));
 
@@ -98,11 +111,11 @@ namespace EngineTest
 
             // capture opponent piece
             ValidateMoves(testPiece, startLoc, validMoves,
-                new Dictionary<(int, int), Piece>() { { upOne, new Piece(PlayerColor.White, PieceIdentity.King) } });
+                new Dictionary<(int, int), Piece>() { { upOne, new Piece(PlayerColor.White, PieceIdentity.AncientDragon) } });
 
             // cannot capture your own piece
             ValidateMoves(testPiece, startLoc, new HashSet<(int, int)>(),
-                new Dictionary<(int, int), Piece>() { { upOne, new Piece(PlayerColor.Black, PieceIdentity.King) } });
+                new Dictionary<(int, int), Piece>() { { upOne, new Piece(PlayerColor.Black, PieceIdentity.BearSoldier) } });
         }
 
         [Fact]

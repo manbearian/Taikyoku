@@ -100,13 +100,7 @@ namespace WPF_UI
             if (Game is null)
                 return;
 
-            for (int i = 0; i < TaikyokuShogi.BoardHeight; ++i)
-            {
-                for (int j = 0; j < TaikyokuShogi.BoardHeight; ++j)
-                {
-                    Game.Debug_SetPiece(null, (i, j));
-                }
-            }
+            Game.Debug_RemoveAllPieces();
 
             Selected = null;
             Selected2 = null;

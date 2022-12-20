@@ -159,12 +159,9 @@ namespace ShogiEngine
             if (CurrentPlayer is null || piece is null)
                 throw new InvalidOperationException("invalid move requested");
 
-            // moving your oppontents piece is illegal
+            // moving your oppontents piece is invalid
             if (piece.Owner != CurrentPlayer)
-            {
-                IllegalMove();
-                return;
-            }
+                throw new InvalidOperationException("cannot move opponents piece");
 
             var moves = this.GetLegalMoves(piece, startLoc, midLoc).Where(move => move.Loc == endLoc);
 
@@ -277,6 +274,9 @@ namespace ShogiEngine
 
         public void UndoLastMove()
         {
+            if (Ending is not null)
+                throw new InvalidOperationException("cannot undo from completed game!");
+
             var moveRecord = _moveRecorder.PopMove();
 
             var piece = GetKnownPiece(moveRecord.EndLoc);
@@ -302,6 +302,17 @@ namespace ShogiEngine
                 return;
 
             _boardState[loc.X, loc.Y] = piece;
+        }
+
+        public void Debug_RemoveAllPieces()
+        {
+            for (int i = 0; i < BoardHeight; ++i)
+            {
+                for (int j = 0; j < BoardHeight; ++j)
+                {
+                    _boardState[i, j] = null;
+                }
+            }
         }
 
         // Public "debug" API: Set let the next player take a turn
