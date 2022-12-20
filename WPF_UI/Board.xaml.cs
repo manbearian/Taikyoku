@@ -79,10 +79,12 @@ namespace WPF_UI
             Selected = null;
             Selected2 = null;
 
-            IsEnabled = Game.CurrentPlayer != null && (networkConnection == null || Game.CurrentPlayer == networkConnection.Color);
-            IsRotated = networkConnection?.Color == PlayerColor.White;
-
-            InvalidateVisual();
+            Dispatcher.Invoke(() =>
+            {
+                IsEnabled = Game.CurrentPlayer != null && (networkConnection == null || Game.CurrentPlayer == networkConnection.Color);
+                IsRotated = networkConnection?.Color == PlayerColor.White;
+                InvalidateVisual();
+            });
 
             OnPlayerChange?.Invoke(this, new PlayerChangeEventArgs(null, Game.CurrentPlayer));
 
