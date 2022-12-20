@@ -36,21 +36,11 @@ namespace WPF_UI
         TaikyokuShogi? _game = null;
         PieceInfoWindow? _pieceInfoWindow = null;
         Connection? NetworkConnection = null;
-        PlayerColor? LocalPlayer = null;
         string? OpponentName = null;
-        Guid GameId = Guid.Empty;
-        Guid PlayerId = Guid.Empty;
 
-        private bool IsNetworkGame { get => GameId != Guid.Empty; }
+        private bool IsNetworkGame { get => NetworkConnection != null; }
 
-        private void ClearNetworkInfo()
-        {
-            NetworkConnection = null;
-            LocalPlayer = null;
-            OpponentName = null;
-            GameId = Guid.Empty;
-            PlayerId = Guid.Empty;
-        }
+        private void ClearNetworkInfo() => (NetworkConnection, OpponentName) = (null, string.Empty);
 
         private TaikyokuShogi? Game { get => _game; }
 
@@ -114,10 +104,7 @@ namespace WPF_UI
                     Contract.Assert(window.Game != null, "DialogReult true => Game != null");
 
                     NetworkConnection = window.Connection;
-                    LocalPlayer = window.LocalPlayer;
-                    OpponentName = window.Opponent;
-                    GameId = window.GameId;
-                    PlayerId = window.PlayerId;
+                    OpponentName = window.Opponent ?? string.Empty;
 
                     savedGame = window.Game;
                 }
@@ -137,12 +124,11 @@ namespace WPF_UI
             if (IsNetworkGame)
             {
                 Contract.Assert(NetworkConnection != null);
-                Contract.Assert(LocalPlayer != null);
                 Contract.Assert(OpponentName != null);
-                Contract.Assert(GameId != Guid.Empty);
-                Contract.Assert(PlayerId != Guid.Empty);
+                Contract.Assert(NetworkConnection.GameId != Guid.Empty);
+                Contract.Assert(NetworkConnection.PlayerId != Guid.Empty);
 
-                GameSaver.RecordNetworkGame(GameId, PlayerId, LocalPlayer ?? throw new NullReferenceException());
+                GameSaver.RecordNetworkGame(NetworkConnection.GameId, NetworkConnection.PlayerId, NetworkConnection.Color);
                  
                 // todo: there's a race condition here as the other player could make a move and even disconnect before we set this event handler
                 //       perhaps we should poll the state after setting this up.
@@ -173,7 +159,7 @@ namespace WPF_UI
         private void ChangeGame(TaikyokuShogi game)
         {
             _game = game;
-            gameBoard.SetGame(_game, NetworkConnection, LocalPlayer);
+            gameBoard.SetGame(_game, NetworkConnection);
             InvalidateVisual();
         }
 
@@ -194,11 +180,9 @@ namespace WPF_UI
 
             if (IsNetworkGame)
             {
-                Contract.Assert(LocalPlayer != null);
-
-                if (LocalPlayer == player)
+                if (NetworkConnection?.Color == player)
                     StatusBarTextBlock2.Text = "Your move!";
-                else if (LocalPlayer == player?.Opponent())
+                else if (NetworkConnection?.Color == player?.Opponent())
                     StatusBarTextBlock2.Text = "Waiting on opponent...";
             }
 
@@ -238,7 +222,7 @@ namespace WPF_UI
             if (IsNetworkGame)
             {
                 StatusBarTextBlock2.Text = (eventArgs.Winner == null) ?
-                    "Draw!" : ((eventArgs.Winner == LocalPlayer) ? "You win!" : "You lost");
+                    "Draw!" : ((eventArgs.Winner == NetworkConnection?.Color) ? "You win!" : "You lost");
             }
             else
             {
@@ -265,7 +249,13 @@ namespace WPF_UI
             // save the game on exit
             if (Game != null)
             {
-                GameSaver.RecordGameState(Game, IsNetworkGame ? new NetworkGameState(GameId, PlayerId, LocalPlayer ?? throw new Exception()) : null);
+                NetworkGameState? networkInfo = null;
+                if (IsNetworkGame)
+                {
+                    Contract.Assert(NetworkConnection != null);
+                    networkInfo = new NetworkGameState(NetworkConnection.GameId, NetworkConnection.PlayerId, NetworkConnection.Color);
+                }
+                GameSaver.RecordGameState(Game, networkInfo);
             }
         }
 
@@ -278,9 +268,9 @@ namespace WPF_UI
                 {
                     Contract.Assert(window.Game != null, "DialogResult == true => Game != null");
 
-                    (NetworkConnection, LocalPlayer, GameId, PlayerId, OpponentName) = window.NetworkGame ?
-                        (window.Connection, window.LocalPlayer, window.GameId, window.PlayerId, window.OpponentName)
-                        : (null, null, Guid.Empty, Guid.Empty, null);
+                    (NetworkConnection, OpponentName) = window.NetworkGame ?
+                        (window.Connection, window.OpponentName)
+                        : (null, string.Empty);
 
                     StartGame(window.Game);
                 }
@@ -330,10 +320,7 @@ namespace WPF_UI
                     Contract.Assert(window.Game != null, "DialogResult == true => Game != null");
 
                     NetworkConnection = window.Connection;
-                    LocalPlayer = window.LocalPlayer;
                     OpponentName = window.OpponentName;
-                    GameId = window.GameId;
-                    PlayerId = window.PlayerId;
                     StartGame(window.Game);
                 }
 
@@ -351,10 +338,7 @@ namespace WPF_UI
                     Contract.Assert(window.Game != null, "DialogResult == true => Game != null");
 
                     NetworkConnection = window.Connection;
-                    LocalPlayer = window.LocalPlayer;
                     OpponentName = window.OpponentName;
-                    GameId = window.GameId;
-                    PlayerId = window.PlayerId;
                     StartGame(window.Game);
                 }
             }
@@ -366,10 +350,7 @@ namespace WPF_UI
                     Contract.Assert(window.Game != null, "DialogResult == true => Game != null");
 
                     NetworkConnection = window.Connection;
-                    LocalPlayer = window.LocalPlayer;
                     OpponentName = window.OpponentName;
-                    GameId = window.GameId;
-                    PlayerId = window.PlayerId;
                     StartGame(window.Game);
                 }
             }
@@ -379,7 +360,7 @@ namespace WPF_UI
             }
             else if (e.Source == resignMenuItem)
             {
-                Game?.Resign(LocalPlayer ?? Game.CurrentPlayer ?? throw new NotSupportedException());
+                Game?.Resign(NetworkConnection?.Color ?? Game.CurrentPlayer ?? throw new NotSupportedException());
                 if (IsNetworkGame)
                 {
                     Contract.Assert(NetworkConnection != null);
@@ -423,9 +404,7 @@ namespace WPF_UI
 
         void OnReceiveUpdate(object sender, ReceiveGameUpdateEventArgs e)
         {
-            // if we've disconnected our game ignore the update
-            if (e.GameId != GameId)
-                return;
+            Contract.Assert(e.GameId == NetworkConnection?.GameId);
 
             // update our saved games
             ChangeGame(e.Game);
@@ -433,18 +412,14 @@ namespace WPF_UI
 
         void OnReceiveGameDisconnect(object sender, ReceiveGameConnectionEventArgs e)
         {
-            // if we've disconnected our game ignore the update
-            if (e.GameId != GameId)
-                return;
+            Contract.Assert(e.GameId == NetworkConnection?.GameId);
 
             Dispatcher.Invoke(() => StatusBarTextBlock1.Text = $"vs. {OpponentName} (opponent disconnected)");
         }
 
         void OnReceiveGameReconnect(object sender, ReceiveGameConnectionEventArgs e)
         {
-            // if we've disconnected our game ignore the update
-            if (e.GameId != GameId)
-                return;
+            Contract.Assert(e.GameId == NetworkConnection?.GameId);
 
             Dispatcher.Invoke(() => StatusBarTextBlock1.Text = $"vs. {OpponentName}");
         }

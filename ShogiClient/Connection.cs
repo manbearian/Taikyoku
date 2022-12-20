@@ -57,6 +57,12 @@ namespace ShogiClient
     {
         private readonly HubConnection _connection;
 
+        public Guid GameId { get; private set; }
+
+        public Guid PlayerId { get; private set; }
+
+        public PlayerColor Color { get; private set; }
+
         public delegate void ReceiveGameListHandler(object sender, ReceiveGameListEventArgs e);
         public event ReceiveGameListHandler? OnReceiveGameList;
 
@@ -75,8 +81,12 @@ namespace ShogiClient
         public delegate void ReceiveEchoHandler(object sender, ReceiveEchoEventArgs e);
         public event ReceiveEchoHandler? OnReceiveEcho;
 
-        public Connection()
+        public Connection() : this(Guid.Empty, Guid.Empty, PlayerColor.Black) { }
+
+        public Connection(Guid gameId, Guid playerId, PlayerColor color)
         {
+            (GameId, PlayerId, Color) = (gameId, playerId, color);
+
             _connection = new HubConnectionBuilder().
                 WithUrl("http://localhost:7071/api").
                 WithAutomaticReconnect().
@@ -86,16 +96,33 @@ namespace ShogiClient
                 OnReceiveGameList?.Invoke(this, new ReceiveGameListEventArgs(gameList)));
 
             _connection.On<string, ClientGameInfo, Guid>("ReceiveGameStart", (serializedGame, gameInfo, playerId) =>
-                OnReceiveGameStart?.Invoke(this, new ReceiveGameStartEventArgs(serializedGame.ToTaikyokuShogi(), gameInfo, playerId)));
+            {
+                // invoke only on expected events
+                if (gameInfo.GameId == GameId)
+                {
+                    PlayerId = playerId;
+                    OnReceiveGameStart?.Invoke(this, new ReceiveGameStartEventArgs(serializedGame.ToTaikyokuShogi(), gameInfo, playerId));
+                }
+            });
 
             _connection.On<string, Guid>("ReceiveGameUpdate", (serializedGame, gameId) =>
-                OnReceiveGameUpdate?.Invoke(this, new ReceiveGameUpdateEventArgs(serializedGame.ToTaikyokuShogi(), gameId)));
+            {
+                if (gameId == GameId)
+                    OnReceiveGameUpdate?.Invoke(this, new ReceiveGameUpdateEventArgs(serializedGame.ToTaikyokuShogi(), gameId));
+            });
 
             _connection.On<Guid>("ReceiveGameDisconnect", (gameId) =>
-                OnReceiveGameDisconnect?.Invoke(this, new ReceiveGameConnectionEventArgs(gameId)));
+            {
+                if (gameId == GameId)
+                    OnReceiveGameDisconnect?.Invoke(this, new ReceiveGameConnectionEventArgs(gameId));
+            });
 
             _connection.On<Guid>("ReceiveGameReconnect", (gameId) =>
-                OnReceiveGameReconnect?.Invoke(this, new ReceiveGameConnectionEventArgs(gameId)));
+            {
+                if (gameId == GameId)
+                    OnReceiveGameReconnect?.Invoke(this, new ReceiveGameConnectionEventArgs(gameId));
+            });
+
 
             _connection.On<string>("Echo", (message) =>
                 OnReceiveEcho?.Invoke(this, new ReceiveEchoEventArgs(message)));
@@ -124,20 +151,23 @@ namespace ShogiClient
         public async Task<IEnumerable<ClientGameInfo>> RequestGameInfo(IEnumerable<NetworkGameRequest> requests) =>
             await _connection.InvokeAsync<IEnumerable<ClientGameInfo>>("RequestGameInfo", requests.ToNetworkGameRequestList());
 
-        public async Task<GamePlayerPair> RequestNewGame(string playerName, bool asBlackPlayer, TaikyokuShogi existingGame) =>
-            await _connection.InvokeAsync<GamePlayerPair>("CreateGame", playerName, asBlackPlayer, existingGame.ToJsonString());
+        public async Task RequestNewGame(string playerName, bool asBlackPlayer, TaikyokuShogi existingGame)
+        {
+            Color = asBlackPlayer ? PlayerColor.Black : PlayerColor.White;
+            (GameId, PlayerId) = await _connection.InvokeAsync<GamePlayerPair>("CreateGame", playerName, asBlackPlayer, existingGame.ToJsonString());
+        }
 
-        public async Task JoinGame(Guid gameId, string playerName) =>
-            await _connection.InvokeAsync<GamePlayerPair>("JoinGame", gameId, playerName);
+        public async Task JoinGame(string playerName) =>
+            await _connection.InvokeAsync<GamePlayerPair>("JoinGame", GameId, playerName);
 
-        public async Task RequestRejoinGame(Guid gameId, Guid playerId) =>
-            await _connection.InvokeAsync("RejoinGame", gameId, playerId);
+        public async Task RequestRejoinGame() =>
+            await _connection.InvokeAsync("RejoinGame", GameId, PlayerId);
 
         public async Task RequestCancelGame() =>
             await _connection.InvokeAsync("CancelGame");
 
         public async Task RequestMove((int X, int Y) startLoc, (int X, int Y) endLoc, (int X, int Y)? midLoc, bool promote) =>
-            await _connection.InvokeAsync("RequestMove", (Location)startLoc, (Location)endLoc, (Location?)midLoc, promote);
+            await _connection.InvokeAsync("MakeMove", GameId, PlayerId, (Location)startLoc, (Location)endLoc, (Location?)midLoc, promote);
 
         public async Task RequestResign() =>
             await _connection.InvokeAsync("RequestResign");
@@ -145,7 +175,7 @@ namespace ShogiClient
 #if DEBUG
         public async Task Echo(string message) => await _connection.InvokeAsync("Echo", message);
 
-        public async Task TestGameStart(TaikyokuShogi game) => await _connection.InvokeAsync("TestGameStart", game.ToJsonString());
+        public async Task TestGameStart(TaikyokuShogi game) => await _connection.InvokeAsync("TestGameStart", GameId, PlayerId, game.ToJsonString());
 #endif
 
         // Helper for identifying possible connection Exceptions
@@ -158,6 +188,8 @@ namespace ShogiClient
                _ when e is HttpRequestException => true,       // Connection faliure
                _ => false
            };
+
+        public void SetGameInfo(Guid gameId, Guid playerId, PlayerColor color) => (GameId, PlayerId, Color) = (gameId, playerId, color);
     }
 
     public static class ClientGameInfoExtension

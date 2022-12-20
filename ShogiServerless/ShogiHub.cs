@@ -467,18 +467,20 @@ namespace ShogiServerless
         }
 
         [FunctionName(nameof(TestGameStart))]
-        public async Task TestGameStart([SignalRTrigger] InvocationContext context, string serializedGame, ILogger logger)
+        public async Task TestGameStart([SignalRTrigger] InvocationContext context,
+            Guid gameId, Guid playerId, string serializedGame,
+            ILogger logger)
         {
             var game = serializedGame.ToTaikyokuShogi();
             logger.LogInformation($"testing GameStart message for '{context.ConnectionId}'");
 
             var info = new ClientGameInfo()
             {
-                GameId = Guid.NewGuid(),
+                GameId = gameId,
                 BlackName = "blackPlayerFakeName",
                 WhiteName = "whitePlayerFakeName"
             };
-            await Clients.Client(context.ConnectionId).ReceiveGameStart(game.ToJsonString(), info, Guid.NewGuid());
+            await Clients.Client(context.ConnectionId).ReceiveGameStart(game.ToJsonString(), info, playerId);
         }
 #endif
 

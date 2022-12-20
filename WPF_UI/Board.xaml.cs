@@ -71,7 +71,7 @@ namespace WPF_UI
             MouseRightButtonUp += RightClickHandler;
         }
 
-        public void SetGame(TaikyokuShogi game, Connection? networkConnection = null, PlayerColor? localPlayer = null)
+        public void SetGame(TaikyokuShogi game, Connection? networkConnection = null)
         {
             Game = game;
             _networkConnection = networkConnection;
@@ -79,8 +79,8 @@ namespace WPF_UI
             Selected = null;
             Selected2 = null;
 
-            IsEnabled = Game.CurrentPlayer != null && (networkConnection == null || Game.CurrentPlayer == localPlayer);
-            IsRotated = localPlayer == PlayerColor.White;
+            IsEnabled = Game.CurrentPlayer != null && (networkConnection == null || Game.CurrentPlayer == networkConnection.Color);
+            IsRotated = networkConnection?.Color == PlayerColor.White;
 
             InvalidateVisual();
 

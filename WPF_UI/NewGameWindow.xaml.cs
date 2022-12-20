@@ -13,6 +13,7 @@ using System.Windows.Shapes;
 using ShogiClient;
 using ShogiEngine;
 using ShogiComms;
+using System.Diagnostics.Contracts;
 
 namespace WPF_UI
 {
@@ -26,12 +27,6 @@ namespace WPF_UI
         public bool NetworkGame { get; private set; }
 
         public Connection Connection { get; }
-
-        public Guid GameId { get; private set; }
-
-        public Guid PlayerId { get; private set; }
-
-        public PlayerColor? LocalPlayer { get; private set; }
 
         public string? OpponentName { get; private set; }
 
@@ -68,34 +63,13 @@ namespace WPF_UI
 
         private void RecieveGameStart(object sender, ReceiveGameStartEventArgs e)
         {
-            if (GameId == Guid.Empty || PlayerId == Guid.Empty)
-            {
-                MessageBox.Show("race condition, game started before we were ready; what do i do???");
-            }
-            else if (GameId != e.GameInfo.GameId)
-            {
-                // game start for unknown game; ignore
-                // TODO: log this???
-                return;
-            }
-            else if (PlayerId != e.PlayerId)
-            {
-                // game start for the wrong player; ignore
-                // TODO: log this?
-                return;
-            }
-
-            if (LocalPlayer == null)
-            {
-                // sometihng went horribly wrong
-                // TODO: log this?
-                return;
-            }
+            Contract.Assert(Connection.GameId == e.GameInfo.GameId);
+            Contract.Assert(Connection.PlayerId == e.PlayerId);
 
             Dispatcher.Invoke(() =>
             {
                 NetworkGame = true;
-                OpponentName = LocalPlayer == PlayerColor.Black ? e.GameInfo.WhiteName : e.GameInfo.BlackName;
+                OpponentName = Connection.Color == PlayerColor.Black ? e.GameInfo.WhiteName : e.GameInfo.BlackName;
                 Game = e.Game;
                 DialogResult = true;
                 Close();
@@ -104,9 +78,6 @@ namespace WPF_UI
 
         private async void NewGameButton_Click(object sender, RoutedEventArgs e)
         {
-            GameId = Guid.Empty;
-            PlayerId = Guid.Empty;
-
             // todo: pick up game options from UI
             var gameOptions = TaikyokuShogiOptions.None;
 
@@ -122,7 +93,7 @@ namespace WPF_UI
                 Properties.Settings.Default.PlayerName = NameBox.Text;
                 Properties.Settings.Default.Save();
 
-                LocalPlayer = ColorBox.SelectedIndex == 0 ? PlayerColor.Black : PlayerColor.White;
+                bool isBlack = ColorBox.SelectedIndex == 0;
                 var playerName = NameBox.Text;
 
                 try
@@ -131,7 +102,7 @@ namespace WPF_UI
                     SetUIForWaitForConnection();
 
                     await Connection.ConnectAsync();
-                    (GameId, PlayerId) = await Connection.RequestNewGame(playerName, LocalPlayer == PlayerColor.Black, Game);
+                    await Connection.RequestNewGame(playerName, isBlack, Game);
                     return;
                 }
                 catch (Exception)

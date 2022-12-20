@@ -13,6 +13,7 @@ using System.Windows.Shapes;
 using ShogiClient;
 using ShogiEngine;
 using ShogiComms;
+using System.Diagnostics;
 
 namespace WPF_UI
 {
@@ -25,33 +26,23 @@ namespace WPF_UI
 
         public Connection Connection { get; }
 
-        public Guid GameId { get; }
-
-        public Guid PlayerId { get; }
-
-        public PlayerColor? LocalPlayer { get; private set; }
-
         public string? Opponent { get; private set; }
 
         public ReconnectWindow(Guid gameId, Guid playerId, PlayerColor myColor)
         {
             InitializeComponent();
 
-            Connection = new Connection();
-            (GameId, PlayerId, LocalPlayer) = (gameId, playerId, myColor);
-
+            Connection = new Connection(gameId, playerId, myColor);
             Connection.OnReceiveGameStart += RecieveGameStart;
         }
 
         private void RecieveGameStart(object sender, ReceiveGameStartEventArgs e) =>
             Dispatcher.Invoke(() =>
             {
-                // ignore spurious game events
-                if (e.GameInfo.GameId != GameId)
-                    return;
+                Debug.Assert(e.GameInfo.GameId == Connection.GameId);
 
                 Game = e.Game;
-                Opponent = LocalPlayer == PlayerColor.Black ? e.GameInfo.BlackName : e.GameInfo.WhiteName;
+                Opponent = Connection.Color == PlayerColor.Black ? e.GameInfo.WhiteName : e.GameInfo.BlackName;
                 DialogResult = true;
                 Close();
             });
@@ -66,7 +57,7 @@ namespace WPF_UI
             try
             {
                 await Connection.ConnectAsync();
-                await Connection.RequestRejoinGame(GameId, PlayerId);
+                await Connection.RequestRejoinGame();
             }
             catch (Exception ex) when (Connection.ExceptionFilter(ex))
             {

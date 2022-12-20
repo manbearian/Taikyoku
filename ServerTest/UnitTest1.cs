@@ -70,9 +70,10 @@ namespace ServerTest
             {
                 Assert.True(c.RequestNewGame("test-player", true, new TaikyokuShogi()).ContinueWith(t =>
                 {
-                    var (gameId, playerId) = t.Result;
-                    output.WriteLine($"new game '{gameId}' created; player is '{playerId}'");
-                    newGames[i] = gameId;
+                    output.WriteLine($"new game '{c.GameId}' created; player is '{c.PlayerId}'");
+                    Assert.NotEqual(c.GameId, Guid.Empty);
+                    Assert.NotEqual(c.PlayerId, Guid.Empty);
+                    newGames[i] = c.GameId;
                 }).Wait(TIMEOUT));
             }
 
@@ -114,11 +115,16 @@ namespace ServerTest
         public void TestReceiveGameStart()
         {
             AutoResetEvent receivedEvent = new(false);
-            Guid gameId = Guid.Empty;
-            TaikyokuShogi? game = null;
+            TaikyokuShogi game = new();
 
-            using var c = new Connection();
-            c.OnReceiveGameStart += (sender, e) => { gameId = e.GameInfo.GameId; game = e.Game; receivedEvent.Set(); };
+            using var c = new Connection(Guid.NewGuid(), Guid.NewGuid(), PlayerColor.Black);
+            c.OnReceiveGameStart += (sender, e) => {
+                output.WriteLine($"...game start received: '{e}'");
+                Assert.Equal(e.GameInfo.GameId, c.GameId);
+                Assert.Equal(e.PlayerId, c.PlayerId);
+                Assert.True(e.Game.BoardStateEquals(game));
+                receivedEvent.Set(); 
+            };
 
             Assert.True(c.ConnectAsync().Wait(TIMEOUT));
 
@@ -130,10 +136,7 @@ namespace ServerTest
             Console.WriteLine("waiting on response...");
             success = receivedEvent.WaitOne(TIMEOUT);
             Assert.True(success);
-            Assert.NotEqual(gameId, Guid.Empty);
-            Assert.NotNull(game);
-
-            output.WriteLine($"...game start received: '{gameId}', 'mc={game?.MoveCount}' and 'cp={game?.CurrentPlayer}'");
+            Console.WriteLine("...done!");
         }
 
         [Fact]
@@ -145,8 +148,7 @@ namespace ServerTest
             output.WriteLine("testing new game...");
             Assert.True(c.RequestNewGame("test-player", true, new TaikyokuShogi()).ContinueWith(t =>
             {
-                var pair = t.Result;
-                output.WriteLine($"new game '{pair.GameId}' created; player is '{pair.PlayerId}'");
+                output.WriteLine($"new game '{c.GameId}' created; player is '{c.PlayerId}'");
             }).Wait(TIMEOUT));
         }
 
@@ -157,45 +159,44 @@ namespace ServerTest
             AutoResetEvent startEvent2 = new(false);
             TaikyokuShogi? game1 = null;
             TaikyokuShogi? game2 = null;
-            Guid gameId = Guid.Empty;
-            Guid playerId = Guid.Empty;
 
             using var c1 = new Connection();
             c1.OnReceiveGameStart += (sender, e) => {
                 output.WriteLine($"game start for initiating player: '{e.GameInfo.GameId}'/'{e.PlayerId}'");
-                Assert.Equal(gameId, e.GameInfo.GameId);
-                Assert.Equal(playerId, e.PlayerId);
+                Assert.Equal(c1.GameId, e.GameInfo.GameId);
+                Assert.Equal(c1.PlayerId, e.PlayerId);
+                Assert.NotEqual(c1.PlayerId, Guid.Empty);
                 Assert.NotNull(e.Game);
                 game1 = e.Game;
                 startEvent1.Set();
             };
-
-            using var c2 = new Connection();
-            c2.OnReceiveGameStart += (sender, e) =>
-            {
-                output.WriteLine($"game start for joining player: '{e.GameInfo.GameId}'/'{e.PlayerId}'");
-                Assert.Equal(gameId, e.GameInfo.GameId);
-                Assert.NotEqual(Guid.Empty, e.PlayerId);
-                Assert.NotNull(e.Game);
-                game2 = e.Game;
-                startEvent2.Set();
-            };
-
             Assert.True(c1.ConnectAsync().Wait(TIMEOUT));
-            Assert.True(c2.ConnectAsync().Wait(TIMEOUT));
 
             output.WriteLine("creating a new game...");
             Assert.True(c1.RequestNewGame("test-player", true, new TaikyokuShogi()).ContinueWith(t =>
             {
-                (gameId, playerId) = t.Result;
-                output.WriteLine($"new game '{gameId}' created; player is '{playerId}'");
+                output.WriteLine($"new game '{c1.GameId}' created; player is '{c1.PlayerId}'");
+                c1.SetGameInfo(c1.GameId, c1.PlayerId, PlayerColor.Black);
             }).Wait(TIMEOUT));
 
-            Assert.NotEqual(gameId, Guid.Empty);
-            Assert.NotEqual(playerId, Guid.Empty);
+            Assert.NotEqual(c1.GameId, Guid.Empty);
+            Assert.NotEqual(c1.PlayerId, Guid.Empty);
+
+            using var c2 = new Connection(c1.GameId, Guid.Empty, PlayerColor.Black);
+            c2.OnReceiveGameStart += (sender, e) =>
+            {
+                output.WriteLine($"game start for joining player: '{e.GameInfo.GameId}'/'{e.PlayerId}'");
+                Assert.Equal(c2.GameId, e.GameInfo.GameId);
+                Assert.Equal(c2.PlayerId, e.PlayerId);
+                Assert.NotEqual(c2.PlayerId, Guid.Empty);
+                Assert.NotNull(e.Game);
+                game2 = e.Game;
+                startEvent2.Set();
+            };
+            Assert.True(c2.ConnectAsync().Wait(TIMEOUT));
 
             output.WriteLine("joining new game...");
-            Assert.True(c2.JoinGame(gameId, "other-player").Wait(TIMEOUT));
+            Assert.True(c2.JoinGame("other-player").Wait(TIMEOUT));
 
             output.WriteLine("waiting for game start events....");
             Assert.True(WaitHandle.WaitAll(new WaitHandle[] { startEvent1, startEvent2 }, TIMEOUT));

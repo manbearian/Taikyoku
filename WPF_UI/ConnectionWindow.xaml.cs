@@ -21,13 +21,6 @@ namespace WPF_UI
         public Connection Connection { get; }
 
         public TaikyokuShogi? Game { get; private set; }
-
-        public Guid GameId { get; private set; }
-
-        public Guid PlayerId { get; private set; }
-
-        public PlayerColor? LocalPlayer { get; private set; }
-
         public string? OpponentName { get; private set; }
 
         public IEnumerable<NetworkGameState>? KnownGames { get; set; }
@@ -78,17 +71,11 @@ namespace WPF_UI
 
         private void RecieveGameStart(object sender, ReceiveGameStartEventArgs e)
         {
-            if (GameId != e.GameInfo.GameId)
-            {
-                // game start for unknown game; ignore
-                // TODO: log this???
-                return;
-            }
+            Contract.Assert(Connection.GameId == e.GameInfo.GameId);
 
             Dispatcher.Invoke(() =>
             {
                 Game = e.Game;
-                PlayerId = e.PlayerId;
                 DialogResult = true;
                 Close();
             });
@@ -114,11 +101,18 @@ namespace WPF_UI
 
                 foreach (var game in orderedList)
                 {
-                    var localMapping = KnownGames.EmptyIfNull().Where(g => g.GameId == game.GameId);
-                    Contract.Assert(localMapping.Count() == 1 || localMapping.Count() == 2);
-                    foreach (var localInfo in localMapping)
+                    if (IsShowingKnownGames)
                     {
-                        GamesList.Items.Add(new ClientGameInfoWrapper(game, localInfo));
+                        var localMapping = KnownGames.EmptyIfNull().Where(g => g.GameId == game.GameId);
+                        Contract.Assert(localMapping.Count() == 1 || localMapping.Count() == 2);
+                        foreach (var localInfo in localMapping)
+                        {
+                            GamesList.Items.Add(new ClientGameInfoWrapper(game, localInfo));
+                        }
+                    }
+                    else
+                    {
+                        GamesList.Items.Add(new ClientGameInfoWrapper(game));
                     }
                 }
 
@@ -145,24 +139,24 @@ namespace WPF_UI
 
             var gameInfo = ((ClientGameInfoWrapper)selectedItem).GameInfo;
             var localInfo = ((ClientGameInfoWrapper)selectedItem).LocalInfo;
-            GameId = gameInfo.GameId;
 
             try
             {
                 if (IsShowingKnownGames)
                 {
-                    LocalPlayer = localInfo.MyColor;
-                    OpponentName = LocalPlayer == PlayerColor.Black ? gameInfo.WhiteName : gameInfo.BlackName;
-                    await Connection.RequestRejoinGame(gameInfo.GameId, localInfo.PlayerId);
+                    Contract.Assert(!(localInfo is null));
+                    OpponentName = localInfo.MyColor == PlayerColor.Black ? gameInfo.WhiteName : gameInfo.BlackName;
+                    Connection.SetGameInfo(gameInfo.GameId, localInfo.PlayerId, localInfo.MyColor);
+                    await Connection.RequestRejoinGame();
                 }
                 else
                 {
                     Settings.Default.PlayerName = NameBox.Text;
                     Settings.Default.Save();
 
-                    LocalPlayer = gameInfo.UnassignedColor();
                     OpponentName = gameInfo.WaitingPlayerName();
-                    await Connection.JoinGame(gameInfo.GameId, NameBox.Text);
+                    Connection.SetGameInfo(gameInfo.GameId, Guid.Empty, gameInfo.UnassignedColor());
+                    await Connection.JoinGame(NameBox.Text);
                 }
             }
             catch (Exception ex) when (Connection.ExceptionFilter(ex))
@@ -240,9 +234,9 @@ namespace WPF_UI
         class ClientGameInfoWrapper
         {
             public ClientGameInfo GameInfo { get; }
-            public NetworkGameState LocalInfo { get; }
+            public NetworkGameState? LocalInfo { get; }
 
-            public ClientGameInfoWrapper(ClientGameInfo gameInfo, NetworkGameState localInfo) => (GameInfo, LocalInfo) = (gameInfo, localInfo);
+            public ClientGameInfoWrapper(ClientGameInfo gameInfo, NetworkGameState? localInfo = null) => (GameInfo, LocalInfo) = (gameInfo, localInfo);
 
             public string DisplayString
             {
@@ -251,7 +245,7 @@ namespace WPF_UI
                     string gameName;
                     if (GameInfo.IsOpen())
                         gameName = $"vs. {GameInfo.WaitingPlayerName()} ({GameInfo.UnassignedColor().Opponent()})";
-                    else if (LocalInfo.MyColor == PlayerColor.Black)
+                    else if (LocalInfo?.MyColor == PlayerColor.Black)
                         gameName = $"vs. {GameInfo.WhiteName} (white)";
                     else
                         gameName = $"vs. {GameInfo.BlackName} (black)";
