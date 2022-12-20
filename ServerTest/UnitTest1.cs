@@ -205,28 +205,15 @@ namespace ServerTest
             Assert.True(game1?.BoardStateEquals(game2 ?? throw new NullReferenceException()));
         }
 
-        [Fact]
-        public void TestMakeMove()
+        private (Connection, Connection) SetupGame()
         {
             AutoResetEvent startEvent1 = new(false);
             AutoResetEvent startEvent2 = new(false);
-            AutoResetEvent updateEvent1 = new(false);
-            AutoResetEvent updateEvent2 = new(false);
 
-            TaikyokuShogi? game1 = null;
-            TaikyokuShogi? game2 = null;
-
-            using var c1 = new Connection();
+            var c1 = new Connection();
             c1.OnReceiveGameStart += (sender, e) => {
                 output.WriteLine($"game start for initiating player: '{e.GameInfo.GameId}'/'{e.PlayerId}'");
-                game1 = e.Game;
                 startEvent1.Set();
-            };
-            c1.OnReceiveGameUpdate += (sender, e) =>
-            {
-                output.WriteLine($"game updated for player1: '{e.GameId}'");
-                game1 = e.Game;
-                updateEvent1.Set();
             };
             Assert.True(c1.ConnectAsync().Wait(TIMEOUT));
 
@@ -237,18 +224,11 @@ namespace ServerTest
             }).Wait(TIMEOUT));
 
             output.WriteLine("joining a second playerto the game...");
-            using var c2 = new Connection(c1.GameId, Guid.Empty, PlayerColor.Black);
+            var c2 = new Connection(c1.GameId, Guid.Empty, PlayerColor.Black);
             c2.OnReceiveGameStart += (sender, e) =>
             {
                 output.WriteLine($"game start for joining player: '{e.GameInfo.GameId}'/'{e.PlayerId}'");
-                game2 = e.Game;
                 startEvent2.Set();
-            };
-            c2.OnReceiveGameUpdate += (sender, e) =>
-            {
-                output.WriteLine($"game updated for player2: '{e.GameId}'");
-                game2 = e.Game;
-                updateEvent2.Set();
             };
             Assert.True(c2.ConnectAsync().Wait(TIMEOUT));
 
@@ -258,17 +238,146 @@ namespace ServerTest
             Assert.True(WaitHandle.WaitAll(new WaitHandle[] { startEvent1, startEvent2 }, TIMEOUT));
             output.WriteLine("...game started for both players");
 
-            output.WriteLine("black attemps _illegal_ move (0,0) -> (1,1)...");
+            return (c1, c2);
+        }
+
+        [Fact]
+        public void TestMakeMove()
+        {
+            AutoResetEvent e1 = new(false);
+            AutoResetEvent e2 = new(false);
+
+            TaikyokuShogi? game1 = null;
+            TaikyokuShogi? game2 = null;
+
+            var (c1, c2) = SetupGame();
+
+            c1.OnReceiveGameUpdate += (sender, e) =>
+            {
+                output.WriteLine($"game updated for player1: '{e.GameId}'");
+                game1 = e.Game;
+                e1.Set();
+            };
+
+            c2.OnReceiveGameUpdate += (sender, e) =>
+            {
+                output.WriteLine($"game updated for player2: '{e.GameId}'");
+                game2 = e.Game;
+                e2.Set();
+            };
+
+            output.WriteLine("black attemps move...");
+            Assert.True(c1.RequestMove((5, 24), (6, 23), null, false).Wait(TIMEOUT));
+            output.WriteLine("...move completed");
+
+            output.WriteLine("waiting for game update events....");
+            Assert.True(WaitHandle.WaitAll(new WaitHandle[] { e1, e2 }, TIMEOUT));
+            output.WriteLine("...both games updated");
+
+            output.WriteLine("white attemps move...");
+            Assert.True(c2.RequestMove((13, 10), (13, 11), null, false).Wait(TIMEOUT));
+            output.WriteLine("...move completed");
+
+            output.WriteLine("waiting for game update events....");
+            Assert.True(WaitHandle.WaitAll(new WaitHandle[] { e1, e2 }, TIMEOUT));
+            output.WriteLine("...both games updated");
+
+            Assert.True(game1?.BoardStateEquals(game2 ?? throw new NullReferenceException()) ?? false);
+            Assert.Equal(PlayerColor.Black, game1?.CurrentPlayer);
+
+            c1.Dispose();
+            c2.Dispose();
+        }
+
+        [Fact]
+        public void TestBadMove()
+        {
+            AutoResetEvent e1 = new(false);
+            AutoResetEvent e2 = new(false);
+
+            TaikyokuShogi? game1 = null;
+            TaikyokuShogi? game2 = null;
+
+            var (c1, c2) = SetupGame();
+
+            c1.OnReceiveGameUpdate += (sender, e) =>
+            {
+                output.WriteLine($"game updated for player1: '{e.GameId}'");
+                game1 = e.Game;
+                e1.Set();
+            };
+
+            c2.OnReceiveGameUpdate += (sender, e) =>
+            {
+                output.WriteLine($"game updated for player2: '{e.GameId}'");
+                game2 = e.Game;
+                e2.Set();
+            };
+
+            output.WriteLine("black attemps _illegal_ move...");
             Assert.True(c1.RequestMove((0, 0), (1, 1), null, false).Wait(TIMEOUT));
             output.WriteLine("...move completed");
 
             output.WriteLine("waiting for game update events....");
-            Assert.True(WaitHandle.WaitAll(new WaitHandle[] { updateEvent1, updateEvent2 }, TIMEOUT));
+            Assert.True(WaitHandle.WaitAll(new WaitHandle[] { e1, e2 }, TIMEOUT));
             output.WriteLine("...both games updated");
 
             Assert.True(game1?.BoardStateEquals(game2 ?? throw new NullReferenceException()) ?? false);
-            Assert.True(game1?.Winner == PlayerColor.White);
-            Assert.True(game1?.Ending == GameEndType.IllegalMove);
+            Assert.Null(game1?.CurrentPlayer);
+            Assert.Equal(PlayerColor.White, game1?.Winner);
+            Assert.Equal(GameEndType.IllegalMove, game1?.Ending);
+
+            c1.Dispose();
+            c2.Dispose();
+        }
+
+        [Fact]
+        public void TestResign()
+        {
+            AutoResetEvent e1 = new(false);
+            AutoResetEvent e2 = new(false);
+
+            TaikyokuShogi? game1 = null;
+            TaikyokuShogi? game2 = null;
+
+            var (c1, c2) = SetupGame();
+
+            c1.OnReceiveGameUpdate += (sender, e) =>
+            {
+                output.WriteLine($"game updated for player1: '{e.GameId}'");
+                game1 = e.Game;
+                e1.Set();
+            };
+
+            c2.OnReceiveGameUpdate += (sender, e) =>
+            {
+                output.WriteLine($"game updated for player2: '{e.GameId}'");
+                game2 = e.Game;
+                e2.Set();
+            };
+
+            output.WriteLine("black attemps move...");
+            Assert.True(c1.RequestMove((5, 24), (6, 23), null, false).Wait(TIMEOUT));
+            output.WriteLine("...move completed");
+
+            output.WriteLine("waiting for game update events....");
+            Assert.True(WaitHandle.WaitAll(new WaitHandle[] { e1, e2 }, TIMEOUT));
+            output.WriteLine("...both games updated");
+
+            output.WriteLine("initating reignation for black....");
+            Assert.True(c1.RequestResign().Wait(TIMEOUT));
+
+            output.WriteLine("waiting for game update events....");
+            Assert.True(WaitHandle.WaitAll(new WaitHandle[] { e1, e2 }, TIMEOUT));
+            output.WriteLine("...both games updated");
+
+            Assert.True(game1?.BoardStateEquals(game2 ?? throw new NullReferenceException()) ?? false);
+            Assert.Null(game1?.CurrentPlayer);
+            Assert.Equal(PlayerColor.White, game1?.Winner);
+            Assert.Equal(GameEndType.Resignation, game1?.Ending);
+
+            c1.Dispose();
+            c2.Dispose();
         }
     }
 }
