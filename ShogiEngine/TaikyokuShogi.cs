@@ -312,6 +312,10 @@ namespace ShogiEngine
         {
             if (_currentPlayer != other._currentPlayer)
                 return false;
+            if (Ending != other.Ending)
+                return false;
+            if (Winner != other.Winner)
+                return false;
 
             for (int x = 0; x < _boardState.GetLength(0); ++x)
             {

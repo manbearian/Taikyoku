@@ -258,16 +258,17 @@ namespace ServerTest
             Assert.True(WaitHandle.WaitAll(new WaitHandle[] { startEvent1, startEvent2 }, TIMEOUT));
             output.WriteLine("...game started for both players");
 
-            output.WriteLine("black moves (0,0) -> (1,1)...");
+            output.WriteLine("black attemps _illegal_ move (0,0) -> (1,1)...");
             Assert.True(c1.RequestMove((0, 0), (1, 1), null, false).Wait(TIMEOUT));
             output.WriteLine("...move completed");
-
 
             output.WriteLine("waiting for game update events....");
             Assert.True(WaitHandle.WaitAll(new WaitHandle[] { updateEvent1, updateEvent2 }, TIMEOUT));
             output.WriteLine("...both games updated");
 
             Assert.True(game1?.BoardStateEquals(game2 ?? throw new NullReferenceException()) ?? false);
+            Assert.True(game1?.Winner == PlayerColor.White);
+            Assert.True(game1?.Ending == GameEndType.IllegalMove);
         }
     }
 }
