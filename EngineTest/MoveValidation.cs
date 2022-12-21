@@ -21,7 +21,7 @@ namespace EngineTest
             game.Debug_RemoveAllPieces(); // empty board
             var loc = (17, 17);
             Assert.Null(game.GetPiece(loc));
-            Assert.Throws<InvalidOperationException>(() => game.MakeMove(loc, Movement.ComputeMove(loc, Movement.Up, 1).Value));
+            Assert.Throws<InvalidMoveException>(() => game.MakeMove(loc, Movement.ComputeMove(loc, Movement.Up, 1).Value));
         }
 
         [Fact]
@@ -32,7 +32,7 @@ namespace EngineTest
             var testPiece = new Piece(PlayerColor.White, PieceIdentity.Queen);
             var startLoc = (17, 17);
             game.Debug_SetPiece(testPiece, startLoc);
-            Assert.Throws<InvalidOperationException>(() => game.MakeMove(startLoc, Movement.ComputeMove(startLoc, Movement.Up, 1).Value));
+            Assert.Throws<InvalidMoveException>(() => game.MakeMove(startLoc, Movement.ComputeMove(startLoc, Movement.Up, 1).Value));
         }
 
         private void ValidateMoves(Piece testPiece, (int, int) startLoc, HashSet<(int, int)> validMoves, Dictionary<(int, int), Piece> otherPieces = null)

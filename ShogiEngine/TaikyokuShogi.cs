@@ -157,11 +157,11 @@ namespace ShogiEngine
 
             // nonsensicial moves are invalid
             if (CurrentPlayer is null || piece is null)
-                throw new InvalidOperationException("invalid move requested");
+                throw new InvalidMoveException(CurrentPlayer, piece, startLoc, endLoc, midLoc, promote);
 
             // moving your oppontents piece is invalid
             if (piece.Owner != CurrentPlayer)
-                throw new InvalidOperationException("cannot move opponents piece");
+                throw new InvalidMoveException(CurrentPlayer!, piece, startLoc, endLoc, midLoc, promote);
 
             var moves = this.GetLegalMoves(piece, startLoc, midLoc).Where(move => move.Loc == endLoc);
 
@@ -275,7 +275,7 @@ namespace ShogiEngine
         public void UndoLastMove()
         {
             if (Ending is not null)
-                throw new InvalidOperationException("cannot undo from completed game!");
+                throw new UndoException("undo from completed game");
 
             var moveRecord = _moveRecorder.PopMove();
 
@@ -283,7 +283,7 @@ namespace ShogiEngine
 
             // unpromote
             if (moveRecord.PromotedFrom is not null)
-                piece = new Piece(piece.Owner, moveRecord.PromotedFrom.Value, false);
+                piece = new (piece.Owner, moveRecord.PromotedFrom.Value, false);
 
             // move back to start
             _boardState[moveRecord.StartLoc.X, moveRecord.StartLoc.Y] = piece;
@@ -339,5 +339,39 @@ namespace ShogiEngine
 
             return true;
         }
+    }
+
+    // Thrown when a move isn't valid (this is different from an illegal move which ends the game)
+    // These represent things that indicate a logic error in the client
+    // Exmples of 'invalid' moves are:
+    //   moving an opponent's piece
+    //   moving when its not your turn
+    //   moving a non-existent piece
+    //   moving to a non-existent location
+    public class InvalidMoveException : Exception
+    {
+        public PlayerColor? CurrentPlayer { get; }
+        public Piece? Piece { get; }
+        public (int X, int Y) StartLoc { get; }
+        public (int X, int Y) EndLoc { get; }
+        public (int X, int Y)? MidLoc { get; }
+        public bool Promote { get; }
+
+        public InvalidMoveException(PlayerColor? currentPlayer, Piece? piece, (int X, int Y) startLoc, (int X, int Y) endLoc, (int X, int Y)? midLoc, bool promote) =>
+            (CurrentPlayer, Piece, StartLoc, EndLoc, MidLoc, Promote) = (currentPlayer, piece, startLoc, endLoc, midLoc, promote);
+
+        public override string ToString()
+        {
+            string player = CurrentPlayer is not null ? CurrentPlayer?.ToString()! : "(null)";
+            string piece = Piece is not null ? Piece?.ToString()! : "(null)";
+            string mid = MidLoc is not null ? $" through {MidLoc}" : "";
+            string promo = Promote ? " and promote" : "";
+            return $"{player} attempted to move {Piece} from {StartLoc} to {EndLoc}{mid}{promo}";
+        }
+    }
+
+    public class UndoException : Exception { 
+        public UndoException(string message) : base(message) { }
+
     }
 }

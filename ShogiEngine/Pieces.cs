@@ -640,7 +640,7 @@ namespace ShogiEngine
             };
     }
 
-    public class Piece
+    public record class Piece
     {
         public PlayerColor Owner { get; }
 
@@ -667,16 +667,7 @@ namespace ShogiEngine
 
         public int Rank { get => Id.Rank(); }
 
-        public override bool Equals(object? obj) =>
-            Equals(obj as Piece);
-
-        public bool Equals(Piece? other) =>
-            (Owner, Id, Promoted) == (other?.Owner, other?.Id, other?.Promoted);
-
-        public override int GetHashCode() => (Owner, Id, Promoted).GetHashCode();
-
-        public static bool operator ==(Piece? lhs, Piece? rhs) => lhs?.Equals(rhs) ?? rhs is null;
-
-        public static bool operator !=(Piece? lhs, Piece? rhs) => !(lhs == rhs);
+        public override string ToString() => 
+            Promoted ? $"{Owner}'s {Id} (promoted)" : $"{Owner}'s {Id}";
     }
 }
