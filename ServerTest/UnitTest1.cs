@@ -28,18 +28,14 @@ namespace ServerTest
                 CreateNoWindow = false,
                 UseShellExecute = true
             }) ?? throw new Exception("process failed to start");
-
-            // wait for server to launch
-            Thread.Sleep(6500);
         }
 
         public void Dispose() => serverProcess?.Close();
     }
 
-
     public class UnitTest1 : IClassFixture<MyFixture>
     {
-        private static int TIMEOUT { get => Debugger.IsAttached ? int.MaxValue : 5000; }
+        private static int TIMEOUT { get => Debugger.IsAttached ? int.MaxValue : 10000; }
 
         private readonly ITestOutputHelper output;
         public UnitTest1(ITestOutputHelper output) => this.output = output;
@@ -209,6 +205,7 @@ namespace ServerTest
             Assert.True(game1?.BoardStateEquals(game2 ?? throw new NullReferenceException()));
         }
 
+        // Helper Function that setups a game and with two Connections attached
         private (Connection, Connection) SetupGame()
         {
             AutoResetEvent startEvent1 = new(false);

@@ -131,17 +131,17 @@ namespace ShogiClient
         public void Dispose() =>
             _connection.DisposeAsync().AsTask().Wait();
 
-        public async Task ConnectAsync()
+        public async Task ConnectAsync(int retry = 0)
         {
             try
             {
                 await _connection.StartAsync();
             }
-            catch (HttpRequestException)
+            catch (HttpRequestException) when (retry < 3)
             {
                 // When Debugging it's posisble that the server hasn't been stood up yet
-                // Sit here for 6 seconds (enough time to fully launch the Azure Functions) and try again
-                await Task.Delay(6000).ContinueWith(t =>  _connection.StartAsync());
+                // It usually takes about 6 secons to start up. Try 3 times @ 3/6/9 second
+                await Task.Delay(3000).ContinueWith(t => ConnectAsync(++retry));
             }
         }
 
