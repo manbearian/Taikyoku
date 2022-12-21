@@ -5,8 +5,6 @@ using System.Threading.Tasks;
 
 using Microsoft.Azure.Cosmos.Table;
 
-using static ShogiServerless.ShogiHub;
-
 namespace ShogiServerless
 {
     class TableStorage
