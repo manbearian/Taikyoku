@@ -39,7 +39,7 @@ namespace ServerTest
 
     public class UnitTest1 : IClassFixture<MyFixture>
     {
-        private int TIMEOUT { get => Debugger.IsAttached ? int.MaxValue : 5000; }
+        private static int TIMEOUT { get => Debugger.IsAttached ? int.MaxValue : 5000; }
 
         private readonly ITestOutputHelper output;
         public UnitTest1(ITestOutputHelper output) => this.output = output;
