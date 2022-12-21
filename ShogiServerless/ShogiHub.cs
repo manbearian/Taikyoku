@@ -48,12 +48,21 @@ namespace ShogiServerless
 
         private static readonly ConnectionMap _connectionMap = new ();
 
+        // database of games looking for players
+        private static readonly ConcurrentDictionary<Guid, OpenGameInfo> OpenGames = new ();
+
         public ShogiHub() : base() { }
 
         private async Task SignalDisconnectToOpponent(Guid gameId, Guid playerId, ILogger logger)
         {
-            var gameInfo = await TableStorage.FindGame(gameId)
-                ?? throw new HubException($"failed to find game: {gameId}");
+            var gameInfo = await TableStorage.FindGame(gameId);
+            if (gameInfo == null)
+            {
+                // game could have been removed, or not added yet, or whatever; just skip
+                logger.LogInformation($"Game not found, skipping disconnect from '{gameId}'/'{playerId}' ");
+                return;
+            }
+
             var otherPlayerInfo = gameInfo.GetOtherPlayerInfo(playerId);
 
             if (otherPlayerInfo is not null &&
@@ -117,19 +126,8 @@ namespace ShogiServerless
             return result;
         }
 
-        private static async Task<IEnumerable<ClientGameInfo>> AllOpenGames() =>
-            await TableStorage.AllGames().ContinueWith(t =>
-            {
-                var gameList = new List<ClientGameInfo>();
-                foreach (var game in t.Result)
-                {
-                    if (game.IsOpen)
-                    {
-                        gameList.Add(game.ToClientGameInfo());
-                    }
-                }
-                return gameList as IEnumerable<ClientGameInfo>;
-            });
+        private static IEnumerable<ClientGameInfo> AllOpenGames() =>
+            OpenGames.Values.Select(info => info.ToClientGameInfo()).ToList();
 
 
         [FunctionName(nameof(CreateGame))]
@@ -138,38 +136,26 @@ namespace ShogiServerless
         {
             var game = JsonSerializer.Deserialize<TaikyokuShogi>(existingGameSerialized ?? "")
                 ?? throw new HubException("failed to deserialize game state");
-            var gameInfo = new GameInfo(game, playerName, asBlackPlayer ? PlayerColor.Black : PlayerColor.White);
-            gameInfo = TableStorage.AddOrUpdateGame(gameInfo)
-                ?? throw new HubException("failed to add game state");
 
-            logger.LogInformation($"client '{context.ConnectionId}' creaging new game created with id '{gameInfo.Id}'");
+            OpenGameInfo gameInfo = new(game, playerName, asBlackPlayer ? PlayerColor.Black : PlayerColor.White);
+            if (!OpenGames.TryAdd(gameInfo.GameId, gameInfo))
+            {
+                throw new HubException("failed to add game");
+            }
+
+            logger.LogInformation($"client '{context.ConnectionId}' creaging new game created with id '{gameInfo.GameId}'");
 
             logger.LogInformation("sending attached clients updated game list");
-            await AllOpenGames().ContinueWith(t => Clients.All.ReceiveGameList(t.Result.ToList()));
+            await Clients.All.ReceiveGameList(AllOpenGames().ToList());
 
-            var playerId = gameInfo.GetPlayerInfo(asBlackPlayer ? PlayerColor.Black : PlayerColor.White)?.PlayerId ?? throw new HubException("bad game state");
+            await MapConnection(context.ConnectionId, gameInfo.GameId, gameInfo.WaitingPlayerInfo.PlayerId, logger);
 
-            await MapConnection(context.ConnectionId, gameInfo.Id, playerId, logger);
-
-            return new GamePlayerPair(gameInfo.Id, playerId);
+            return new GamePlayerPair(gameInfo.GameId, gameInfo.WaitingPlayerInfo.PlayerId);
         }
 
         [FunctionName(nameof(RequestAllOpenGameInfo))]
-        public async Task<IEnumerable<ClientGameInfo>> RequestAllOpenGameInfo([SignalRTrigger] InvocationContext context)
-        {
-            // query the table storage for all the requested games
-            return await TableStorage.AllGames().ContinueWith(t => {
-                var gameList = new List<ClientGameInfo>();
-                foreach (var game in t.Result)
-                {
-                    if (game.IsOpen)
-                    {
-                        gameList.Add(game.ToClientGameInfo());
-                    }
-                }
-                return gameList as IEnumerable<ClientGameInfo>;
-            });
-        }
+        public async Task<IEnumerable<ClientGameInfo>> RequestAllOpenGameInfo([SignalRTrigger] InvocationContext context) =>
+            await Task.Run(() => AllOpenGames());
 
         [FunctionName(nameof(RequestGameInfo))]
         public async Task<IEnumerable<ClientGameInfo>> RequestGameInfo([SignalRTrigger] InvocationContext context,
@@ -203,17 +189,24 @@ namespace ShogiServerless
         {
             logger.LogInformation($"client '{context.ConnectionId}' named '{playerName}' requesting to join game '{gameId}'");
 
-            var gameInfo = await TableStorage.FindGame(gameId)
-                ?? throw new HubException($"failed to find game: {gameId}");
-
-            var (oldPlayerInfo, newPlayerInfo) = gameInfo.AddPlayer(playerName);
-            gameInfo = TableStorage.AddOrUpdateGame(gameInfo)
-                ?? throw new HubException("Internal Storage Error: Unable to connect game");
-
-            logger.LogInformation($"'{context.ConnectionId}' sucessfully joined '{gameId}'");
+            if (!OpenGames.TryRemove(gameId, out var openGameInfo))
+            {
+                logger.LogInformation($"'{gameId}' was not found in OpenGames list");
+                throw new HubException($"game '{gameId}' is no longer available");
+            }
 
             logger.LogInformation($"sending all clients updated open game list");
-            await AllOpenGames().ContinueWith(t => Clients.All.ReceiveGameList(t.Result.ToList()));
+            await Clients.All.ReceiveGameList(AllOpenGames().ToList());
+
+            var gameInfo = TableStorage.AddGame(new GameInfo(openGameInfo, playerName))
+                ?? throw new HubException("Internal Storage Error: Unable to add game");
+
+            logger.LogInformation($"'{gameId}' successfully moved from OpenGames to LiveGames");
+
+            var oldPlayerInfo = openGameInfo.WaitingPlayerInfo;
+            var newPlayerInfo = gameInfo.GetOtherPlayerInfo(oldPlayerInfo.PlayerId);
+
+            logger.LogInformation($"mapping '{context.ConnectionId}' to '{gameId}' as '{newPlayerInfo}'");
 
             // add new connection to the map
             await MapConnection(context.ConnectionId, gameId, newPlayerInfo.PlayerId, logger);
@@ -265,7 +258,7 @@ namespace ShogiServerless
         private async Task UpdateGame(GameInfo gameInfo,
             ILogger logger)
         {
-            gameInfo = TableStorage.AddOrUpdateGame(gameInfo)
+            gameInfo = TableStorage.UpdateGame(gameInfo)
                 ?? throw new HubException("Interal Server error: cannot record move");
 
             var blackPlayerId = gameInfo.BlackPlayer?.PlayerId ?? throw new HubException("game in bad state; missing black player");

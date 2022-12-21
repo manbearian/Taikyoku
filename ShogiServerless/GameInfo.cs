@@ -1,8 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 using Microsoft.Azure.Cosmos.Table;
 using Microsoft.AspNetCore.SignalR;
@@ -13,22 +10,58 @@ using ShogiEngine;
 
 namespace ShogiServerless
 {
-    internal class GameInfo : ITableEntity
+    internal class PlayerInfo
     {
-        internal class PlayerInfo
+        public PlayerInfo(string name) : this(name, Guid.NewGuid()) { }
+
+        public PlayerInfo(string name, Guid id) => (PlayerName, PlayerId) = (name, id);
+
+        public Guid PlayerId { get; }
+
+        public string PlayerName { get; }
+
+        public override string ToString() => $"<{PlayerName}-{PlayerId}>";
+    }
+
+    internal record class OpenGameInfo
+    {
+        public TaikyokuShogi Game { get; }
+
+        public Guid GameId { get; }
+
+        public DateTime Created { get; }
+
+        public PlayerInfo WaitingPlayerInfo { get; }
+
+        public PlayerColor WaitingPlayerColor { get; }
+
+        public OpenGameInfo(TaikyokuShogi game, string playerName, PlayerColor playerColor)
         {
-            public PlayerInfo(string name) : this(name, Guid.NewGuid()) { }
-
-            public PlayerInfo(string name, Guid id) => (PlayerName, PlayerId) = (name, id);
-
-            public Guid PlayerId { get; }
-
-            public string PlayerName { get; }
-
-            public override string ToString() => $"<{PlayerName}-{PlayerId}>";
+            Game = game;
+            GameId = Guid.NewGuid();
+            Created = DateTime.UtcNow;
+            WaitingPlayerInfo = new(playerName);
+            WaitingPlayerColor = playerColor;
         }
 
+        // Convert the saved state of this game into information that the client can consume
+        public ClientGameInfo ToClientGameInfo() =>
+            new()
+            {
+                GameId = GameId,
+                Created = Created,
+                LastPlayed = Created,
+                BlackName = WaitingPlayerColor == PlayerColor.Black ? WaitingPlayerInfo.PlayerName : null,
+                WhiteName = WaitingPlayerColor == PlayerColor.White ? WaitingPlayerInfo.PlayerName : null
+            };
+    }
+
+    internal class GameInfo : ITableEntity
+    {
+        // required to allow default construction by Azure Storage
         private TaikyokuShogi? _game;
+        private PlayerInfo? _blackPlayer;
+        private PlayerInfo? _whitePlayer;
 
         public TaikyokuShogi Game { get => _game ?? throw new NullReferenceException(); }
 
@@ -38,48 +71,34 @@ namespace ShogiServerless
 
         public DateTime LastPlayed { get; set; }
 
-        public PlayerInfo? BlackPlayer { get; private set; } = null;
+        public PlayerInfo BlackPlayer { get => _blackPlayer ?? throw new NullReferenceException(); }
 
-        public PlayerInfo? WhitePlayer { get; private set; } = null;
+        public PlayerInfo WhitePlayer { get => _whitePlayer ?? throw new NullReferenceException(); }
 
-        public bool IsOpen { get => BlackPlayer is null || WhitePlayer is null; }
-
-        public GameInfo(TaikyokuShogi game, string playerName, PlayerColor color)
+        public GameInfo(OpenGameInfo openGameInfo, string newPlayerName)
         {
-            (_game, Id, Created, LastPlayed) = (game, Guid.NewGuid(), DateTime.UtcNow, DateTime.Now);
-            var playerInfo = new PlayerInfo(playerName);
-            if (color == PlayerColor.Black)
-                BlackPlayer = playerInfo;
+            (_game, Id, Created, LastPlayed) = (openGameInfo.Game, openGameInfo.GameId, openGameInfo.Created, openGameInfo.Created);
+            if (openGameInfo.WaitingPlayerColor == PlayerColor.Black)
+            {
+                _blackPlayer = openGameInfo.WaitingPlayerInfo;
+                _whitePlayer = new (newPlayerName);
+            }
             else
-                WhitePlayer = playerInfo;
+            {
+                _whitePlayer = openGameInfo.WaitingPlayerInfo;
+                _blackPlayer = new (newPlayerName);
+            }
+
             (((ITableEntity)this).PartitionKey, ((ITableEntity)this).RowKey) = (string.Empty, Id.ToString());
         }
 
-        public (PlayerInfo oldPlayer, PlayerInfo newPlayer) AddPlayer(string name)
-        {
-            if (BlackPlayer is null && WhitePlayer is not null)
-            {
-                BlackPlayer = new PlayerInfo(name);
-                return (WhitePlayer, BlackPlayer);
-            }
-
-            if (WhitePlayer is null && BlackPlayer is not null)
-            {
-                WhitePlayer = new PlayerInfo(name);
-                return (BlackPlayer, WhitePlayer);
-            }
-
-            throw new HubException($"Failed to join game: {Id}");
-        }
-
         public PlayerColor GetPlayerColor(Guid playerId) =>
-            playerId == BlackPlayer?.PlayerId ? PlayerColor.Black :
-                (playerId == WhitePlayer?.PlayerId ? PlayerColor.White :
-                    throw new HubException("unknown player"));
+            playerId == BlackPlayer.PlayerId ? PlayerColor.Black : PlayerColor.White;
 
-        public PlayerInfo GetPlayerInfo(Guid playerId) => GetPlayerInfo(GetPlayerColor(playerId)) ?? throw new Exception("unkonwn player");
+        public PlayerInfo GetPlayerInfo(Guid playerId) => 
+            GetPlayerInfo(GetPlayerColor(playerId));
 
-        public PlayerInfo? GetPlayerInfo(PlayerColor player) =>
+        public PlayerInfo GetPlayerInfo(PlayerColor player) =>
             player switch
             {
                 PlayerColor.Black => BlackPlayer,
@@ -87,18 +106,18 @@ namespace ShogiServerless
                 _ => throw new HubException("unknown player")
             };
 
-        public PlayerInfo? GetOtherPlayerInfo(Guid playerId) =>
+        public PlayerInfo GetOtherPlayerInfo(Guid playerId) =>
             GetPlayerInfo(GetPlayerColor(playerId).Opponent());
 
         // Convert the saved state of this game into information that the client can consume
         public ClientGameInfo ToClientGameInfo() =>
-            new ClientGameInfo()
+            new ()
             {
                 GameId = Id,
                 Created = Created,
                 LastPlayed = LastPlayed,
-                BlackName = BlackPlayer?.PlayerName,
-                WhiteName = WhitePlayer?.PlayerName
+                BlackName = BlackPlayer.PlayerName,
+                WhiteName = WhitePlayer.PlayerName
             };
 
         //
@@ -116,10 +135,10 @@ namespace ShogiServerless
                 ["Id"] = new EntityProperty(Id),
                 ["Created"] = new EntityProperty(Created),
                 ["LastPlayed"] = new EntityProperty(LastPlayed),
-                ["BlackPlayer_PlayerId"] = new EntityProperty(BlackPlayer?.PlayerId ?? Guid.Empty),
-                ["BlackPlayer_PlayerName"] = new EntityProperty(BlackPlayer?.PlayerName ?? ""),
-                ["WhitePlayer_PlayerId"] = new EntityProperty(WhitePlayer?.PlayerId ?? Guid.Empty),
-                ["WhitePlayer_PlayerName"] = new EntityProperty(WhitePlayer?.PlayerName ?? "")
+                ["BlackPlayer_PlayerId"] = new EntityProperty(BlackPlayer.PlayerId),
+                ["BlackPlayer_PlayerName"] = new EntityProperty(BlackPlayer.PlayerName),
+                ["WhitePlayer_PlayerId"] = new EntityProperty(WhitePlayer.PlayerId),
+                ["WhitePlayer_PlayerName"] = new EntityProperty(WhitePlayer.PlayerName)
             };
         }
 
@@ -131,11 +150,13 @@ namespace ShogiServerless
             LastPlayed = properties["LastPlayed"].DateTime ?? throw new Exception("Cannot deserialize");
 
             var blackId = properties["BlackPlayer_PlayerId"].GuidValue ?? throw new Exception("Cannot deserialize");
-            if (blackId != Guid.Empty)
-                BlackPlayer = new PlayerInfo(properties["BlackPlayer_PlayerName"].StringValue ?? throw new Exception("Cannot deserialize"), blackId);
+            if (blackId == Guid.Empty)
+                throw new Exception("Cannot deserialize");
+            _blackPlayer = new (properties["BlackPlayer_PlayerName"].StringValue ?? throw new Exception("Cannot deserialize"), blackId);
             var whiteId = properties["WhitePlayer_PlayerId"].GuidValue ?? throw new Exception("Cannot deserialize");
-            if (whiteId != Guid.Empty)
-                WhitePlayer = new PlayerInfo(properties["WhitePlayer_PlayerName"].StringValue ?? throw new Exception("Cannot deserialize"), whiteId);
+            if (whiteId == Guid.Empty)
+                throw new Exception("Cannot deserialize");
+            _whitePlayer = new (properties["WhitePlayer_PlayerName"].StringValue ?? throw new Exception("Cannot deserialize"), whiteId);
         }
 
         string? ITableEntity.PartitionKey { get; set; }

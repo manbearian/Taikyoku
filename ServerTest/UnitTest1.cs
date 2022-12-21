@@ -319,8 +319,8 @@ namespace ServerTest
                 e2.Set();
             };
 
-            output.WriteLine("black attemps _illegal_ move...");
-            Assert.True(c1.RequestMove((0, 0), (1, 1), null, false).Wait(TIMEOUT));
+            output.WriteLine("black attemps _illegal_ move (will cause game end)...");
+            Assert.True(c1.RequestMove((5, 24), (5, 25), null, false).Wait(TIMEOUT));
             output.WriteLine("...move completed");
 
             output.WriteLine("waiting for game update events....");
@@ -497,5 +497,11 @@ namespace ServerTest
             c3.Dispose();
             c4.Dispose();
         }
+
+        // TODO: missing tests
+        //   start -> join (client1) -> join (client2)
+        //   start -> cancel
+        //   start -> cancel -> join
+        //   start -> join -> cancel
     }
 }

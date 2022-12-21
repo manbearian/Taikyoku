@@ -19,7 +19,35 @@ namespace ShogiServerless
             _cloudTableClient = storageAccount.CreateCloudTableClient(new TableClientConfiguration());
         }
 
-        public GameInfo? AddOrUpdateGame(GameInfo gameInfo)
+        // returns the added GameInfo if successfully added to the table strorage otherwise null
+        public GameInfo? AddGame(GameInfo gameInfo)
+        {
+            try
+            {
+                var table = _cloudTableClient.GetTableReference(RunningGameTableName);
+                table.CreateIfNotExists();
+                var lookupOp = TableOperation.Retrieve<GameInfo>("", gameInfo.Id.ToString());
+                var oldGameInfo = table.Execute(lookupOp).Result as GameInfo;
+                
+                // A serious eroror occured... this game is already in the table storage! 
+                if (oldGameInfo is not null)
+                    return null;
+
+                // todo: validate what happens here if the game was updated between the read and write
+                // theoretically it should fail, but what we really want to do is retry the write.
+                var updateOp = TableOperation.InsertOrReplace(gameInfo);
+                return table.Execute(updateOp).Result as GameInfo;
+            }
+            catch (StorageException)
+            {
+
+            }
+
+            return null;
+        }
+
+        // returns the updated GameInfo if successfully updated otherwise null
+        public GameInfo? UpdateGame(GameInfo gameInfo)
         {
             try
             {
@@ -28,6 +56,10 @@ namespace ShogiServerless
 
                 var lookupOp = TableOperation.Retrieve<GameInfo>("", gameInfo.Id.ToString());
                 var oldGameInfo = table.Execute(lookupOp).Result as GameInfo;
+
+                // A serious eroror occured... this game is not in the table storage! 
+                if (oldGameInfo is null)
+                    return null;
 
                 // game was recorded as ending; don't update things
                 // this can happen if our opponent conceded while we were making a move
