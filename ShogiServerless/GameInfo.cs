@@ -1,12 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 
-using Microsoft.Azure.Cosmos.Table;
 using Microsoft.AspNetCore.SignalR;
+using Microsoft.WindowsAzure.Storage;
+using Microsoft.WindowsAzure.Storage.Table;
 
 using ShogiComms;
 using ShogiEngine;
-
 
 namespace ShogiServerless
 {

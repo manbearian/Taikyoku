@@ -129,7 +129,7 @@ namespace ShogiClient
         }
 
         public void Dispose() =>
-            _connection.DisposeAsync().Wait();
+            _connection.DisposeAsync().AsTask().Wait();
 
         public async Task ConnectAsync()
         {

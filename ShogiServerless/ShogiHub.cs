@@ -1,5 +1,5 @@
 ﻿using System;
-using System.Threading;
+using System.Text.Json;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -10,18 +10,11 @@ using Microsoft.AspNetCore.SignalR;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.Azure.WebJobs.Extensions.SignalRService;
-using Microsoft.Extensions.Azure;
-
-using Azure.Storage.Queues;
-using Azure.Storage.Blobs;
-using Azure.Core.Extensions;
+using Microsoft.Extensions.Logging;
+using Microsoft.Azure.SignalR.Management;
 
 using ShogiEngine;
 using ShogiComms;
-using Microsoft.Extensions.Logging;
-using Azure.Core;
-using System.Text.Json;
-using Microsoft.Azure.SignalR.Management;
 
 namespace ShogiServerless
 {
@@ -183,7 +176,7 @@ namespace ShogiServerless
         }
 
         [FunctionName(nameof(JoinGame))]
-        public async Task JoinGame([SignalRTrigger] InvocationContext context, 
+        public async Task JoinGame([SignalRTrigger] InvocationContext context,
             Guid gameId, string playerName,
             ILogger logger)
         {

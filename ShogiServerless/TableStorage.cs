@@ -2,8 +2,8 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-
-using Microsoft.Azure.Cosmos.Table;
+using Microsoft.WindowsAzure.Storage;
+using Microsoft.WindowsAzure.Storage.Table;
 
 namespace ShogiServerless
 {
@@ -16,18 +16,18 @@ namespace ShogiServerless
         {
             var storageConnectionString = "UseDevelopmentStorage=true"; //AppSettings.LoadAppSettings().StorageConnectionString ?? string.Empty;
             var storageAccount = CreateStorageAccountFromConnectionString(storageConnectionString);
-            _cloudTableClient = storageAccount.CreateCloudTableClient(new TableClientConfiguration());
+            _cloudTableClient = storageAccount.CreateCloudTableClient();
         }
 
         // returns the added GameInfo if successfully added to the table strorage otherwise null
-        public GameInfo? AddGame(GameInfo gameInfo)
+        public async Task<GameInfo?> AddGame(GameInfo gameInfo)
         {
             try
             {
                 var table = _cloudTableClient.GetTableReference(RunningGameTableName);
-                table.CreateIfNotExists();
+                await table.CreateIfNotExistsAsync();
                 var lookupOp = TableOperation.Retrieve<GameInfo>("", gameInfo.Id.ToString());
-                var oldGameInfo = table.Execute(lookupOp).Result as GameInfo;
+                var oldGameInfo = (await table.ExecuteAsync(lookupOp)).Result as GameInfo;
                 
                 // A serious eroror occured... this game is already in the table storage! 
                 if (oldGameInfo is not null)
@@ -36,7 +36,7 @@ namespace ShogiServerless
                 // todo: validate what happens here if the game was updated between the read and write
                 // theoretically it should fail, but what we really want to do is retry the write.
                 var updateOp = TableOperation.InsertOrReplace(gameInfo);
-                return table.Execute(updateOp).Result as GameInfo;
+                return (await table.ExecuteAsync(updateOp)).Result as GameInfo;
             }
             catch (StorageException)
             {
@@ -47,15 +47,15 @@ namespace ShogiServerless
         }
 
         // returns the updated GameInfo if successfully updated otherwise null
-        public GameInfo? UpdateGame(GameInfo gameInfo)
+        public async Task<GameInfo?> UpdateGame(GameInfo gameInfo)
         {
             try
             {
                 var table = _cloudTableClient.GetTableReference(RunningGameTableName);
-                table.CreateIfNotExists();
+                await table.CreateIfNotExistsAsync();
 
                 var lookupOp = TableOperation.Retrieve<GameInfo>("", gameInfo.Id.ToString());
-                var oldGameInfo = table.Execute(lookupOp).Result as GameInfo;
+                var oldGameInfo = (await table.ExecuteAsync(lookupOp)).Result as GameInfo;
 
                 // A serious eroror occured... this game is not in the table storage! 
                 if (oldGameInfo is null)
@@ -69,7 +69,7 @@ namespace ShogiServerless
                 // todo: validate what happens here if the game was updated between the read and write
                 // theoretically it should fail, but what we really want to do is retry the write.
                 var updateOp = TableOperation.InsertOrReplace(gameInfo);
-                return table.Execute(updateOp).Result as GameInfo;
+                return (await table.ExecuteAsync(updateOp)).Result as GameInfo;
             }
             catch(StorageException)
             {
