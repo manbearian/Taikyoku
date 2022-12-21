@@ -366,7 +366,7 @@ namespace ShogiEngine
             string piece = Piece is not null ? Piece?.ToString()! : "(null)";
             string mid = MidLoc is not null ? $" through {MidLoc}" : "";
             string promo = Promote ? " and promote" : "";
-            return $"{player} attempted to move {Piece} from {StartLoc} to {EndLoc}{mid}{promo}";
+            return $"{player} attempted to move {piece} from {StartLoc} to {EndLoc}{mid}{promo}";
         }
     }
 
