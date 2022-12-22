@@ -13,7 +13,6 @@ using ShogiComms;
 using ShogiClient;
 using ShogiEngine;
 
-
 namespace ServerTest
 {
     public sealed class MyFixture : IDisposable
@@ -40,6 +39,7 @@ namespace ServerTest
         private static int TIMEOUT { get => Debugger.IsAttached ? int.MaxValue : 10000; }
 
         private readonly ITestOutputHelper output;
+
         public UnitTest1(ITestOutputHelper output) => this.output = output;
 
         // Test that RequestOpenGames simply runs
@@ -592,7 +592,5 @@ namespace ServerTest
             Assert.IsType<HubException>(ex.InnerException);
             Assert.Equal(ex.InnerException?.Message, string.Format(HubExceptions.OpenGameNotFound, c1.GameId));
         }
-        
-
     }
 }
