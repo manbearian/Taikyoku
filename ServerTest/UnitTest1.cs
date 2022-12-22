@@ -469,7 +469,7 @@ namespace ServerTest
 
             output.WriteLine($"changing connection1 from Game A, Player 1 to Game B, Player 1");
             c1.SetGameInfo(gameB, playerB1, PlayerColor.Black);
-            Assert.True(c1.RequestRejoinGame().Wait(TIMEOUT));
+            Assert.True(c1.RejoinGame().Wait(TIMEOUT));
 
             output.WriteLine("waiting for game disconnect events....");
             Assert.True(WaitHandle.WaitAll(new WaitHandle[] { gAp2DisconnectEvent, gBp2DisconnectEvent }, TIMEOUT));

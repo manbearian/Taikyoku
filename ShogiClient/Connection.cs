@@ -123,7 +123,6 @@ namespace ShogiClient
                     OnReceiveGameReconnect?.Invoke(this, new ReceiveGameConnectionEventArgs(gameId));
             });
 
-
             _connection.On<string>("Echo", (message) =>
                 OnReceiveEcho?.Invoke(this, new ReceiveEchoEventArgs(message)));
         }
@@ -137,11 +136,12 @@ namespace ShogiClient
             {
                 await _connection.StartAsync();
             }
-            catch (HttpRequestException) when (retry < 3)
+            catch (HttpRequestException e) when (retry < 3)
             {
                 // When Debugging it's posisble that the server hasn't been stood up yet
                 // It usually takes about 6 secons to start up. Try 3 times @ 3/6/9 second
-                await Task.Delay(3000).ContinueWith(t => ConnectAsync(++retry));
+                await Task.Delay(3000);
+                await ConnectAsync(++retry);
             }
         }
 
@@ -160,7 +160,7 @@ namespace ShogiClient
         public async Task JoinGame(string playerName) =>
             await _connection.InvokeAsync<GamePlayerPair>("JoinGame", GameId, playerName);
 
-        public async Task RequestRejoinGame() =>
+        public async Task RejoinGame() =>
             await _connection.InvokeAsync("RejoinGame", GameId, PlayerId);
 
         public async Task RequestMove((int X, int Y) startLoc, (int X, int Y) endLoc, (int X, int Y)? midLoc, bool promote) =>

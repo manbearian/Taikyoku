@@ -147,7 +147,7 @@ namespace WPF_UI
                     Contract.Assert(!(localInfo is null));
                     OpponentName = localInfo.MyColor == PlayerColor.Black ? gameInfo.WhiteName : gameInfo.BlackName;
                     Connection.SetGameInfo(gameInfo.GameId, localInfo.PlayerId, localInfo.MyColor);
-                    await Connection.RequestRejoinGame();
+                    await Connection.RejoinGame();
                 }
                 else
                 {

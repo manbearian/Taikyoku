@@ -57,7 +57,7 @@ namespace WPF_UI
             try
             {
                 await Connection.ConnectAsync();
-                await Connection.RequestRejoinGame();
+                await Connection.RejoinGame();
             }
             catch (Exception ex) when (Connection.ExceptionFilter(ex))
             {
