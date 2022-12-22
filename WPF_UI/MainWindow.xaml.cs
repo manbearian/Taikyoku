@@ -364,7 +364,7 @@ namespace WPF_UI
                 if (IsNetworkGame)
                 {
                     Contract.Assert(NetworkConnection is not null);
-                    await NetworkConnection.RequestResign();
+                    await NetworkConnection.ResignGame();
                 }
                 gameBoard.InvalidateVisual();
                 OnPlayerChange(this, new PlayerChangeEventArgs(null, null));

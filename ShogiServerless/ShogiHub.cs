@@ -298,8 +298,8 @@ namespace ShogiServerless
             await UpdateGame(gameInfo, logger);
         }
 
-        [FunctionName(nameof(Resign))]
-        public async Task Resign([SignalRTrigger] InvocationContext context, ILogger logger)
+        [FunctionName(nameof(ResignGame))]
+        public async Task ResignGame([SignalRTrigger] InvocationContext context, ILogger logger)
         {
             if (!TryGetPlayer(context.ConnectionId, out var gameId, out var playerId, logger))
                 return;
@@ -311,6 +311,27 @@ namespace ShogiServerless
             gameInfo.LastPlayed = DateTime.Now;
 
             await UpdateGame(gameInfo, logger);
+        }
+
+
+        [FunctionName(nameof(CancelGame))]
+        public async Task CancelGame([SignalRTrigger] InvocationContext context, ILogger logger)
+        {
+            if (!TryGetPlayer(context.ConnectionId, out var gameId, out var _, logger))
+                return;
+
+            logger.LogInformation($"client '{context.ConnectionId}' requested to cancel game '{gameId}'");
+
+            if (!OpenGames.TryRemove(gameId, out var _))
+            {
+                logger.LogInformation($"'{gameId}' was not found in OpenGames list");
+                throw new OpenGameNotFoundException(gameId);
+            }
+
+            logger.LogInformation($"sending all clients updated open game list");
+            await Clients.All.ReceiveGameList(AllOpenGames().ToList());
+
+            await UnmapConnection(context.ConnectionId, logger);
         }
 
 #if DEBUG

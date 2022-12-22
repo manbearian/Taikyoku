@@ -126,7 +126,7 @@ namespace WPF_UI
             {
                 try
                 {
-                    await Connection.RequestCancelGame(); // cancel any games we started
+                    await Connection.CancelGame(); // cancel any games we started
                 }
                 catch (Exception)
                 {

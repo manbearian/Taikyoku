@@ -94,7 +94,7 @@ namespace ServerTest
         [Fact]
         public void TestEcho()
         {
-            AutoResetEvent receivedEvent = new(false);
+            using AutoResetEvent receivedEvent = new(false);
             string echoMessage = "";
 
             using var c = new Connection();
@@ -114,7 +114,7 @@ namespace ServerTest
         [Fact]
         public void TestReceiveGameStart()
         {
-            AutoResetEvent receivedEvent = new(false);
+            using AutoResetEvent receivedEvent = new(false);
             TaikyokuShogi game = new();
 
             using var c = new Connection(Guid.NewGuid(), Guid.NewGuid(), PlayerColor.Black);
@@ -156,8 +156,8 @@ namespace ServerTest
         [Fact]
         public void TestJoinGame()
         {
-            AutoResetEvent startEvent1 = new(false);
-            AutoResetEvent startEvent2 = new(false);
+            using AutoResetEvent startEvent1 = new(false);
+            using AutoResetEvent startEvent2 = new(false);
             TaikyokuShogi? game1 = null;
             TaikyokuShogi? game2 = null;
 
@@ -210,8 +210,8 @@ namespace ServerTest
         // Helper Function that setups a game and with two Connections attached
         private (Connection, Connection) SetupGame()
         {
-            AutoResetEvent startEvent1 = new(false);
-            AutoResetEvent startEvent2 = new(false);
+            using AutoResetEvent startEvent1 = new(false);
+            using AutoResetEvent startEvent2 = new(false);
 
             var c1 = new Connection();
             c1.OnReceiveGameStart += (sender, e) =>
@@ -248,13 +248,15 @@ namespace ServerTest
         [Fact]
         public void TestMakeMove()
         {
-            AutoResetEvent e1 = new(false);
-            AutoResetEvent e2 = new(false);
+            using AutoResetEvent e1 = new(false);
+            using AutoResetEvent e2 = new(false);
 
             TaikyokuShogi? game1 = null;
             TaikyokuShogi? game2 = null;
 
             var (c1, c2) = SetupGame();
+            using var closeC1 = c1;
+            using var closeC2 = c2;
 
             c1.OnReceiveGameUpdate += (sender, e) =>
             {
@@ -288,21 +290,20 @@ namespace ServerTest
 
             Assert.True(game1?.BoardStateEquals(game2 ?? throw new NullReferenceException()) ?? false);
             Assert.Equal(PlayerColor.Black, game1?.CurrentPlayer);
-
-            c1.Dispose();
-            c2.Dispose();
         }
 
         [Fact]
         public void TestBadMove()
         {
-            AutoResetEvent e1 = new(false);
-            AutoResetEvent e2 = new(false);
+            using AutoResetEvent e1 = new(false);
+            using AutoResetEvent e2 = new(false);
 
             TaikyokuShogi? game1 = null;
             TaikyokuShogi? game2 = null;
 
             var (c1, c2) = SetupGame();
+            using var closeC1 = c1;
+            using var closeC2 = c2;
 
             c1.OnReceiveGameUpdate += (sender, e) =>
             {
@@ -330,21 +331,20 @@ namespace ServerTest
             Assert.Null(game1?.CurrentPlayer);
             Assert.Equal(PlayerColor.White, game1?.Winner);
             Assert.Equal(GameEndType.IllegalMove, game1?.Ending);
-
-            c1.Dispose();
-            c2.Dispose();
         }
 
         [Fact]
         public void TestResign()
         {
-            AutoResetEvent e1 = new(false);
-            AutoResetEvent e2 = new(false);
+            using AutoResetEvent e1 = new(false);
+            using AutoResetEvent e2 = new(false);
 
             TaikyokuShogi? game1 = null;
             TaikyokuShogi? game2 = null;
 
             var (c1, c2) = SetupGame();
+            using var closeC1 = c1;
+            using var closeC2 = c2;
 
             c1.OnReceiveGameUpdate += (sender, e) =>
             {
@@ -369,7 +369,7 @@ namespace ServerTest
             output.WriteLine("...both games updated");
 
             output.WriteLine("initating reignation for black....");
-            Assert.True(c1.RequestResign().Wait(TIMEOUT));
+            Assert.True(c1.ResignGame().Wait(TIMEOUT));
 
             output.WriteLine("waiting for game update events....");
             Assert.True(WaitHandle.WaitAll(new WaitHandle[] { e1, e2 }, TIMEOUT));
@@ -379,15 +379,12 @@ namespace ServerTest
             Assert.Null(game1?.CurrentPlayer);
             Assert.Equal(PlayerColor.White, game1?.Winner);
             Assert.Equal(GameEndType.Resignation, game1?.Ending);
-
-            c1.Dispose();
-            c2.Dispose();
         }
 
         [Fact]
         public void TestDisconnect()
         {
-            AutoResetEvent e1 = new(false);
+            using AutoResetEvent e1 = new(false);
 
             var (c1, c2) = SetupGame();
 
@@ -409,14 +406,18 @@ namespace ServerTest
         [Fact]
         public void TestSecondConnect()
         {
-            AutoResetEvent gAp2DisconnectEvent = new(false);
-            AutoResetEvent gBp2DisconnectEvent = new(false);
-            AutoResetEvent gBp2ReconnectEvent = new(false);
-            AutoResetEvent gBp1UpdateEvent = new(false);
-            AutoResetEvent gBp2UpdateEvent = new(false);
+            using AutoResetEvent gAp2DisconnectEvent = new(false);
+            using AutoResetEvent gBp2DisconnectEvent = new(false);
+            using AutoResetEvent gBp2ReconnectEvent = new(false);
+            using AutoResetEvent gBp1UpdateEvent = new(false);
+            using AutoResetEvent gBp2UpdateEvent = new(false);
 
             var (c1, c2) = SetupGame();
             var (c3, c4) = SetupGame();
+            using var closeC1 = c1;
+            using var closeC2 = c2;
+            using var closeC3 = c3;
+            using var closeC4 = c4;
 
             Guid gameA = c1.GameId;
             Guid playerA1 = c1.PlayerId;
@@ -466,7 +467,6 @@ namespace ServerTest
                 gBp2UpdateEvent.Set();
             };
 
-
             output.WriteLine($"changing connection1 from Game A, Player 1 to Game B, Player 1");
             c1.SetGameInfo(gameB, playerB1, PlayerColor.Black);
             Assert.True(c1.RequestRejoinGame().Wait(TIMEOUT));
@@ -490,26 +490,21 @@ namespace ServerTest
             output.WriteLine("waiting for game update events....");
             Assert.True(WaitHandle.WaitAll(new WaitHandle[] { gBp1UpdateEvent, gBp2UpdateEvent }, TIMEOUT));
             output.WriteLine("...both games updated");
-
-            c1.Dispose();
-            c2.Dispose();
-            c3.Dispose();
-            c4.Dispose();
         }
-
 
         // Test scenarios around moving connection from game1 to game2
         [Fact]
         public void TestLateJoins()
         {
-            AutoResetEvent gAp2DisconnectEvent = new(false);
-            AutoResetEvent gBp2DisconnectEvent = new(false);
-            AutoResetEvent gBp2ReconnectEvent = new(false);
-            AutoResetEvent gBp1UpdateEvent = new(false);
-            AutoResetEvent gBp2UpdateEvent = new(false);
+            using AutoResetEvent gAp2DisconnectEvent = new(false);
+            using AutoResetEvent gBp2DisconnectEvent = new(false);
+            using AutoResetEvent gBp2ReconnectEvent = new(false);
+            using AutoResetEvent gBp1UpdateEvent = new(false);
+            using AutoResetEvent gBp2UpdateEvent = new(false);
 
             var (c1, c2) = SetupGame();
-
+            using var closeC1 = c1;
+            using var closeC2 = c2;
 
             output.WriteLine("joining a third player to the game...");
             var c3 = new Connection(c1.GameId, c2.PlayerId, PlayerColor.White);
@@ -524,11 +519,80 @@ namespace ServerTest
             Assert.Equal(ex.InnerException?.Message, string.Format(HubExceptions.OpenGameNotFound, c1.GameId));
         }
 
+        // Test cancel a game that has been opened but not joined
+        [Fact]
+        public void TestStartAndCancel()
+        {
+            using AutoResetEvent startEvent = new(false);
 
-        // TODO: missing tests
-        //   start -> cancel
-        //   start -> cancel -> join
-        //   start -> join -> cancel
+            using var c1 = new Connection();
+            c1.OnReceiveGameStart += (sender, e) =>
+            {
+                output.WriteLine($"game start for initiating player: '{e.GameInfo.GameId}'/'{e.PlayerId}'");
+                startEvent.Set();
+            };
+            Assert.True(c1.ConnectAsync().Wait(TIMEOUT));
+
+            output.WriteLine("creating a new game...");
+            Assert.True(c1.RequestNewGame("test-player", true, new TaikyokuShogi()).ContinueWith(t =>
+            {
+                output.WriteLine($"new game '{c1.GameId}' created; player is '{c1.PlayerId}'");
+            }).Wait(TIMEOUT));
+
+            Assert.True(c1.CancelGame().Wait(TIMEOUT));
+        }
+        
+        // Test cancel a game that has already been joined
+        [Fact]
+        public void TestCancelOfJoinedGame()
+        {
+            var (c1, c2) = SetupGame();
+            using var closeC1 = c1;
+            using var closeC2 = c2;
+
+            var ex = Assert.Throws<AggregateException>(() => c1.CancelGame().Wait(TIMEOUT));
+            Assert.IsType<HubException>(ex.InnerException);
+            Assert.Equal(ex.InnerException?.Message, string.Format(HubExceptions.OpenGameNotFound, c1.GameId));
+        }
+
+        // Test joining a game that has been canceled
+        [Fact]
+        public void TestJoinOfCancledGame()
+        {
+            using AutoResetEvent startEvent1 = new(false);
+            using AutoResetEvent startEvent2 = new(false);
+
+            using var c1 = new Connection();
+            c1.OnReceiveGameStart += (sender, e) =>
+            {
+                output.WriteLine($"game start for initiating player: '{e.GameInfo.GameId}'/'{e.PlayerId}'");
+                startEvent1.Set();
+            };
+            Assert.True(c1.ConnectAsync().Wait(TIMEOUT));
+
+            output.WriteLine("creating a new game...");
+            Assert.True(c1.RequestNewGame("test-player", true, new TaikyokuShogi()).ContinueWith(t =>
+            {
+                output.WriteLine($"new game '{c1.GameId}' created; player is '{c1.PlayerId}'");
+            }).Wait(TIMEOUT));
+
+            output.WriteLine("canceling the game...");
+            Assert.True(c1.CancelGame().Wait(TIMEOUT));
+
+            output.WriteLine("joining a second playerto the game...");
+            using var c2 = new Connection(c1.GameId, Guid.Empty, PlayerColor.Black);
+            c2.OnReceiveGameStart += (sender, e) =>
+            {
+                output.WriteLine($"game start for joining player: '{e.GameInfo.GameId}'/'{e.PlayerId}'");
+                startEvent2.Set();
+            };
+            Assert.True(c2.ConnectAsync().Wait(TIMEOUT));
+
+            var ex = Assert.Throws<AggregateException>(() => c2.JoinGame("other-player").Wait(TIMEOUT));
+            Assert.IsType<HubException>(ex.InnerException);
+            Assert.Equal(ex.InnerException?.Message, string.Format(HubExceptions.OpenGameNotFound, c1.GameId));
+        }
+        
 
     }
 }
