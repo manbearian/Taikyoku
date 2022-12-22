@@ -173,20 +173,23 @@ namespace WPF_UI
                 _ => throw new InvalidOperationException()
             };
 
-            corners.ForEach(corner => { corner.Fill = fillColor; });
-            borders.ForEach(border => { border.FillColor = fillColor; border.TextColor = textColor; border.InvalidateVisual(); });
-
-            playMenu.IsEnabled = player is not null;
-
-            if (IsNetworkGame)
+            Dispatcher.Invoke(() =>
             {
-                if (NetworkConnection?.Color == player)
-                    StatusBarTextBlock2.Text = "Your move!";
-                else if (NetworkConnection?.Color == player?.Opponent())
-                    StatusBarTextBlock2.Text = "Waiting on opponent...";
-            }
+                corners.ForEach(corner => { corner.Fill = fillColor; });
+                borders.ForEach(border => { border.FillColor = fillColor; border.TextColor = textColor; border.InvalidateVisual(); });
 
-            InvalidateVisual();
+                playMenu.IsEnabled = player is not null;
+
+                if (IsNetworkGame)
+                {
+                    if (NetworkConnection?.Color == player)
+                        StatusBarTextBlock2.Text = "Your move!";
+                    else if (NetworkConnection?.Color == player?.Opponent())
+                        StatusBarTextBlock2.Text = "Waiting on opponent...";
+                }
+
+                InvalidateVisual();
+            });
         }
 
         private void SaveGame(string path)

@@ -84,9 +84,10 @@ namespace WPF_UI
                 IsEnabled = Game.CurrentPlayer is not null && (networkConnection is null || Game.CurrentPlayer == networkConnection.Color);
                 IsRotated = networkConnection?.Color == PlayerColor.White;
                 InvalidateVisual();
+
+                OnPlayerChange?.Invoke(this, new PlayerChangeEventArgs(null, Game.CurrentPlayer));
             });
 
-            OnPlayerChange?.Invoke(this, new PlayerChangeEventArgs(null, Game.CurrentPlayer));
 
             // check if we loaded up a game that has ended
             if (Game.Ending is not null)
