@@ -1,7 +1,4 @@
-﻿using Microsoft.AspNetCore.SignalR;
-using ShogiClient;
-using ShogiComms;
-using ShogiEngine;
+﻿
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.Contracts;
@@ -9,6 +6,11 @@ using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+
+using ShogiClient;
+using ShogiComms;
+using ShogiEngine;
+
 using WPF_UI.Properties;
 
 namespace WPF_UI
@@ -168,25 +170,19 @@ namespace WPF_UI
 
         private async void Window_SourceInitialized(object sender, EventArgs e)
         {
+            IEnumerable<ClientGameInfo> list = Enumerable.Empty<ClientGameInfo>();
+
             try
             {
                 await Connection.ConnectAsync();
-
                 if (IsShowingKnownGames)
                 {
                     SetUIForConnectExistingGame();
-                    await Connection.RequestGameInfo(KnownGames.EmptyIfNull().Select(p => new NetworkGameRequest(p.GameId, p.PlayerId)).ToList()).
-                        ContinueWith(t =>
-                    {
-                        Dispatcher.Invoke(() => UpdateGameList(t.Result));
-                    });
+                    list = await Connection.RequestGameInfo(KnownGames.EmptyIfNull().Select(p => new NetworkGameRequest(p.GameId, p.PlayerId)).ToList());
                 }
                 else
                 {
-                    await Connection.RequestAllOpenGameInfo().ContinueWith(t =>
-                    {
-                        Dispatcher.Invoke(() => UpdateGameList(t.Result));
-                    });
+                    list = await Connection.RequestAllOpenGameInfo();
                 }
             }
             catch (Exception ex) when (Connection.ExceptionFilter(ex))
@@ -194,6 +190,8 @@ namespace WPF_UI
                 // TODO: log error? report to uesr?
                 Close();
             }
+
+            Dispatcher.Invoke(() => UpdateGameList(list));
         }
 
         private void GamesList_SelectionChanged(object sender, SelectionChangedEventArgs e)
