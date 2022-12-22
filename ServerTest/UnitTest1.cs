@@ -1,16 +1,18 @@
 using Xunit;
 using Xunit.Abstractions;
 
-
 using System;
 using System.Threading;
-using System.Security.Principal;
 using System.Diagnostics;
 using System.Threading.Tasks;
 using System.Linq;
 
+using Microsoft.AspNetCore.SignalR;
+
+using ShogiComms;
 using ShogiClient;
 using ShogiEngine;
+
 
 namespace ServerTest
 {
@@ -495,10 +497,38 @@ namespace ServerTest
             c4.Dispose();
         }
 
+
+        // Test scenarios around moving connection from game1 to game2
+        [Fact]
+        public void TestLateJoins()
+        {
+            AutoResetEvent gAp2DisconnectEvent = new(false);
+            AutoResetEvent gBp2DisconnectEvent = new(false);
+            AutoResetEvent gBp2ReconnectEvent = new(false);
+            AutoResetEvent gBp1UpdateEvent = new(false);
+            AutoResetEvent gBp2UpdateEvent = new(false);
+
+            var (c1, c2) = SetupGame();
+
+
+            output.WriteLine("joining a third player to the game...");
+            var c3 = new Connection(c1.GameId, c2.PlayerId, PlayerColor.White);
+            c3.OnReceiveGameStart += (sender, e) =>
+            {
+                Assert.True(false);
+            };
+            Assert.True(c3.ConnectAsync().Wait(TIMEOUT));
+
+            var ex = Assert.Throws<AggregateException>(() => c3.JoinGame("third-wheel").Wait(TIMEOUT));
+            Assert.IsType<HubException>(ex.InnerException);
+            Assert.Equal(ex.InnerException?.Message, string.Format(HubExceptions.OpenGameNotFound, c1.GameId));
+        }
+
+
         // TODO: missing tests
-        //   start -> join (client1) -> join (client2)
         //   start -> cancel
         //   start -> cancel -> join
         //   start -> join -> cancel
+
     }
 }

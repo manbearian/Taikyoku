@@ -183,7 +183,6 @@ namespace ShogiClient
            e switch
            {
                _ when e is HubException => true,               // Marshalled exception from the hub.
-               _ when e is InvalidOperationException => true,  // Connection failure
                _ when e is SocketException => true,            // Connection faliure
                _ when e is HttpRequestException => true,       // Connection faliure
                _ => false

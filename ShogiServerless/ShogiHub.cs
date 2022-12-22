@@ -185,14 +185,14 @@ namespace ShogiServerless
             if (!OpenGames.TryRemove(gameId, out var openGameInfo))
             {
                 logger.LogInformation($"'{gameId}' was not found in OpenGames list");
-                throw new HubException($"game '{gameId}' is no longer available");
+                throw new OpenGameNotFoundException(gameId);
             }
 
             logger.LogInformation($"sending all clients updated open game list");
             await Clients.All.ReceiveGameList(AllOpenGames().ToList());
 
-            var gameInfo = TableStorage.AddGame(new GameInfo(openGameInfo, playerName))
-                ?? throw new HubException("Internal Storage Error: Unable to add game");
+            var gameInfo = await TableStorage.AddGame(new GameInfo(openGameInfo, playerName))
+                ?? throw new AddGameException(openGameInfo.GameId);
 
             logger.LogInformation($"'{gameId}' successfully moved from OpenGames to LiveGames");
 
@@ -224,7 +224,8 @@ namespace ShogiServerless
             ILogger logger)
         {
             var gameInfo = await TableStorage.FindGame(gameId)
-                ?? throw new HubException($"failed to find game: {gameId}");
+                ?? throw new FindGameException(gameId);
+
             var otherPlayerInfo = gameInfo.GetOtherPlayerInfo(playerId);
 
             await MapConnection(context.ConnectionId, gameId, playerId, logger);
@@ -251,11 +252,11 @@ namespace ShogiServerless
         private async Task UpdateGame(GameInfo gameInfo,
             ILogger logger)
         {
-            gameInfo = TableStorage.UpdateGame(gameInfo)
-                ?? throw new HubException("Interal Server error: cannot record move");
+            gameInfo = await TableStorage.UpdateGame(gameInfo)
+                ?? throw new UpdateGameException(gameInfo.Id);
 
-            var blackPlayerId = gameInfo.BlackPlayer?.PlayerId ?? throw new HubException("game in bad state; missing black player");
-            var whitePlayerId = gameInfo.WhitePlayer?.PlayerId ?? throw new HubException("game in bad state; missing white player");
+            var blackPlayerId = gameInfo.BlackPlayer.PlayerId;
+            var whitePlayerId = gameInfo.WhitePlayer.PlayerId;
 
             logger.LogInformation($"Black player is '{gameInfo.Id}/{blackPlayerId}'");
             logger.LogInformation($"White player is '{gameInfo.Id}/{whitePlayerId}'");
@@ -278,23 +279,20 @@ namespace ShogiServerless
             Location startLoc, Location endLoc, Location midLoc, bool promote,
             ILogger logger)
         {
-            if (!TryGetPlayer(context.ConnectionId, out var gameId, out var playerId, logger))
+            if (!TryGetPlayer(context.ConnectionId, out var gameId, out var _, logger))
                 return;
 
             var gameInfo = await TableStorage.FindGame(gameId)
-                ?? throw new HubException($"failed to find game: {gameId}");
-
-            if (gameInfo.Game.CurrentPlayer != gameInfo.GetPlayerColor(playerId))
-                throw new HubException("illegal move: wrong client requested the move");
-
+                ?? throw new FindGameException(gameId);
             try
             {
                 gameInfo.Game.MakeMove(((int, int))startLoc, ((int, int))endLoc, ((int, int)?)midLoc, promote);
                 gameInfo.LastPlayed = DateTime.Now;
             }
-            catch (InvalidOperationException e)
+            catch (ShogiEngine.InvalidMoveException ex)
             {
-                throw new HubException("invalid move: unable to complete move", e);
+                logger.LogError(ex, $"Invalid move '{ex.Message}' for '{gameId}'");
+                throw new InvalidMoveException(gameId, ex);
             }
 
             await UpdateGame(gameInfo, logger);

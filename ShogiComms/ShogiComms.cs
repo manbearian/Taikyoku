@@ -32,7 +32,7 @@ namespace ShogiComms
 
     public static class NetworkGameRequestListExtensions
     {
-        public static NetworkGameRequestList ToNetworkGameRequestList(this IEnumerable<NetworkGameRequest> list) => new (list);
+        public static NetworkGameRequestList ToNetworkGameRequestList(this IEnumerable<NetworkGameRequest> list) => new(list);
     }
 
     // Workaround for returning named tuples from Hub which was causing silent failure
@@ -84,5 +84,18 @@ namespace ShogiComms
         public static explicit operator (int X, int Y)(Location loc) => (loc.X, loc.Y);
 
         public static explicit operator (int X, int Y)?(Location loc) => !loc.isValid() ? null : (loc.X, loc.Y);
+    }
+
+    public static class HubExceptions
+    {
+        public static string OpenGameNotFound { get; } = "Open game '{0}' is no longer available";
+
+        public static string AddGameFailed { get; } = "Failed to add game '{0}' to backing storage";
+
+        public static string UpdateGameFailed { get; } = "Failed to update game '{0}' in backing storage";
+
+        public static string FindGameFailed { get; } = "Failed to find  game '{0}' in backing storage";
+
+        public static string InvalidMove { get; } = "Invalid move '{0}' requested in game '{1}'";
     }
 }
