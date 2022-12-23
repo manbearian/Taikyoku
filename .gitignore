@@ -5,6 +5,7 @@
 
 # Azure Functions localsettings file
 local.settings.json
+serviceDependencies.local.json
 
 # User-specific files
 *.rsuser
@@ -345,3 +346,7 @@ healthchecksdb
 # Azure Storage emulator
 __azurite_db*.json
 __blobstorage__/
+
+# packages for deployment
+*Zip Deploy*
+**/ServiceDependencies/local
