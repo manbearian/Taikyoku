@@ -28,7 +28,7 @@ namespace WPF_UI
                 Settings.Default.Reload();
 
                 // TODO: we're still getting duplicates?!!?
-                var origList = Settings.Default.NetworkGameList.NetworkGameStates.EmptyIfNull();
+                var origList = Settings.Default.NetworkGameList?.NetworkGameStates ?? Enumerable.Empty<NetworkGameState>();
                 var newList = origList.Append(new NetworkGameState(gameId, playerId, myColor)).Distinct();
                 Settings.Default.NetworkGameList = new NetworkGameStateList(newList);
                 Settings.Default.Save();
@@ -72,7 +72,7 @@ namespace WPF_UI
         {
             // don't need the mutex here, just show whatever is available
             Settings.Default.Reload();
-            return Settings.Default.NetworkGameList.NetworkGameStates;
+            return Settings.Default.NetworkGameList?.NetworkGameStates ?? Enumerable.Empty<NetworkGameState>();
         }
 
         public static void RecordGameState(TaikyokuShogi game, NetworkGameState? networkGameInfo = null)
