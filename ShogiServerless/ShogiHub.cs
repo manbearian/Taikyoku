@@ -1,11 +1,13 @@
 ﻿using System;
-using System.Text.Json;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.IO;
+using System.Text.Json;
 using System.Threading.Tasks;
 using System.Linq;
 
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
@@ -371,6 +373,18 @@ namespace ShogiServerless
         {
             await UnmapConnection(context.ConnectionId, logger);
             logger.LogInformation($"{context.ConnectionId} has disconnected");
+        }
+
+        [FunctionName("index")]
+        public IActionResult GetHomePage([HttpTrigger(AuthorizationLevel.Anonymous)] HttpRequest req, ExecutionContext context, ILogger logger)
+        {
+            logger.LogInformation("web page request received");
+            var path = Path.Combine(context.FunctionAppDirectory, "content", "index.html");
+            return new ContentResult
+            {
+                Content = File.ReadAllText(path),
+                ContentType = "text/html",
+            };
         }
 
         [FunctionName("negotiate")]
