@@ -1,7 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
+using System.Configuration;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Configuration;
 using Microsoft.WindowsAzure.Storage;
 using Microsoft.WindowsAzure.Storage.Table;
 
@@ -14,7 +15,14 @@ namespace ShogiServerless
 
         public TableStorage()
         {
-            var storageConnectionString = "UseDevelopmentStorage=true"; //AppSettings.LoadAppSettings().StorageConnectionString ?? string.Empty;
+            var storageConnectionString = Environment.GetEnvironmentVariable("AzureWebJobsStorage")
+                ?? throw new Exception("AzureWebJobsStorage not set");
+
+            //#if true
+            //            var storageConnectionString = "UseDevelopmentStorage=true"; //AppSettings.LoadAppSettings().StorageConnectionString ?? string.Empty;
+            //#else
+            //            var storageConnectionString = "ShogiStorConnectionString"; //  CloudStorageAccount.Parse(.Ap.Parse(CloudConfigurationManger.GetSetting("ShogiStorConnectionString"));
+            //#endif
             var storageAccount = CreateStorageAccountFromConnectionString(storageConnectionString);
             _cloudTableClient = storageAccount.CreateCloudTableClient();
         }
