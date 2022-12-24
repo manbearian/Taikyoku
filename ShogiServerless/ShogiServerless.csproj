@@ -5,6 +5,7 @@
     <Nullable>enable</Nullable>
     <AssemblyName>ShogiServerless</AssemblyName>
     <Configurations>Debug;Release;DebugLocal</Configurations>
+    <ApplicationInsightsResourceId>/subscriptions/ea9c15e2-981e-4f0b-90bd-9f7a2682375e/resourceGroups/shogi-group/providers/microsoft.insights/components/shogihub</ApplicationInsightsResourceId>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='DebugLocal|AnyCPU'">
     <DefineConstants>$(DefineConstants);DEBUG;LOCAL</DefineConstants>
@@ -14,6 +15,7 @@
     <PackageReference Include="Azure.Storage.Blobs" Version="12.14.1" />
     <PackageReference Include="Azure.Storage.Files.Shares" Version="12.12.1" />
     <PackageReference Include="Azure.Storage.Queues" Version="12.12.0" />
+    <PackageReference Include="Microsoft.ApplicationInsights.WorkerService" Version="2.15.0" />
     <PackageReference Include="Microsoft.AspNetCore.AzureKeyVault.HostingStartup" Version="2.0.4" />
     <PackageReference Include="Microsoft.Azure.WebJobs.Extensions.SignalRService" Version="1.8.0" />
     <PackageReference Include="Microsoft.Azure.WebJobs.Extensions.Storage" Version="5.0.1" />

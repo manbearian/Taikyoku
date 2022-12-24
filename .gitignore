@@ -345,7 +345,3 @@ healthchecksdb
 
 # Azure Storage emulator
 .azurite/
-
-# packages for deployment
-*Zip Deploy*
-**/ServiceDependencies/local
