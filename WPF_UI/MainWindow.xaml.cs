@@ -48,20 +48,20 @@ namespace WPF_UI
         {
             InitializeComponent();
 
-#if !DEBUG
+#if RELEASE
             debugModeMenuItem.IsEnabled = false;
+#endif
 
-            foreach (var pieceId in (Enum.GetValues(typeof(PieceIdentity)) as PieceIdentity[]).OrderBy(piece => piece.Name()))
+            foreach (var pieceId in (Enum.GetValues(typeof(PieceIdentity)) as PieceIdentity[]).EmptyIfNull().OrderBy(piece => piece.Name()))
             {
                 var blackMenuItem = new MenuItem() { Header = pieceId.Name() };
                 var whiteMenuItem = new MenuItem() { Header = pieceId.Name() };
 
-                pieceMenuItems.Add(blackMenuItem, new Piece(Player.Black, pieceId));
+                pieceMenuItems.Add(blackMenuItem, new Piece(PlayerColor.Black, pieceId));
                 addBlackPieceMenuItem.Items.Add(blackMenuItem);
-                pieceMenuItems.Add(whiteMenuItem, new Piece(Player.White, pieceId));
+                pieceMenuItems.Add(whiteMenuItem, new Piece(PlayerColor.White, pieceId));
                 addWhitePieceMenuItem.Items.Add(whiteMenuItem);
             }
-#endif
 
             gameBoard.IsRotated = Properties.Settings.Default.RotateBoard;
 
