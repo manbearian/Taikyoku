@@ -17,6 +17,7 @@
     <AssemblyName>TaikyokuShogi</AssemblyName>
     <LangVersion>10.0</LangVersion>
     <Nullable>enable</Nullable>
+    <Configurations>Debug;Release</Configurations>
   </PropertyGroup>
 
   <ItemGroup>

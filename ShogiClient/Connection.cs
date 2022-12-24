@@ -87,10 +87,17 @@ namespace ShogiClient
         {
             (GameId, PlayerId, Color) = (gameId, playerId, color);
 
+#if LOCAL
             _connection = new HubConnectionBuilder().
                 WithUrl("http://localhost:7071/api").
                 WithAutomaticReconnect().
                 Build();
+#else
+            _connection = new HubConnectionBuilder().
+                WithUrl("https://shogiserverless.azurewebsites.net/api").
+                WithAutomaticReconnect().
+                Build();
+#endif
 
             _connection.On<List<ClientGameInfo>>("ReceiveGameList", gameList =>
                 OnReceiveGameList?.Invoke(this, new ReceiveGameListEventArgs(gameList)));
@@ -136,7 +143,7 @@ namespace ShogiClient
             {
                 await _connection.StartAsync();
             }
-            catch (HttpRequestException e) when (retry < 3)
+            catch (HttpRequestException ex) when (retry < 3)
             {
                 // When Debugging it's posisble that the server hasn't been stood up yet
                 // It usually takes about 6 secons to start up. Try 3 times @ 3/6/9 second

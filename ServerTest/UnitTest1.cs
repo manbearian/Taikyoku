@@ -15,6 +15,7 @@ using ShogiEngine;
 
 namespace ServerTest
 {
+#if LOCAL
     public sealed class MyFixture : IDisposable
     {
         readonly Process serverProcess;
@@ -33,6 +34,9 @@ namespace ServerTest
 
         public void Dispose() => serverProcess?.Close();
     }
+#else
+    public sealed class MyFixture { }
+#endif
 
     public class UnitTest1 : IClassFixture<MyFixture>
     {
@@ -91,6 +95,7 @@ namespace ServerTest
             output.WriteLine("...validation complete");
         }
 
+#if DEBUG
         [Fact]
         public void TestEcho()
         {
@@ -139,6 +144,7 @@ namespace ServerTest
             Assert.True(success);
             Console.WriteLine("...done!");
         }
+#endif
 
         [Fact]
         public void TestCreateGame()

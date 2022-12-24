@@ -4,6 +4,10 @@
     <TargetFramework>net6.0</TargetFramework>
     <LangVersion>10.0</LangVersion>
     <Nullable>enable</Nullable>
+    <Configurations>Debug;Release;DebugLocal</Configurations>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='DebugLocal|AnyCPU'">
+    <DefineConstants>$(DefineConstants);DEBUG;LOCAL</DefineConstants>
+  </PropertyGroup>
 </Project>

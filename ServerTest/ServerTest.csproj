@@ -5,6 +5,12 @@
     <Nullable>enable</Nullable>
 
     <IsPackable>false</IsPackable>
+
+    <Configurations>Debug;Release;DebugLocal</Configurations>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='DebugLocal|AnyCPU'">
+    <DefineConstants>$(DefineConstants);DEBUG;LOCAL</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup>
