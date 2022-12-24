@@ -344,8 +344,7 @@ ASALocalRun/
 healthchecksdb
 
 # Azure Storage emulator
-__azurite_db*.json
-__blobstorage__/
+.azurite/
 
 # packages for deployment
 *Zip Deploy*
