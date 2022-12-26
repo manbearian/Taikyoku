@@ -30,9 +30,9 @@ namespace WPF_UI
     /// </summary>
     public partial class MainWindow : Window
     {
-        readonly List<Shape> corners = new List<Shape>();
-        readonly List<NumberPanel> borders = new List<NumberPanel>();
-        readonly Dictionary<MenuItem, Piece> pieceMenuItems = new Dictionary<MenuItem, Piece>();
+        readonly List<Shape> corners = new();
+        readonly List<NumberPanel> borders = new();
+        readonly Dictionary<MenuItem, Piece> pieceMenuItems = new();
 
         TaikyokuShogi? _game = null;
         PieceInfoWindow? _pieceInfoWindow = null;
@@ -330,9 +330,9 @@ namespace WPF_UI
                 }
 
                 // remove games the server was unaware of from our known game list
-                foreach (var game in window.DeadGames)
+                foreach (var (gameId, playerId) in window.DeadGames)
                 {
-                    GameSaver.RemoveNetworkGame(game.GameId, game.PlayerId);
+                    GameSaver.RemoveNetworkGame(gameId, playerId);
                 }
             }
             else if (e.Source == connectMenuItem)
