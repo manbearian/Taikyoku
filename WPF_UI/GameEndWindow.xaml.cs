@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics.Tracing;
 using System.Text;
 using System.Windows;
 using System.Windows.Controls;
@@ -24,7 +25,7 @@ namespace WPF_UI
             InitializeComponent();
         }
 
-        public void ShowDialog(GameEndType gameEndType, PlayerColor? winner)
+        public void ShowDialog(GameEndType gameEndType, PlayerColor? winner, string message)
         {
             upperTextBox.Text = gameEndType switch
             {
@@ -34,13 +35,7 @@ namespace WPF_UI
                 _ => throw new NotSupportedException()
             };
 
-            lowerTextBox.Text = winner switch
-            {
-                PlayerColor.White => "White Wins!",
-                PlayerColor.Black => "Black Wins!",
-                null => "Draw!",
-                _ => throw new NotSupportedException(),
-            };
+            lowerTextBox.Text = message;
 
             ShowDialog();
         }

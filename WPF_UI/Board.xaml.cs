@@ -84,10 +84,9 @@ namespace WPF_UI
                 IsEnabled = Game.CurrentPlayer is not null && (networkConnection is null || Game.CurrentPlayer == networkConnection.Color);
                 IsRotated = networkConnection?.Color == PlayerColor.White;
                 InvalidateVisual();
-
-                OnPlayerChange?.Invoke(this, new PlayerChangeEventArgs(null, Game.CurrentPlayer));
             });
 
+            OnPlayerChange?.Invoke(this, new PlayerChangeEventArgs(null, Game.CurrentPlayer));
 
             // check if we loaded up a game that has ended
             if (Game.Ending is not null)
@@ -98,15 +97,15 @@ namespace WPF_UI
 
         public void ClearBoard()
         {
-            if (Game is null)
-                return;
+            Dispatcher.Invoke(() =>
+            {
+                Game?.Debug_RemoveAllPieces();
 
-            Game.Debug_RemoveAllPieces();
+                Selected = null;
+                Selected2 = null;
 
-            Selected = null;
-            Selected2 = null;
-
-            InvalidateVisual();
+                InvalidateVisual();
+            });
         }
 
         public (int X, int Y)? GetBoardLoc(Point p)
