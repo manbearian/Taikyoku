@@ -21,6 +21,7 @@ using ShogiEngine;
 using ShogiClient;
 
 using WPF_UI.Properties;
+using System.Reflection;
 
 namespace WPF_UI
 {
@@ -94,7 +95,7 @@ namespace WPF_UI
             }
 
             // reconnect to the server for network games
-            if (!(networkGameState is null))
+            if (networkGameState is not null)
             {
                 // todo: this prevents the main window from drawing while connection
                 // is in progress. I think it might be better to draw the window first?
@@ -158,9 +159,12 @@ namespace WPF_UI
 
         private void ChangeGame(TaikyokuShogi game)
         {
-            _game = game;
-            gameBoard.SetGame(_game, NetworkConnection);
-            InvalidateVisual();
+            Dispatcher.Invoke(() =>
+            {
+                _game = game;
+                gameBoard.SetGame(_game, NetworkConnection);
+                InvalidateVisual();
+            });
         }
 
         private void SetPlayer(PlayerColor? player)
@@ -222,27 +226,25 @@ namespace WPF_UI
 
         private void OnGameEnd(object sender, GameEndEventArgs eventArgs)
         {
-            if (IsNetworkGame)
+            var statusText = eventArgs.Winner switch
             {
-                StatusBarTextBlock2.Text = (eventArgs.Winner is null) ?
-                    "Draw!" : ((eventArgs.Winner == NetworkConnection?.Color) ? "You win!" : "You lost");
-            }
-            else
+                null => "Draw!",
+                PlayerColor.White when !IsNetworkGame => "White Wins!",
+                PlayerColor.Black when !IsNetworkGame => "Black Wins!",
+                _ when IsNetworkGame && eventArgs.Winner == NetworkConnection?.Color => "You win!",
+                _ when IsNetworkGame => "You lose",
+                _ => throw new NotSupportedException()
+            };
+
+            Dispatcher.Invoke(() =>
             {
-                StatusBarTextBlock2.Text = eventArgs.Winner switch
-                {
-                    PlayerColor.White => "White Wins!",
-                    PlayerColor.Black => "Black Wins!",
-                    null => "Draw!",
-                    _ => throw new NotSupportedException()
-                };
-            }
+                StatusBarTextBlock2.Text = statusText;
+                StatusBarTextBlock2.Visibility = Visibility.Visible;
 
-            StatusBarTextBlock2.Visibility = Visibility.Visible;
-
-            // todo: when a completed game is loaded from disk it causes the game ending window to show up
-            //       before the game window itself
-            new GameEndWindow().ShowDialog(eventArgs.Ending, eventArgs.Winner);
+                // todo: when a completed game is loaded from disk it causes the game ending window to show up
+                //       before the game window itself
+                new GameEndWindow().ShowDialog(eventArgs.Ending, eventArgs.Winner, statusText);
+            });
         }
 
         private void OnClose(object? Sender, EventArgs e)
@@ -363,15 +365,17 @@ namespace WPF_UI
             }
             else if (e.Source == resignMenuItem)
             {
-                Game?.Resign(NetworkConnection?.Color ?? Game.CurrentPlayer ?? throw new NotSupportedException());
                 if (IsNetworkGame)
                 {
                     Contract.Assert(NetworkConnection is not null);
                     await NetworkConnection.ResignGame();
                 }
-                gameBoard.InvalidateVisual();
-                OnPlayerChange(this, new PlayerChangeEventArgs(null, null));
-                OnGameEnd(this, new GameEndEventArgs(Game?.Ending ?? throw new NotSupportedException(), Game.Winner));
+                else
+                {
+                    Game?.Resign(NetworkConnection?.Color ?? Game.CurrentPlayer ?? throw new NotSupportedException());
+                    OnPlayerChange(this, new PlayerChangeEventArgs(null, null));
+                    OnGameEnd(this, new GameEndEventArgs(Game?.Ending ?? throw new NotSupportedException(), Game.Winner));
+                }
             }
             else if (e.Source == rotateMenuItem)
             {
