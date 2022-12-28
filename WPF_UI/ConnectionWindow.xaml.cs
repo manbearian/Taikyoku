@@ -146,7 +146,7 @@ namespace WPF_UI
             {
                 if (IsShowingKnownGames)
                 {
-                    Contract.Assert(!(localInfo is null));
+                    Contract.Assert(localInfo is not null);
                     OpponentName = localInfo.MyColor == PlayerColor.Black ? gameInfo.WhiteName : gameInfo.BlackName;
                     Connection.SetGameInfo(gameInfo.GameId, localInfo.PlayerId, localInfo.MyColor);
                     await Connection.RejoinGame();

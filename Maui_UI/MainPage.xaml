@@ -1,0 +1,65 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:shogi="clr-namespace:MauiUI"
+             x:Class="MauiUI.MainPage"
+             x:Name="page"
+             Title="Taikyoku Shogi">
+
+    <VerticalStackLayout
+            Spacing="25"
+            Padding="30,0"
+            BackgroundColor="White"
+            VerticalOptions="Center">
+
+        <Image
+                Source="logo.png"
+                SemanticProperties.Description="Taikyoku Shogi Logo"
+                HeightRequest="200"
+                HorizontalOptions="Center" />
+
+        <shogi:MyGamesView Connection="{Binding Source={x:Reference page}, Path=Connection}" HorizontalOptions="Center"/>
+
+        <HorizontalStackLayout
+            HorizontalOptions="CenterAndExpand">
+            <ImageButton
+                x:Name="NewLocalGameBtn"
+                Source="newlocalgame.png"
+                MaximumHeightRequest="128"
+                MaximumWidthRequest="128"
+                Margin="25,0"
+                SemanticProperties.Hint="Create a new local game"
+                HorizontalOptions="Center" />
+
+            <ImageButton
+                x:Name="NewOnlineGameBtn"
+                Source="newonlinegame.png"
+                MaximumHeightRequest="128"
+                MaximumWidthRequest="128"
+                Margin="25,0"
+                SemanticProperties.Hint="Create a new online game"
+                HorizontalOptions="Center" />
+
+            <ImageButton
+                x:Name="FindGameBtn"
+                Source="joinonlinegame.png"
+                MaximumHeightRequest="128"
+                MaximumWidthRequest="128"
+                Margin="25,0"
+                SemanticProperties.Hint="Find and join an online game"
+                HorizontalOptions="Center" />
+            
+            <Button
+                x:Name="SignInBtn"
+                Text="Sign in..."
+                MaximumHeightRequest="128"
+                MaximumWidthRequest="128"
+                Margin="25,0"
+                SemanticProperties.Hint="Sign in to Taikyoku Shogi"
+                HorizontalOptions="Center" />
+
+        </HorizontalStackLayout>
+
+    </VerticalStackLayout>
+
+</ContentPage>
