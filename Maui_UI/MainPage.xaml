@@ -29,7 +29,8 @@
                 MaximumWidthRequest="128"
                 Margin="25,0"
                 SemanticProperties.Hint="Create a new local game"
-                HorizontalOptions="Center" />
+                HorizontalOptions="Center"
+                Clicked="NewLocalGameBtn_Clicked" />
 
             <ImageButton
                 x:Name="NewOnlineGameBtn"

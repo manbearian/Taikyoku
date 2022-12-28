@@ -22,5 +22,10 @@ namespace MauiUI
 
             Connection = new Connection();
         }
+
+        private void NewLocalGameBtn_Clicked(object sender, EventArgs e)
+        {
+            Navigation.PushModalAsync(new BoardPage(), true);
+        }
     }
 }

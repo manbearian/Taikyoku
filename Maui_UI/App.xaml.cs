@@ -6,7 +6,9 @@
         {
             InitializeComponent();
 
-            MainPage = new AppShell();
+            // Don't wrap in a shell or navigation page
+            MainPage = new MainPage();
+            // MainPage = new AppShell();
         }
     }
 }
