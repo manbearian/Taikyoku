@@ -1,7 +1,6 @@
 using System.Collections.ObjectModel;
-using System.ComponentModel;
 using System.Diagnostics.Contracts;
-using System.Runtime.CompilerServices;
+
 using ShogiClient;
 using ShogiComms;
 using ShogiEngine;
@@ -90,13 +89,15 @@ public partial class MyGamesView : ContentView
 
         // Update UI on saved game changes
         var watcher = MySettings.LocalGameWatcher;
-        watcher.Changed += (s, e) => Dispatcher.Dispatch(() => PopulateMyGamesList());
-        watcher.Created += (s, e) => Dispatcher.Dispatch(() => PopulateMyGamesList());
-        watcher.Deleted += (s, e) => Dispatcher.Dispatch(() => PopulateMyGamesList());
-        watcher.Renamed += (s, e) => Dispatcher.Dispatch(() => PopulateMyGamesList());
+        watcher.Changed += handleLocalGameUpdate;
+        watcher.Created += handleLocalGameUpdate;
+        watcher.Deleted += handleLocalGameUpdate;
+        watcher.Renamed += handleLocalGameUpdate;
         watcher.EnableRaisingEvents = true;
     }
 
+   private void handleLocalGameUpdate(object sender, FileSystemEventArgs e) => Dispatcher.Dispatch(() => PopulateMyGamesList());
+    
     private void PopulateMyGamesList()
     {
         GamesList.Clear();
@@ -163,7 +164,6 @@ public partial class MyGamesView : ContentView
                 GamesList.Add(GameListItem.FromNetworkGame(gameInfo, myColor));
             }
         }
-
     }
 
     private void MyGamesView_Loaded(object? sender, EventArgs e) =>
@@ -171,6 +171,16 @@ public partial class MyGamesView : ContentView
 
     private void MyGamesView_Unloaded(object? sender, EventArgs e)
     {
+        var watcher = MySettings.LocalGameWatcher;
+        watcher.Changed -= handleLocalGameUpdate;
+        watcher.Created -= handleLocalGameUpdate;
+        watcher.Deleted -= handleLocalGameUpdate;
+        watcher.Renamed -= handleLocalGameUpdate;
     }
 
+    private void listView_ItemSelected(object sender, SelectedItemChangedEventArgs e)
+    {
+        var item = (GameListItem)e.SelectedItem;
+        Navigation.PushModalAsync(new BoardPage(item.GameId, item.Game));
+    }
 }

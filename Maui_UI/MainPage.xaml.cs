@@ -26,7 +26,7 @@ namespace MauiUI
 
         private void NewLocalGameBtn_Clicked(object sender, EventArgs e)
         {
-            Navigation.PushModalAsync(new BoardPage(Guid.NewGuid(), new TaikyokuShogi()), true);
+            Navigation.PushModalAsync(new BoardPage(Guid.Empty, new TaikyokuShogi()), true);
         }
     }
 }

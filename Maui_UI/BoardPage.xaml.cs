@@ -33,11 +33,17 @@ public partial class BoardPage : ContentPage
 
     private async void BoardPage_NavigatingFrom(object? sender, NavigatingFromEventArgs e)
     {
-        bool saveGame = await DisplayAlert("Save Game?", "Would you like to save this game?", "Yes", "No");
-        if (saveGame)
+        if (GameId == Guid.Empty)
         {
-            MySettings.SaveGame(GameId, Game);
+            bool saveGame = await DisplayAlert("Save Game?", "Would you like to save this game?", "Yes", "No");
+            if (saveGame)
+            {
+                GameId = Guid.NewGuid();
+            }
         }
+
+        if (GameId != Guid.Empty)
+            MySettings.SaveGame(GameId, Game);
     }
 
     private async void BackBtn_Clicked(object sender, EventArgs e) =>

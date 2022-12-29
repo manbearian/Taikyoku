@@ -10,6 +10,7 @@
         <ListView
             x:Name="listView"
             SelectionMode="Single"
+            ItemSelected="listView_ItemSelected"
             ItemsSource="{Binding Source={x:Reference this}, Path=GamesList}" >
             <ListView.ItemTemplate>
                 <DataTemplate x:DataType="local:GameListItem">
