@@ -107,7 +107,7 @@ internal class BoardDrawer : IDrawable
                 canvas.Rotate(piece.Owner == PlayerColor.White ? 180 : 0, spaceWidth / 2, spaceHeight / 2);
 
                 canvas.StrokeColor = (loc == View.SelectedLoc) ? ((piece.Owner == View.Game.CurrentPlayer) ? Colors.Blue : Colors.Red) : Colors.Black;
-                canvas.StrokeSize = 1.0f;
+                canvas.StrokeSize = (loc == View.SelectedLoc) ? 3.0f : 1.0f;
                 canvas.DrawPath(pieceGeometry);
                 canvas.FillColor = Colors.SandyBrown;
                 canvas.FillPath(pieceGeometry);
@@ -140,11 +140,18 @@ public class BoardView : GraphicsView
     public bool IsRotated { get; set; }
 
     public (int X, int Y)? SelectedLoc { get; set; } = null;
+    public (int X, int Y)? SelectedLoc2 { get; set; } = null;
+
+
+    private PointF? _lastTouchPoint = null;
 
     public BoardView()
     {
         Drawable = new BoardDrawer(this);
-        StartInteraction += BoardView_StartInteraction;
+
+        var tapRecognizer = new TapGestureRecognizer();
+        tapRecognizer.Tapped += TapRecognizer_Tapped;
+        GestureRecognizers.Add(tapRecognizer);
         EndInteraction += BoardView_EndInteraction;
     }
 
@@ -161,29 +168,103 @@ public class BoardView : GraphicsView
         return (x < 0 || x >= BoardWidth || y < 0 || y >= BoardHeight) ? null : (x, y);
     }
 
-    private void BoardView_StartInteraction(object? sender, TouchEventArgs e)
+    private void TapRecognizer_Tapped(object? sender, EventArgs e)
     {
+        if (_lastTouchPoint is null)
+            return;
+        
         if (Game is null)
             return;
 
-        var loc = GetBoardLoc(e.Touches.FirstOrDefault());
+        var loc = GetBoardLoc(_lastTouchPoint.Value);
 
         if (loc is null)
             return;
 
         var clickedPiece = Game.GetPiece(loc.Value);
 
-        SelectedLoc = clickedPiece is null ? null : loc;
+        if (SelectedLoc is null)
+        {
+            SelectedLoc = clickedPiece is null ? null : loc;
+            SelectedLoc2 = null;
+        }
+        else
+        {
+            var selectedPiece = Game.GetKnownPiece(SelectedLoc.Value);
+
+            if (selectedPiece.Owner == Game.CurrentPlayer)
+            {
+                if (SelectedLoc2 is null
+                    && Game.GetLegalMoves(selectedPiece, SelectedLoc.Value).Where(move => move.Loc == loc.Value).Any(move => move.Type == MoveType.Igui || move.Type == MoveType.Area))
+                {
+                    SelectedLoc2 = loc;
+                }
+                else
+                {
+                    var legalMoves = Game.GetLegalMoves(selectedPiece, SelectedLoc.Value, SelectedLoc2).Where(move => move.Loc == loc.Value);
+                    if (legalMoves.Any())
+                    {
+                        bool promote = legalMoves.Any(move => move.Promotion == PromotionType.Must);
+
+                        if (!promote && legalMoves.Any(move => move.Promotion == PromotionType.May))
+                        {
+                            // TODO: ASK THE PLAYER
+                            // must ask the player...
+                        //    var x = new PromotionWindow();
+                        //    promote = x.ShowDialog(Game, selectedPiece.Id, selectedPiece.Id.PromotesTo() ?? throw new Exception());
+                        }
+
+                        MakeMove(SelectedLoc.Value, loc.Value, SelectedLoc2, promote);
+
+                        SelectedLoc = null;
+                        SelectedLoc2 = null;
+                    }
+                    else
+                    {
+                        SelectedLoc = clickedPiece is not null ? loc : null;
+                        SelectedLoc2 = null;
+                    }
+                }
+            }
+            else
+            {
+                SelectedLoc = clickedPiece is not null ? loc : null;
+                SelectedLoc2 = null;
+            }
+        }
 
         Invalidate();
+
+        void MakeMove((int X, int Y) startLoc, (int X, int Y) endLoc, (int X, int Y)? midLoc = null, bool promote = false)
+        {
+            // TODO: NETWORK GAMES
+            //if (_networkConnection is not null)
+            //{
+            //    Task.Run(() => _networkConnection.RequestMove(startLoc, endLoc, midLoc, promote));
+            //    IsEnabled = false;
+            //    return;
+            //}
+
+            PlayerColor prevPlayer = Game.CurrentPlayer.Value;
+
+            Game.MakeMove(startLoc, endLoc, midLoc, promote);
+
+            if (Game.Ending is not null)
+            {
+                IsEnabled = false;
+
+                Invalidate();
+
+                // TOOD: UPDATE UI EVENTS
+                //OnGameEnd?.Invoke(this, new GameEndEventArgs(Game.Ending.Value, Game.Winner));
+            }
+
+            // TOOD: UPDATE UI EVENTS
+            //if (prevPlayer != Game.CurrentPlayer)
+            //    OnPlayerChange?.Invoke(this, new PlayerChangeEventArgs(prevPlayer, Game.CurrentPlayer));
+        }
     }
 
-    private void BoardView_EndInteraction(object? sender, TouchEventArgs e)
-    {
-        if (!e.IsInsideBounds)
-            return;
-
-        // TODO: Gestures?
-
-    }
+    private void BoardView_EndInteraction(object? sender, TouchEventArgs e) =>
+         _lastTouchPoint = e.IsInsideBounds ? e.Touches.FirstOrDefault() : null;
 }
