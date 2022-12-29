@@ -22,24 +22,26 @@ internal class BoardDrawer : IDrawable
         var boardHeight = View.BoardHeight;
         var spaceWidth = View.SpaceWidth;
         var spaceHeight = View.SpaceHeight;
+        var game = View.Game;
 
         // we need at least 1 px to draw the grid
         if (width == 0 || height == 0)
             return;
 
-        if (View.Game is not null)
-        {
-            canvas.Rotate(View.IsRotated ? 180 : 0, width / 2, height / 2);
+        if (game is null)
+            return;
 
-            // Draw background
-            canvas.FillColor = Colors.AntiqueWhite;
-            canvas.FillRectangle(0, 0, width, height);
+        canvas.Rotate(View.IsRotated ? 180 : 0, width / 2, height / 2);
 
-            DrawBoard(canvas, dirtyRect);
-            DrawPieces(canvas, dirtyRect);
-        }
+        // Draw background
+        canvas.FillColor = Colors.AntiqueWhite;
+        canvas.FillRectangle(0, 0, width, height);
 
-        void DrawBoard(ICanvas canvas, RectF dirtyRect)
+        DrawBoard(canvas);
+        DrawMoves(canvas);
+        DrawPieces(canvas);
+
+        void DrawBoard(ICanvas canvas)
         {
             canvas.StrokeColor = Colors.Black;
             canvas.StrokeSize = 1.0f;
@@ -55,7 +57,7 @@ internal class BoardDrawer : IDrawable
             }
         }
 
-        void DrawPieces(ICanvas canvas, RectF dirtyRect)
+        void DrawPieces(ICanvas canvas)
         {
             PathF ComputePieceGeometry()
             {
@@ -91,7 +93,7 @@ internal class BoardDrawer : IDrawable
             {
                 for (int j = 0; j < boardHeight; ++j)
                 {
-                    var piece = View.Game.GetPiece((i, j));
+                    var piece = game.GetPiece((i, j));
 
                     if (piece is not null)
                     {
@@ -106,7 +108,7 @@ internal class BoardDrawer : IDrawable
                 canvas.Translate(spaceWidth * loc.X, spaceHeight * loc.Y);
                 canvas.Rotate(piece.Owner == PlayerColor.White ? 180 : 0, spaceWidth / 2, spaceHeight / 2);
 
-                canvas.StrokeColor = (loc == View.SelectedLoc) ? ((piece.Owner == View.Game.CurrentPlayer) ? Colors.Blue : Colors.Red) : Colors.Black;
+                canvas.StrokeColor = (loc == View.SelectedLoc) ? ((piece.Owner == game.CurrentPlayer) ? Colors.Blue : Colors.Red) : Colors.Black;
                 canvas.StrokeSize = (loc == View.SelectedLoc) ? 3.0f : 1.0f;
                 canvas.DrawPath(pieceGeometry);
                 canvas.FillColor = Colors.SandyBrown;
@@ -121,6 +123,71 @@ internal class BoardDrawer : IDrawable
 
                 canvas.RestoreState();
             }
+        }
+
+        void DrawMoves(ICanvas canvas)
+        {
+            Rect BoardLocToRect((int X, int Y) loc) =>
+                new(loc.X * spaceWidth, loc.Y * spaceHeight, spaceWidth, spaceHeight);
+
+            Rect GetRect((int X, int Y) loc)
+            {
+                var rect = BoardLocToRect(loc);
+                rect.Location = new Point(rect.X + 1, rect.Y + 1);
+                rect.Height -= 2;
+                rect.Width -= 2;
+                return rect;
+            }
+
+            if (View.SelectedLoc is null)
+                return;
+
+            var loc = View.SelectedLoc.Value;
+            var selectedPiece = game.GetKnownPiece(loc);
+
+            var moves = game.GetLegalMoves(selectedPiece, loc);
+
+            // first color in the basic background for movable squares
+            foreach (var move in moves)
+            {
+                var rect = GetRect(move.Loc);
+                canvas.FillColor = selectedPiece.Owner == game.CurrentPlayer ? Colors.LightBlue : Colors.Pink;
+                canvas.FillRectangle(rect);
+
+                if (game.GetPiece(move.Loc) is not null)
+                {
+                    canvas.StrokeColor = selectedPiece.Owner == game.CurrentPlayer ? Colors.Blue : Colors.Red;
+                    canvas.StrokeSize = 1.0f;
+                    canvas.DrawRectangle(rect);
+                }
+            }
+
+            if (View.SelectedLoc2 is null)
+                return;
+
+            var secondMoves = game.GetLegalMoves(selectedPiece, loc, View.SelectedLoc2.Value);
+
+            // Color in the location for secondary moves
+            foreach (var move in secondMoves)
+            {
+                var rect = GetRect(move.Loc);
+                var captureOwner = game.GetPiece(move.Loc)?.Owner ?? game.CurrentPlayer;
+
+                canvas.FillColor = Colors.LightGreen;
+                canvas.FillRectangle(rect);
+
+                if (captureOwner != game.CurrentPlayer)
+                {
+                    canvas.StrokeColor = selectedPiece.Owner == game.CurrentPlayer ? Colors.Blue : Colors.Red;
+                    canvas.StrokeSize = 1.0f;
+                    canvas.DrawRectangle(rect);
+                }
+            }
+
+            // outline the Selected square
+            canvas.StrokeColor = Colors.Green;
+            canvas.StrokeSize = 1.0f;
+            canvas.DrawRectangle(GetRect(View.SelectedLoc2.Value));
         }
     }
 }
@@ -147,8 +214,10 @@ public class BoardView : GraphicsView
 
     public BoardView()
     {
+        // Enable custom draw
         Drawable = new BoardDrawer(this);
 
+        // Enable tap interactions
         var tapRecognizer = new TapGestureRecognizer();
         tapRecognizer.Tapped += TapRecognizer_Tapped;
         GestureRecognizers.Add(tapRecognizer);
@@ -172,7 +241,7 @@ public class BoardView : GraphicsView
     {
         if (_lastTouchPoint is null)
             return;
-        
+
         if (Game is null)
             return;
 
@@ -210,8 +279,8 @@ public class BoardView : GraphicsView
                         {
                             // TODO: ASK THE PLAYER
                             // must ask the player...
-                        //    var x = new PromotionWindow();
-                        //    promote = x.ShowDialog(Game, selectedPiece.Id, selectedPiece.Id.PromotesTo() ?? throw new Exception());
+                            //    var x = new PromotionWindow();
+                            //    promote = x.ShowDialog(Game, selectedPiece.Id, selectedPiece.Id.PromotesTo() ?? throw new Exception());
                         }
 
                         MakeMove(SelectedLoc.Value, loc.Value, SelectedLoc2, promote);
@@ -221,14 +290,14 @@ public class BoardView : GraphicsView
                     }
                     else
                     {
-                        SelectedLoc = clickedPiece is not null ? loc : null;
+                        SelectedLoc = clickedPiece is null ? null : loc;
                         SelectedLoc2 = null;
                     }
                 }
             }
             else
             {
-                SelectedLoc = clickedPiece is not null ? loc : null;
+                SelectedLoc = clickedPiece is null ? null : loc;
                 SelectedLoc2 = null;
             }
         }
