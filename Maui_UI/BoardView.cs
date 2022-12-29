@@ -1,5 +1,3 @@
-using System.Diagnostics.Contracts;
-
 using ShogiEngine;
 
 namespace MauiUI;
@@ -13,11 +11,10 @@ internal class BoardDrawer : IDrawable
 
     public void Draw(ICanvas canvas, RectF dirtyRect)
     {
-        Contract.Assert(View.Width == dirtyRect.Width);
-        Contract.Assert(View.Height == dirtyRect.Height);
-
-        var width = dirtyRect.Width;
-        var height = dirtyRect.Height;
+        var width = View.CenterWidth;
+        var height = View.CenterHeight;
+        var fullWidth = (float)View.Width;
+        var fullHeight = (float)View.Height;
         var boardWidth = View.BoardWidth;
         var boardHeight = View.BoardHeight;
         var spaceWidth = View.SpaceWidth;
@@ -35,11 +32,45 @@ internal class BoardDrawer : IDrawable
 
         // Draw background
         canvas.FillColor = Colors.AntiqueWhite;
-        canvas.FillRectangle(0, 0, width, height);
+        canvas.FillRectangle(0, 0, fullWidth, fullHeight);
+
+        if (View.IsLabeled)
+        {
+            var labelWidth = View.LabelWidth;
+            var labelHeight = View.LabelHeight;
+
+            canvas.FillColor = Colors.White;
+            canvas.FillRectangle(0, 0, fullWidth, labelHeight);
+            canvas.FillRectangle(0, 0, labelWidth, fullHeight);
+            canvas.FillRectangle(0, fullHeight - labelHeight, fullWidth, labelHeight);
+            canvas.FillRectangle(fullWidth - labelWidth, 0, labelWidth, fullHeight);
+
+            canvas.FontColor = Colors.Black;
+            canvas.FontSize = labelHeight;
+            var spacer = labelHeight * 0.7f;
+
+            for (int i = 0; i < boardWidth; ++i)
+            {
+                canvas.DrawString($"{boardWidth - i}", i * spaceWidth + (spaceWidth / 2) + labelWidth, spacer, HorizontalAlignment.Center);
+                canvas.DrawString($"{boardWidth - i}", i * spaceWidth + (spaceWidth / 2) + labelWidth, fullHeight - labelHeight + spacer, HorizontalAlignment.Center);
+            }
+
+            static string RowName(int i) => new((char)('A' + (i % 26)), i / 26 + 1);
+
+            for (int i = 0; i < boardHeight; ++i)
+            {
+                canvas.DrawString(RowName(i), labelWidth / 2, (i * spaceHeight) + (spaceHeight / 2) + labelHeight + spacer / 2, HorizontalAlignment.Center);
+                canvas.DrawString(RowName(i), labelWidth / 2 + fullWidth - labelWidth, (i * spaceHeight) + (spaceHeight / 2) + labelHeight + spacer / 2, HorizontalAlignment.Center);
+            }
+
+            canvas.Translate(labelWidth, labelHeight);
+        }
 
         DrawBoard(canvas);
         DrawMoves(canvas);
         DrawPieces(canvas);
+
+        canvas.ResetState();
 
         void DrawBoard(ICanvas canvas)
         {
@@ -200,17 +231,26 @@ public class BoardView : GraphicsView
 
     public int BoardHeight { get => TaikyokuShogi.BoardHeight; }
 
-    public float SpaceWidth { get => (float)Width / BoardWidth; }
+    public float SpaceWidth { get => CenterWidth / BoardWidth; }
 
-    public float SpaceHeight { get => (float)Height / BoardHeight; }
+    public float SpaceHeight { get => CenterHeight / BoardHeight; }
 
     public bool IsRotated { get; set; }
+
+    public bool IsLabeled { get; set; } = true;
 
     public (int X, int Y)? SelectedLoc { get; set; } = null;
     public (int X, int Y)? SelectedLoc2 { get; set; } = null;
 
-
     private PointF? _lastTouchPoint = null;
+
+    public float LabelWidth { get => 12.0f; }
+
+    public float LabelHeight { get => 10.0f; }
+
+    public float CenterWidth { get => IsLabeled ? (float)Width - 2 * LabelWidth : (float)Width; }
+
+    public float CenterHeight { get => IsLabeled ? (float)Height - 2 * LabelHeight : (float)Height; }
 
     public BoardView()
     {
@@ -224,8 +264,12 @@ public class BoardView : GraphicsView
         EndInteraction += BoardView_EndInteraction;
     }
 
+    // Translate a point on the View to a space on the board
     public (int X, int Y)? GetBoardLoc(Point p)
     {
+        // compensate for adornments
+        p = new(p.X - LabelWidth, p.Y - LabelHeight);
+
         // check for negative values before rounding
         if (p.X < 0 || p.Y < 0)
             return null;
