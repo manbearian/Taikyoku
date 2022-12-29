@@ -66,7 +66,7 @@ public partial class MyGamesView : ContentView
     //
     // Bindable Proprerties
     //
-    
+
     public static readonly BindableProperty ConnectionProperty = BindableProperty.Create(nameof(Connection), typeof(Connection), typeof(MyGamesView));
 
     public Connection Connection
@@ -74,6 +74,10 @@ public partial class MyGamesView : ContentView
         get => (Connection)GetValue(ConnectionProperty);
         set => SetValue(ConnectionProperty, value);
     }
+
+    //
+    // Non-Bindable Properties
+    //
 
     public ObservableCollection<GameListItem> GamesList { get; set; } = new();
 
@@ -83,23 +87,25 @@ public partial class MyGamesView : ContentView
 
         Loaded += MyGamesView_Loaded;
         Unloaded += MyGamesView_Unloaded;
+
+        // Update UI on saved game changes
+        var watcher = MySettings.LocalGameWatcher;
+        watcher.Changed += (s, e) => Dispatcher.Dispatch(() => PopulateMyGamesList());
+        watcher.Created += (s, e) => Dispatcher.Dispatch(() => PopulateMyGamesList());
+        watcher.Deleted += (s, e) => Dispatcher.Dispatch(() => PopulateMyGamesList());
+        watcher.Renamed += (s, e) => Dispatcher.Dispatch(() => PopulateMyGamesList());
+        watcher.EnableRaisingEvents = true;
     }
 
     private void PopulateMyGamesList()
     {
-        // TODO REMOVE THIS HACK
-        MySettings.SaveGame(new TaikyokuShogi());
-        MySettings.SaveGame(new TaikyokuShogi());
-        MySettings.SaveGame(new TaikyokuShogi());
+        GamesList.Clear();
 
         var localGameList = MySettings.LocalGameList;
         foreach (var (gameId, lastPlayed, game) in localGameList)
         {
             GamesList.Add(GameListItem.FromLocalGame(gameId, lastPlayed, game));
         }
-
-        // TODO REMOVE THIS HACK
-        MySettings.ClearLocalGames();
 
         var networkGameList = MySettings.NetworkGameList;
 
@@ -160,7 +166,7 @@ public partial class MyGamesView : ContentView
 
     }
 
-    private void MyGamesView_Loaded(object? sender, EventArgs e) => 
+    private void MyGamesView_Loaded(object? sender, EventArgs e) =>
         PopulateMyGamesList();
 
     private void MyGamesView_Unloaded(object? sender, EventArgs e)

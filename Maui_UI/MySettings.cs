@@ -19,7 +19,6 @@ namespace MauiUI
             set => Preferences.Default.Set(nameof(RotateBoard), value);
         }
 
-
         public static IEnumerable<(Guid GameId, Guid PlayerId, PlayerColor MyColor)> NetworkGameList
         {
             get
@@ -60,8 +59,8 @@ namespace MauiUI
         private static string MakeFileName(Guid gameId) =>
             Path.Combine(FileSystem.Current.CacheDirectory, gameId.ToString() + ".shogi");
 
-        public static void SaveGame(TaikyokuShogi game)
-             => File.WriteAllBytes(MakeFileName(Guid.NewGuid()), JsonSerializer.SerializeToUtf8Bytes(game));
+        public static void SaveGame(Guid gameId, TaikyokuShogi game)
+             => File.WriteAllBytes(MakeFileName(gameId), JsonSerializer.SerializeToUtf8Bytes(game));
 
         public static void DeleteGame(Guid gameId) =>
             File.Delete(MakeFileName(gameId));
@@ -74,6 +73,8 @@ namespace MauiUI
                 File.Delete(f);
             }
         }
+
+        public static FileSystemWatcher LocalGameWatcher { get; } = new(FileSystem.Current.CacheDirectory, "*.shogi");
 
         public sealed record class NetworkGameState
         {

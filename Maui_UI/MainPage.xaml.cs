@@ -1,4 +1,5 @@
 ﻿using ShogiClient;
+using ShogiEngine;
 
 namespace MauiUI
 {
@@ -25,7 +26,7 @@ namespace MauiUI
 
         private void NewLocalGameBtn_Clicked(object sender, EventArgs e)
         {
-            Navigation.PushModalAsync(new BoardPage(), true);
+            Navigation.PushModalAsync(new BoardPage(Guid.NewGuid(), new TaikyokuShogi()), true);
         }
     }
 }

@@ -225,7 +225,37 @@ internal class BoardDrawer : IDrawable
 
 public class BoardView : GraphicsView
 {
-    public TaikyokuShogi? Game { get; set; } = new TaikyokuShogi(); // TOOD: set the real game
+    //
+    // Bindabe Proprerties
+    //
+
+    public static readonly BindableProperty GameProperty = BindableProperty.Create(nameof(Game), typeof(TaikyokuShogi), typeof(BoardView));
+
+    public TaikyokuShogi Game
+    {
+        get => (TaikyokuShogi)GetValue(GameProperty);
+        set => SetValue(GameProperty, value);
+    }
+
+    public static readonly BindableProperty IsRotatedProperty = BindableProperty.Create(nameof(IsRotated), typeof(bool), typeof(BoardView));
+
+    public bool IsRotated
+    {
+        get => (bool)GetValue(IsRotatedProperty);
+        set => SetValue(IsRotatedProperty, value);
+    }
+
+    public static readonly BindableProperty IsLabeledProperty = BindableProperty.Create(nameof(IsLabeled), typeof(bool), typeof(BoardView));
+
+    public bool IsLabeled
+    {
+        get => (bool)GetValue(IsLabeledProperty);
+        set => SetValue(IsLabeledProperty, value);
+    }
+
+    //
+    // Standard Properties
+    //
 
     public int BoardWidth { get => TaikyokuShogi.BoardWidth; }
 
@@ -234,10 +264,6 @@ public class BoardView : GraphicsView
     public float SpaceWidth { get => CenterWidth / BoardWidth; }
 
     public float SpaceHeight { get => CenterHeight / BoardHeight; }
-
-    public bool IsRotated { get; set; }
-
-    public bool IsLabeled { get; set; } = true;
 
     public (int X, int Y)? SelectedLoc { get; set; } = null;
     public (int X, int Y)? SelectedLoc2 { get; set; } = null;

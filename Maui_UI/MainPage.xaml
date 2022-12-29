@@ -6,27 +6,33 @@
              x:Name="page"
              Title="Taikyoku Shogi">
 
-    <VerticalStackLayout
-            Spacing="25"
-            Padding="30,0"
-            BackgroundColor="White"
-            VerticalOptions="Center">
+    <Grid BackgroundColor="White">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="200"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="128"/>
+        </Grid.RowDefinitions>
 
         <Image
+            Grid.Row="0"
                 Source="logo.png"
                 SemanticProperties.Description="Taikyoku Shogi Logo"
                 HeightRequest="200"
-                HorizontalOptions="Center" />
+            />
 
-        <shogi:MyGamesView Connection="{Binding Source={x:Reference page}, Path=Connection}" HorizontalOptions="Center"/>
+        <shogi:MyGamesView
+            Grid.Row="1"
+            Connection="{Binding Source={x:Reference page}, Path=Connection}"/>
 
         <HorizontalStackLayout
-            HorizontalOptions="CenterAndExpand">
+            Grid.Row="2"
+            HorizontalOptions="Center"
+            HeightRequest="200">
             <ImageButton
                 x:Name="NewLocalGameBtn"
                 Source="newlocalgame.png"
-                MaximumHeightRequest="128"
-                MaximumWidthRequest="128"
+                HeightRequest="128"
+                WidthRequest="128"
                 Margin="25,0"
                 SemanticProperties.Hint="Create a new local game"
                 HorizontalOptions="Center"
@@ -35,8 +41,8 @@
             <ImageButton
                 x:Name="NewOnlineGameBtn"
                 Source="newonlinegame.png"
-                MaximumHeightRequest="128"
-                MaximumWidthRequest="128"
+                HeightRequest="128"
+                WidthRequest="128"
                 Margin="25,0"
                 SemanticProperties.Hint="Create a new online game"
                 HorizontalOptions="Center" />
@@ -44,23 +50,21 @@
             <ImageButton
                 x:Name="FindGameBtn"
                 Source="joinonlinegame.png"
-                MaximumHeightRequest="128"
-                MaximumWidthRequest="128"
+                HeightRequest="128"
+                WidthRequest="128"
                 Margin="25,0"
                 SemanticProperties.Hint="Find and join an online game"
                 HorizontalOptions="Center" />
-            
+
             <Button
                 x:Name="SignInBtn"
                 Text="Sign in..."
-                MaximumHeightRequest="128"
-                MaximumWidthRequest="128"
+                HeightRequest="128"
+                WidthRequest="128"
                 Margin="25,0"
                 SemanticProperties.Hint="Sign in to Taikyoku Shogi"
                 HorizontalOptions="Center" />
 
         </HorizontalStackLayout>
-
-    </VerticalStackLayout>
-
+    </Grid>
 </ContentPage>

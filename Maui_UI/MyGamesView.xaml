@@ -6,8 +6,7 @@
              x:Class="MauiUI.MyGamesView">
 
     <Frame BorderColor="Silver" BackgroundColor="White"
-           HorizontalOptions="CenterAndExpand"
-           MaximumWidthRequest="700" >
+           MaximumWidthRequest="700">
         <ListView
             x:Name="listView"
             SelectionMode="Single"
