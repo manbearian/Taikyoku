@@ -5,29 +5,31 @@
              x:Name="this"
              x:Class="MauiUI.MyGamesView">
 
-    <Frame BorderColor="Silver" BackgroundColor="White"
-           MaximumWidthRequest="700">
+    <Frame x:Name="frame"
+           BorderColor="Silver" BackgroundColor="White"
+           MaximumWidthRequest="550" Padding="5">
         <ListView
             x:Name="listView"
+            WidthRequest="{Binding Source={x:Reference frame}, Path=Width}"
             SelectionMode="Single"
             ItemSelected="listView_ItemSelected"
             ItemsSource="{Binding Source={x:Reference this}, Path=GamesList}" >
             <ListView.ItemTemplate>
                 <DataTemplate x:DataType="local:GameListItem">
                     <ViewCell>
-                        <Grid Padding="10">
+                        <Grid WidthRequest="{Binding Source={x:Reference listView}, Path=Width}">
                             <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="200" />
-                                <ColumnDefinition Width="150" />
                                 <ColumnDefinition Width="175" />
-                                <ColumnDefinition Width="75" />
+                                <ColumnDefinition Width="100" />
+                                <ColumnDefinition Width="175" />
+                                <ColumnDefinition Width="50" />
                                 <ColumnDefinition Width="50" />
                             </Grid.ColumnDefinitions>
-                            <Label Grid.Column="0" TextColor="Black" Text="{Binding OpponentName}"/>
-                            <Label Grid.Column="1" TextColor="Black" Text="{Binding Status}"/>
-                            <Label Grid.Column="2" TextColor="Black" Text="{Binding LastMove}"/>
-                            <Label Grid.Column="3" TextColor="Black" Text="{Binding TurnCount}"/>
-                            <Label Grid.Column="4" TextColor="Black" Text="{Binding Details}"/>
+                            <Label Grid.Column="0" TextColor="Black" Text="{Binding OpponentName}" HorizontalTextAlignment="Start" VerticalTextAlignment="Center"/>
+                            <Label Grid.Column="1" TextColor="Black" Text="{Binding Status}" HorizontalTextAlignment="Start" VerticalTextAlignment="Center"/>
+                            <Label Grid.Column="2" TextColor="Black" Text="{Binding LastMove}" HorizontalTextAlignment="Start" VerticalTextAlignment="Center"/>
+                            <Label Grid.Column="3" TextColor="Black" Text="{Binding TurnCount}" HorizontalTextAlignment="Center" VerticalTextAlignment="Center"/>
+                            <Button Grid.Column="4" TextColor="Black" Text="..." />
                         </Grid>
                     </ViewCell>
                 </DataTemplate>

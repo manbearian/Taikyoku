@@ -14,8 +14,6 @@ public class GameListItem
     public string LastMove { get; set; } = string.Empty;
     public string TurnCount { get; set; } = string.Empty;
 
-    public string Details { get; set; } = "...";
-
     public Guid GameId { get; set; } = Guid.Empty;
 
     public TaikyokuShogi Game { get; set; } = new TaikyokuShogi();
@@ -96,8 +94,8 @@ public partial class MyGamesView : ContentView
         watcher.EnableRaisingEvents = true;
     }
 
-   private void handleLocalGameUpdate(object sender, FileSystemEventArgs e) => Dispatcher.Dispatch(() => PopulateMyGamesList());
-    
+    private void handleLocalGameUpdate(object sender, FileSystemEventArgs e) => Dispatcher.Dispatch(() => PopulateMyGamesList());
+
     private void PopulateMyGamesList()
     {
         GamesList.Clear();
