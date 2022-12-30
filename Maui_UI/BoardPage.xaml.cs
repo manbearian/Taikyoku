@@ -33,7 +33,7 @@ public partial class BoardPage : ContentPage
 
     private async void BoardPage_NavigatingFrom(object? sender, NavigatingFromEventArgs e)
     {
-        if (GameId == Guid.Empty)
+        if (GameId == Guid.Empty && !Game.BoardStateEquals(new TaikyokuShogi()))
         {
             bool saveGame = await DisplayAlert("Save Game?", "Would you like to save this game?", "Yes", "No");
             if (saveGame)
@@ -43,7 +43,7 @@ public partial class BoardPage : ContentPage
         }
 
         if (GameId != Guid.Empty)
-            MySettings.SaveGame(GameId, Game);
+            MySettings.LocalGameManager.SaveGame(GameId, Game);
     }
 
     private async void BackBtn_Clicked(object sender, EventArgs e) =>

@@ -85,22 +85,32 @@ public partial class MyGamesView : ContentView
         Loaded += MyGamesView_Loaded;
         Unloaded += MyGamesView_Unloaded;
 
-        // Update UI on saved game changes
-        var watcher = MySettings.LocalGameWatcher;
-        watcher.Changed += handleLocalGameUpdate;
-        watcher.Created += handleLocalGameUpdate;
-        watcher.Deleted += handleLocalGameUpdate;
-        watcher.Renamed += handleLocalGameUpdate;
-        watcher.EnableRaisingEvents = true;
+        MySettings.LocalGameManager.OnLocalGameUpdate += LocalGameManager_OnLocalGameUpdate;
     }
 
-    private void handleLocalGameUpdate(object sender, FileSystemEventArgs e) => Dispatcher.Dispatch(() => PopulateMyGamesList());
+    private void LocalGameManager_OnLocalGameUpdate(object sender, LocalGameUpdateEventArgs e)
+    {
+        if (e.Update == LocalGameUpdate.Add)
+            GamesList.Insert(0, GameListItem.FromLocalGame(e.GameId, e.LastMove, e.Game!));
+
+        for (int i = 0; i < GamesList.Count; i++)
+        {
+            if (GamesList[i].GameId == e.GameId)
+            {
+                if (e.Update == LocalGameUpdate.Remove)
+                    GamesList.RemoveAt(i);
+                else if (e.Update == LocalGameUpdate.Update)
+                    GamesList[i] = GameListItem.FromLocalGame(e.GameId, e.LastMove, e.Game!);
+                return;
+            }
+        }
+
+        throw new Exception("updated game not found...?");
+    }
 
     private void PopulateMyGamesList()
     {
-        GamesList.Clear();
-
-        var localGameList = MySettings.LocalGameList;
+        var localGameList = LocalGameManager.LocalGameList;
         foreach (var (gameId, lastPlayed, game) in localGameList)
         {
             GamesList.Add(GameListItem.FromLocalGame(gameId, lastPlayed, game));
@@ -162,6 +172,8 @@ public partial class MyGamesView : ContentView
                 GamesList.Add(GameListItem.FromNetworkGame(gameInfo, myColor));
             }
         }
+
+        // TODO: Make the GamesList sorted
     }
 
     private void MyGamesView_Loaded(object? sender, EventArgs e) =>
@@ -169,11 +181,7 @@ public partial class MyGamesView : ContentView
 
     private void MyGamesView_Unloaded(object? sender, EventArgs e)
     {
-        var watcher = MySettings.LocalGameWatcher;
-        watcher.Changed -= handleLocalGameUpdate;
-        watcher.Created -= handleLocalGameUpdate;
-        watcher.Deleted -= handleLocalGameUpdate;
-        watcher.Renamed -= handleLocalGameUpdate;
+        MySettings.LocalGameManager.OnLocalGameUpdate -= LocalGameManager_OnLocalGameUpdate;
     }
 
     private void listView_ItemSelected(object sender, SelectedItemChangedEventArgs e)
