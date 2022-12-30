@@ -84,8 +84,6 @@ public partial class MyGamesView : ContentView
 
         Loaded += MyGamesView_Loaded;
         Unloaded += MyGamesView_Unloaded;
-
-        MySettings.LocalGameManager.OnLocalGameUpdate += LocalGameManager_OnLocalGameUpdate;
     }
 
     private void LocalGameManager_OnLocalGameUpdate(object sender, LocalGameUpdateEventArgs e)
@@ -176,8 +174,11 @@ public partial class MyGamesView : ContentView
         // TODO: Make the GamesList sorted
     }
 
-    private void MyGamesView_Loaded(object? sender, EventArgs e) =>
+    private void MyGamesView_Loaded(object? sender, EventArgs e)
+    {
         PopulateMyGamesList();
+        MySettings.LocalGameManager.OnLocalGameUpdate += LocalGameManager_OnLocalGameUpdate;
+    }
 
     private void MyGamesView_Unloaded(object? sender, EventArgs e)
     {
