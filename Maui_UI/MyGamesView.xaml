@@ -12,7 +12,7 @@
             x:Name="listView"
             WidthRequest="{Binding Source={x:Reference frame}, Path=Width}"
             SelectionMode="Single"
-            ItemSelected="listView_ItemSelected"
+            ItemSelected="ListView_ItemSelected"
             ItemsSource="{Binding Source={x:Reference this}, Path=GamesList}" >
             <ListView.ItemTemplate>
                 <DataTemplate x:DataType="local:GameListItem">
@@ -25,16 +25,18 @@
                                 <ColumnDefinition Width="50" />
                                 <ColumnDefinition Width="50" />
                             </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="50" />
+                            </Grid.RowDefinitions>
                             <Label Grid.Column="0" TextColor="Black" Text="{Binding OpponentName}" HorizontalTextAlignment="Start" VerticalTextAlignment="Center"/>
                             <Label Grid.Column="1" TextColor="Black" Text="{Binding Status}" HorizontalTextAlignment="Start" VerticalTextAlignment="Center"/>
                             <Label Grid.Column="2" TextColor="Black" Text="{Binding LastMove}" HorizontalTextAlignment="Start" VerticalTextAlignment="Center"/>
                             <Label Grid.Column="3" TextColor="Black" Text="{Binding TurnCount}" HorizontalTextAlignment="Center" VerticalTextAlignment="Center"/>
-                            <Button Grid.Column="4" TextColor="Black" Text="..." />
+                            <ImageButton Grid.Column="4" Source="trash.png" Clicked="DeleteBtn_Clicked" HeightRequest="30" IsVisible="{Binding IsLocal}" />
                         </Grid>
                     </ViewCell>
                 </DataTemplate>
             </ListView.ItemTemplate>
-
         </ListView>
     </Frame>
 </ContentView>

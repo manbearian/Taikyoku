@@ -18,6 +18,8 @@ public class GameListItem
 
     public TaikyokuShogi Game { get; set; } = new TaikyokuShogi();
 
+    public bool IsLocal { get; set; } = true;
+
     public static GameListItem FromLocalGame(Guid gameId, DateTime lastPlayed, TaikyokuShogi game) =>
         new()
         {
@@ -37,7 +39,8 @@ public class GameListItem
                 _ => "unknown"
             },
             LastMove = lastPlayed.ToString(),
-            TurnCount = game.MoveCount.ToString()
+            TurnCount = game.MoveCount.ToString(),
+            IsLocal = true
         };
 
     public static GameListItem FromNetworkGame(ClientGameInfo gameInfo, PlayerColor myColor) =>
@@ -54,7 +57,8 @@ public class GameListItem
                 _ => "unknown"
             },
             LastMove = gameInfo.LastPlayed.ToString(),
-            TurnCount = "-1" // TODO: Get actual game information
+            TurnCount = "-1", // TODO: Get actual game information
+            IsLocal = false
         };
 }
 
@@ -185,9 +189,33 @@ public partial class MyGamesView : ContentView
         MySettings.LocalGameManager.OnLocalGameUpdate -= LocalGameManager_OnLocalGameUpdate;
     }
 
-    private void listView_ItemSelected(object sender, SelectedItemChangedEventArgs e)
+    private void ListView_ItemSelected(object sender, SelectedItemChangedEventArgs e)
     {
         var item = (GameListItem)e.SelectedItem;
+        if (item is null)
+            return;
+        ((ListView)sender).SelectedItem = null;
         Navigation.PushModalAsync(new BoardPage(item.GameId, item.Game));
+    }
+
+    private async void DeleteBtn_Clicked(object sender, EventArgs e)
+    {
+        var item = (GameListItem)((ImageButton)sender).BindingContext;
+        Contract.Assert(item.IsLocal);
+
+        // get parent page
+        var parent = Parent;
+        while (parent is not ContentPage)
+        {
+            parent = parent.Parent;
+        }
+        var parentPage = parent as ContentPage;
+        Contract.Assert(parentPage is not null);
+
+        bool confirmed = await parentPage.DisplayAlert("Delete Game?", "Would you like to delete this game?", "Yes", "No");
+        if (confirmed)
+        {
+            MySettings.LocalGameManager.DeleteGame(item.GameId);
+        }
     }
 }
