@@ -143,7 +143,7 @@ namespace ShogiClient
             {
                 await _connection.StartAsync();
             }
-            catch (HttpRequestException ex) when (retry < 3)
+            catch (HttpRequestException) when (retry < 3)
             {
                 // When Debugging it's posisble that the server hasn't been stood up yet
                 // It usually takes about 6 secons to start up. Try 3 times @ 3/6/9 second
