@@ -12,7 +12,7 @@ public partial class NewGameView : ContentView
     }
 
     private void CancelBtn_Clicked(object sender, EventArgs e) =>
-        MainPage.Default.MainPageMode = MainPageMode.Default;
+        MainPage.Default.MainPageMode = MainPageMode.Home;
 
     private async void CreateBtn_Clicked(object sender, EventArgs e)
     {

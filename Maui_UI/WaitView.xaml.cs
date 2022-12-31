@@ -23,6 +23,6 @@ public partial class WaitView : ContentView
             // i need to ignore this cancel some how :(
         }
 
-        MainPage.Default.MainPageMode = MainPageMode.Default;
+        MainPage.Default.MainPageMode = MainPageMode.Home;
     }
 }

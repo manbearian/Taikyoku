@@ -72,6 +72,16 @@ public partial class MyGamesView : ContentView
         Loaded += MyGamesView_Loaded;
         Unloaded += MyGamesView_Unloaded;
     }
+    private async void MyGamesView_Loaded(object? sender, EventArgs e)
+    {
+        await PopulateMyGamesList();
+        MySettings.LocalGameManager.OnLocalGameUpdate += LocalGameManager_OnLocalGameUpdate;
+    }
+
+    private void MyGamesView_Unloaded(object? sender, EventArgs e)
+    {
+        MySettings.LocalGameManager.OnLocalGameUpdate -= LocalGameManager_OnLocalGameUpdate;
+    }
 
     private void LocalGameManager_OnLocalGameUpdate(object sender, LocalGameUpdateEventArgs e)
     {
@@ -116,17 +126,6 @@ public partial class MyGamesView : ContentView
         }
 
         // TODO: Make the GamesList sorted
-    }
-
-    private void MyGamesView_Loaded(object? sender, EventArgs e)
-    {
-        PopulateMyGamesList();
-        MySettings.LocalGameManager.OnLocalGameUpdate += LocalGameManager_OnLocalGameUpdate;
-    }
-
-    private void MyGamesView_Unloaded(object? sender, EventArgs e)
-    {
-        MySettings.LocalGameManager.OnLocalGameUpdate -= LocalGameManager_OnLocalGameUpdate;
     }
 
     private void ListView_ItemSelected(object sender, SelectedItemChangedEventArgs e)

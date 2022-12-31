@@ -40,8 +40,8 @@ public partial class FindGameView : ContentView
         // Update display only when visible
         if (IsVisible)
         {
-            MainPage.Default.Connection.OnReceiveGameList += Connection_OnReceiveGameList;
             await PopulateGamesList();
+            MainPage.Default.Connection.OnReceiveGameList += Connection_OnReceiveGameList;
         }
         else
         {
@@ -50,16 +50,12 @@ public partial class FindGameView : ContentView
     }
 
     private async void Connection_OnReceiveGameList(object sender, ReceiveGameListEventArgs e)
-    {
-        await Dispatcher.DispatchAsync(async () =>
-        {
-            GamesList.Clear();
-            await PopulateGamesList();
-        });
-    }
+        => await Dispatcher.DispatchAsync(async () => await PopulateGamesList());
 
     private async Task PopulateGamesList()
     {
+        GamesList.Clear();
+
         var gameList = await MainPage.Default.Connection.RequestAllOpenGameInfo();
         var sortedList = gameList.OrderByDescending(g => g.LastPlayed);
         foreach(var game in sortedList)

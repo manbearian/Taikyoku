@@ -7,7 +7,7 @@ namespace MauiUI;
 
 public enum MainPageMode
 {
-    Default, NewNetworkGame, FindNetworkGame, Wait
+    Home, NewNetworkGame, FindNetworkGame, Wait
 }
 
 public partial class MainPage : ContentPage
@@ -16,7 +16,7 @@ public partial class MainPage : ContentPage
     // Bindabe Proprerties
     //
 
-    public static readonly BindableProperty MainPageModeProperty = BindableProperty.Create(nameof(MainPageMode), typeof(MainPageMode), typeof(MyGamesView), MainPageMode.Default, BindingMode.OneWay);
+    public static readonly BindableProperty MainPageModeProperty = BindableProperty.Create(nameof(MainPageMode), typeof(MainPageMode), typeof(MyGamesView), MainPageMode.Home, BindingMode.OneWay);
 
     public MainPageMode MainPageMode
     {
@@ -33,14 +33,14 @@ public partial class MainPage : ContentPage
     {
         InitializeComponent();
 
+        Appearing += async (s, e) => await Connection.ConnectAsync();
         Loaded += MainPage_Loaded;
         Unloaded += MainPage_Unloaded;
     }
-
-    private async void MainPage_Loaded(object? sender, EventArgs e)
+ 
+    private void MainPage_Loaded(object? sender, EventArgs e)
     {
         Connection.OnReceiveGameStart += Connection_OnReceiveGameStart;
-        await Connection.ConnectAsync();
     }
 
     private void MainPage_Unloaded(object? sender, EventArgs e)

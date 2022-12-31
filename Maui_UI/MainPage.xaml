@@ -24,7 +24,7 @@
 
         <shogi:MyGamesView
             Grid.Row="1"
-            IsVisible="{Binding Source={x:Reference this}, Path=MainPageMode, Converter={StaticResource pageModeConverter}, ConverterParameter='Default'}"
+            IsVisible="{Binding Source={x:Reference this}, Path=MainPageMode, Converter={StaticResource pageModeConverter}, ConverterParameter='Home'}"
             />
 
         <shogi:NewGameView
@@ -45,7 +45,7 @@
         <HorizontalStackLayout
             x:Name="bottomRowBtns"
             Grid.Row="2"
-            IsVisible="{Binding Source={x:Reference this}, Path=MainPageMode, Converter={StaticResource pageModeConverter}, ConverterParameter='Default'}"
+            IsVisible="{Binding Source={x:Reference this}, Path=MainPageMode, Converter={StaticResource pageModeConverter}, ConverterParameter='Home'}"
             HorizontalOptions="Center"
             HeightRequest="200">
             <ImageButton
