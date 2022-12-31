@@ -3,8 +3,11 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:shogi="clr-namespace:MauiUI"
              x:Class="MauiUI.MainPage"
-             x:Name="page"
+             x:Name="this"
              Title="Taikyoku Shogi">
+    <ContentPage.Resources>
+        <shogi:MainPageModeConverter x:Key="pageModeConverter"/>
+    </ContentPage.Resources>
 
     <Grid BackgroundColor="White">
         <Grid.RowDefinitions>
@@ -15,17 +18,32 @@
 
         <Image
             Grid.Row="0"
-                Source="logo.png"
-                SemanticProperties.Description="Taikyoku Shogi Logo"
-                HeightRequest="200"
-            />
+            Source="logo.png"
+            SemanticProperties.Description="Taikyoku Shogi Logo"
+            HeightRequest="200" />
 
         <shogi:MyGamesView
+            x:Name="MyGamesView"
             Grid.Row="1"
-            Connection="{Binding Source={x:Reference page}, Path=Connection}"/>
+            IsVisible="{Binding Source={x:Reference this}, Path=MainPageMode, Converter={StaticResource pageModeConverter}, ConverterParameter='Default'}"
+            Connection="{Binding Source={x:Reference this}, Path=Connection}"/>
+
+        <shogi:NewGameView
+            x:Name="NewGameView"
+            Grid.Row="1"
+            IsVisible="{Binding Source={x:Reference this}, Path=MainPageMode, Converter={StaticResource pageModeConverter}, ConverterParameter='NewNetworkGame'}"
+            Connection="{Binding Source={x:Reference this}, Path=Connection}"/>
+
+        <shogi:WaitView
+            x:Name="WaitView"
+            Grid.Row="1"
+            IsVisible="{Binding Source={x:Reference this}, Path=MainPageMode, Converter={StaticResource pageModeConverter}, ConverterParameter='Wait'}"
+            Connection="{Binding Source={x:Reference this}, Path=Connection}"/>
 
         <HorizontalStackLayout
+            x:Name="bottomRowBtns"
             Grid.Row="2"
+            IsVisible="{Binding Source={x:Reference this}, Path=MainPageMode, Converter={StaticResource pageModeConverter}, ConverterParameter='Default'}"
             HorizontalOptions="Center"
             HeightRequest="200">
             <ImageButton
@@ -45,7 +63,8 @@
                 WidthRequest="128"
                 Margin="25,0"
                 SemanticProperties.Hint="Create a new online game"
-                HorizontalOptions="Center" />
+                HorizontalOptions="Center"
+                Clicked="NewOnlineGameBtn_Clicked"/>
 
             <ImageButton
                 x:Name="FindGameBtn"

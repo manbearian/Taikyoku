@@ -7,7 +7,7 @@
             InitializeComponent();
 
             // Don't wrap in a shell or navigation page
-            MainPage = new MainPage();
+            MainPage = MauiUI.MainPage.Default;
             // MainPage = new AppShell();
         }
     }

@@ -4,7 +4,6 @@
              xmlns:local="clr-namespace:MauiUI"
              x:Name="this"
              x:Class="MauiUI.MyGamesView">
-
     <Frame x:Name="frame"
            BorderColor="Silver" BackgroundColor="White"
            MaximumWidthRequest="550" Padding="5">

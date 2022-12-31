@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:shogi="clr-namespace:MauiUI"
+             x:Name="this"
+             x:Class="MauiUI.NewGameView">
+    <ContentView.Resources>
+        <shogi:EmptyStringConverter x:Key="isEmptyString"/>
+    </ContentView.Resources>
+
+    <VerticalStackLayout VerticalOptions="Center" HorizontalOptions="Center"
+                         BackgroundColor="White">
+        <Label TextColor="Black" Text="Create New Game" FontSize="Large" />
+        <HorizontalStackLayout BackgroundColor="White" Padding="20">
+            <VerticalStackLayout>
+                <Label TextColor="Black" Text="My Name" />
+                <Entry x:Name="nameFld" TextColor="Black" Placeholder="Enter your name" WidthRequest="200"/>
+            </VerticalStackLayout>
+            <VerticalStackLayout>
+                <Label TextColor="Black" Text="Color"  />
+                <RadioButton x:Name="blackBtn" TextColor="Black" BackgroundColor="White" Content="Black" IsChecked="True" />
+                <RadioButton x:Name="whiteBtn" TextColor="Black" BackgroundColor="White" Content="White" />
+            </VerticalStackLayout>
+        </HorizontalStackLayout>
+        <HorizontalStackLayout HorizontalOptions="Center">
+            <Button x:Name="CancelBtn" Text="Cancel" Clicked="CancelBtn_Clicked"/>
+            <Button x:Name="CreateBtn" Text="Create" Clicked="CreateBtn_Clicked" IsEnabled="{Binding Source={x:Reference nameFld}, Path=Text, Converter={StaticResource isEmptyString}, Mode=OneWay}"/>
+        </HorizontalStackLayout>
+    </VerticalStackLayout>
+</ContentView>
