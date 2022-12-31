@@ -6,7 +6,7 @@ using ShogiEngine;
 
 namespace MauiUI;
 
-public class GameListItem
+public class MyGamesListItem
 {
     public string OpponentName { get; set; } = string.Empty;
     public string Status { get; set; } = string.Empty;
@@ -19,7 +19,7 @@ public class GameListItem
 
     public bool IsLocal { get; set; } = true;
 
-    public static GameListItem FromLocalGame(Guid gameId, DateTime lastPlayed, TaikyokuShogi game) =>
+    public static MyGamesListItem FromLocalGame(Guid gameId, DateTime lastPlayed, TaikyokuShogi game) =>
         new()
         {
             GameId = gameId,
@@ -42,7 +42,7 @@ public class GameListItem
             IsLocal = true
         };
 
-    public static GameListItem FromNetworkGame(ClientGameInfo gameInfo, PlayerColor myColor) =>
+    public static MyGamesListItem FromNetworkGame(ClientGameInfo gameInfo, PlayerColor myColor) =>
         new()
         {
             GameId = gameInfo.GameId,
@@ -63,7 +63,7 @@ public class GameListItem
 
 public partial class MyGamesView : ContentView
 {
-    public ObservableCollection<GameListItem> GamesList { get; set; } = new();
+    public ObservableCollection<MyGamesListItem> GamesList { get; set; } = new();
 
     public MyGamesView()
     {
@@ -76,7 +76,7 @@ public partial class MyGamesView : ContentView
     private void LocalGameManager_OnLocalGameUpdate(object sender, LocalGameUpdateEventArgs e)
     {
         if (e.Update == LocalGameUpdate.Add)
-            GamesList.Insert(0, GameListItem.FromLocalGame(e.GameId, e.LastMove, e.Game!));
+            GamesList.Insert(0, MyGamesListItem.FromLocalGame(e.GameId, e.LastMove, e.Game!));
 
         for (int i = 0; i < GamesList.Count; i++)
         {
@@ -85,7 +85,7 @@ public partial class MyGamesView : ContentView
                 if (e.Update == LocalGameUpdate.Remove)
                     GamesList.RemoveAt(i);
                 else if (e.Update == LocalGameUpdate.Update)
-                    GamesList[i] = GameListItem.FromLocalGame(e.GameId, e.LastMove, e.Game!);
+                    GamesList[i] = MyGamesListItem.FromLocalGame(e.GameId, e.LastMove, e.Game!);
                 return;
             }
         }
@@ -98,7 +98,7 @@ public partial class MyGamesView : ContentView
         var localGameList = LocalGameManager.LocalGameList;
         foreach (var (gameId, lastPlayed, game) in localGameList)
         {
-            GamesList.Add(GameListItem.FromLocalGame(gameId, lastPlayed, game));
+            GamesList.Add(MyGamesListItem.FromLocalGame(gameId, lastPlayed, game));
         }
 
         var networkGameList = MySettings.NetworkGameList;
@@ -154,7 +154,7 @@ public partial class MyGamesView : ContentView
             Contract.Assert(matchedGames.Count() == 1 || matchedGames.Count() == 2);
             foreach (var (_, _, myColor) in matchedGames)
             {
-                GamesList.Add(GameListItem.FromNetworkGame(gameInfo, myColor));
+                GamesList.Add(MyGamesListItem.FromNetworkGame(gameInfo, myColor));
             }
         }
 
@@ -174,7 +174,7 @@ public partial class MyGamesView : ContentView
 
     private void ListView_ItemSelected(object sender, SelectedItemChangedEventArgs e)
     {
-        var item = (GameListItem)e.SelectedItem;
+        var item = (MyGamesListItem)e.SelectedItem;
         if (item is null)
             return;
         ((ListView)sender).SelectedItem = null;
@@ -183,7 +183,7 @@ public partial class MyGamesView : ContentView
 
     private async void DeleteBtn_Clicked(object sender, EventArgs e)
     {
-        var item = (GameListItem)((ImageButton)sender).BindingContext;
+        var item = (MyGamesListItem)((ImageButton)sender).BindingContext;
         Contract.Assert(item.IsLocal);
 
         // get parent page

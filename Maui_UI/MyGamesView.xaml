@@ -14,7 +14,7 @@
             ItemSelected="ListView_ItemSelected"
             ItemsSource="{Binding Source={x:Reference this}, Path=GamesList}" >
             <ListView.ItemTemplate>
-                <DataTemplate x:DataType="shogi:GameListItem">
+                <DataTemplate x:DataType="shogi:MyGamesListItem">
                     <ViewCell>
                         <Grid WidthRequest="{Binding Source={x:Reference listView}, Path=Width}">
                             <Grid.ColumnDefinitions>
