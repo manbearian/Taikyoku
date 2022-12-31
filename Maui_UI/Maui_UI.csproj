@@ -118,6 +118,9 @@
 	  <MauiXaml Update="BoardPage.xaml">
 	    <Generator>MSBuild:Compile</Generator>
 	  </MauiXaml>
+	  <MauiXaml Update="FindGameView.xaml">
+	    <Generator>MSBuild:Compile</Generator>
+	  </MauiXaml>
 	  <MauiXaml Update="NewGameView.xaml">
 	    <Generator>MSBuild:Compile</Generator>
 	  </MauiXaml>

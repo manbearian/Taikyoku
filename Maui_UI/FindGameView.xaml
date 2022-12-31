@@ -3,10 +3,10 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:shogi="clr-namespace:MauiUI"
              x:Name="this"
-             x:Class="MauiUI.MyGamesView">
+             x:Class="MauiUI.FindGameView">
     <Frame x:Name="frame"
            BorderColor="Silver" BackgroundColor="White"
-           MaximumWidthRequest="550" Padding="5">
+           MaximumWidthRequest="300" Padding="5">
         <ListView
             x:Name="listView"
             WidthRequest="{Binding Source={x:Reference frame}, Path=Width}"
@@ -14,24 +14,20 @@
             ItemSelected="ListView_ItemSelected"
             ItemsSource="{Binding Source={x:Reference this}, Path=GamesList}" >
             <ListView.ItemTemplate>
-                <DataTemplate x:DataType="shogi:GameListItem">
+                <DataTemplate x:DataType="shogi:FindGameListItem">
                     <ViewCell>
                         <Grid WidthRequest="{Binding Source={x:Reference listView}, Path=Width}">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="175" />
-                                <ColumnDefinition Width="100" />
+                                <ColumnDefinition Width="50" />
                                 <ColumnDefinition Width="175" />
-                                <ColumnDefinition Width="50" />
-                                <ColumnDefinition Width="50" />
                             </Grid.ColumnDefinitions>
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="50" />
                             </Grid.RowDefinitions>
                             <Label Grid.Column="0" TextColor="Black" Text="{Binding OpponentName}" HorizontalTextAlignment="Start" VerticalTextAlignment="Center"/>
-                            <Label Grid.Column="1" TextColor="Black" Text="{Binding Status}" HorizontalTextAlignment="Start" VerticalTextAlignment="Center"/>
-                            <Label Grid.Column="2" TextColor="Black" Text="{Binding LastMove}" HorizontalTextAlignment="Start" VerticalTextAlignment="Center"/>
-                            <Label Grid.Column="3" TextColor="Black" Text="{Binding TurnCount}" HorizontalTextAlignment="Center" VerticalTextAlignment="Center"/>
-                            <ImageButton Grid.Column="4" Source="trash.png" Clicked="DeleteBtn_Clicked" HeightRequest="30" IsVisible="{Binding IsLocal}" />
+                            <Label Grid.Column="1" TextColor="Black" Text="{Binding MyColor}" HorizontalTextAlignment="Start" VerticalTextAlignment="Center"/>
+                            <Label Grid.Column="2" TextColor="Black" Text="{Binding CreatedOn }" HorizontalTextAlignment="Start" VerticalTextAlignment="Center"/>
                         </Grid>
                     </ViewCell>
                 </DataTemplate>

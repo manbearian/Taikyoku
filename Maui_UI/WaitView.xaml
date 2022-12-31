@@ -4,7 +4,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              x:Class="MauiUI.WaitView">
     <VerticalStackLayout HorizontalOptions="Center" VerticalOptions="Center">
-        <Label TextColor="Black" Text="Looking for Opponent..." FontSize="Large"/>
+        <Label TextColor="Black" Text="Waiting for Opponent..." FontSize="Large"/>
         <Button Text="Cancel" Clicked="CancelBtn_Clicked"></Button>
     </VerticalStackLayout>
 </ContentView>

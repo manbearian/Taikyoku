@@ -7,7 +7,7 @@ namespace MauiUI;
 
 public enum MainPageMode
 {
-    Default, NewNetworkGame, JoinNetworkGame, Wait
+    Default, NewNetworkGame, FindNetworkGame, Wait
 }
 
 public partial class MainPage : ContentPage
@@ -54,10 +54,11 @@ public partial class MainPage : ContentPage
     private void NewOnlineGameBtn_Clicked(object sender, EventArgs e) =>
         MainPageMode = MainPageMode.NewNetworkGame;
 
-    private void Connection_OnReceiveGameStart(object sender, ReceiveGameStartEventArgs e)
-    {
-        throw new NotImplementedException();
-    }
+    private void JoinOnlineGameBtn_Clicked(object sender, EventArgs e) =>
+        MainPageMode = MainPageMode.FindNetworkGame;
+
+    private void Connection_OnReceiveGameStart(object sender, ReceiveGameStartEventArgs e) =>
+        Dispatcher.Dispatch(() => Navigation.PushModalAsync(new BoardPage(e.GameInfo.GameId, e.Game), true));
 }
 
 public class MainPageModeConverter : IValueConverter

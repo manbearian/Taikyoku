@@ -63,10 +63,6 @@ public class GameListItem
 
 public partial class MyGamesView : ContentView
 {
-    //
-    // Non-Bindable Properties
-    //
-
     public ObservableCollection<GameListItem> GamesList { get; set; } = new();
 
     public MyGamesView()

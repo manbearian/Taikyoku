@@ -23,19 +23,21 @@
             HeightRequest="200" />
 
         <shogi:MyGamesView
-            x:Name="MyGamesView"
             Grid.Row="1"
             IsVisible="{Binding Source={x:Reference this}, Path=MainPageMode, Converter={StaticResource pageModeConverter}, ConverterParameter='Default'}"
             />
 
         <shogi:NewGameView
-            x:Name="NewGameView"
             Grid.Row="1"
             IsVisible="{Binding Source={x:Reference this}, Path=MainPageMode, Converter={StaticResource pageModeConverter}, ConverterParameter='NewNetworkGame'}"
             />
 
+        <shogi:FindGameView
+            Grid.Row="1"
+            IsVisible="{Binding Source={x:Reference this}, Path=MainPageMode, Converter={StaticResource pageModeConverter}, ConverterParameter='FindNetworkGame'}"
+            />
+
         <shogi:WaitView
-            x:Name="WaitView"
             Grid.Row="1"
             IsVisible="{Binding Source={x:Reference this}, Path=MainPageMode, Converter={StaticResource pageModeConverter}, ConverterParameter='Wait'}"
             />
@@ -73,7 +75,8 @@
                 WidthRequest="128"
                 Margin="25,0"
                 SemanticProperties.Hint="Find and join an online game"
-                HorizontalOptions="Center" />
+                HorizontalOptions="Center"
+                Clicked="JoinOnlineGameBtn_Clicked" />
 
             <Button
                 x:Name="SignInBtn"
