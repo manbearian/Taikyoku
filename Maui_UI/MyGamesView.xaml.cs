@@ -93,7 +93,7 @@ public partial class MyGamesView : ContentView
         throw new Exception("updated game not found...?");
     }
 
-    private void PopulateMyGamesList()
+    private async Task PopulateMyGamesList()
     {
         var localGameList = LocalGameManager.LocalGameList;
         foreach (var (gameId, lastPlayed, game) in localGameList)
@@ -101,53 +101,10 @@ public partial class MyGamesView : ContentView
             GamesList.Add(MyGamesListItem.FromLocalGame(gameId, lastPlayed, game));
         }
 
-        var networkGameList = MySettings.NetworkGameList;
-
-        /////////////////////////////////////////////
-        // TODO: REMOVE THIS HACK
-        //
-        Guid game1 = Guid.NewGuid();
-        Guid game1player1 = Guid.NewGuid();
-        Guid game1player2 = Guid.NewGuid();
-        Guid game2 = Guid.NewGuid();
-        Guid game2player1 = Guid.NewGuid();
-        Guid game2player2 = Guid.NewGuid();
-        Guid game3 = Guid.NewGuid();
-        Guid game3player1 = Guid.NewGuid();
-        Guid game3player2 = Guid.NewGuid();
-
-        networkGameList = new (Guid GameId, Guid PlayerId, PlayerColor MyColor)[]
-        {
-            (game1, game1player1, PlayerColor.Black),
-            (game1, game1player2, PlayerColor.White),
-            (game2, game2player1, PlayerColor.White),
-            (game3, game3player1, PlayerColor.Black),
-        };
-        //
-        ///////////////////////////////////////////////////
+        var networkGameList = NetworkGameManager.NetworkGameList;
 
         var requestInfos = networkGameList.Select(i => new NetworkGameRequest(i.GameId, i.PlayerId));
-        // var clientGameInfos = await MainPage.Default.Connection.RequestGameInfo(requestInfos);
-        ///////////////////////////////////
-        // TODO REMOVE THIS THACK
-        var clientGameInfos = new ClientGameInfo[]
-        {
-            new ClientGameInfo()
-            {
-                GameId = game1, BlackName = "alice", WhiteName = "bob", Created = DateTime.UtcNow, LastPlayed = DateTime.UtcNow, Status = GameStatus.BlackTurn
-            },
-            new ClientGameInfo()
-            {
-                GameId = game2,
-                BlackName = "charlie",
-                WhiteName = "dana",
-                Created = DateTime.UtcNow,
-                LastPlayed = DateTime.UtcNow,
-                Status = GameStatus.BlackTurn
-            }
-        };
-        //
-        ///////////////////////////////
+        var clientGameInfos = await MainPage.Default.Connection.RequestGameInfo(requestInfos);
         foreach (var gameInfo in clientGameInfos)
         {
             var matchedGames = networkGameList.Where(i => i.GameId == gameInfo.GameId);

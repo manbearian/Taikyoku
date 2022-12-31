@@ -57,8 +57,15 @@ public partial class MainPage : ContentPage
     private void JoinOnlineGameBtn_Clicked(object sender, EventArgs e) =>
         MainPageMode = MainPageMode.FindNetworkGame;
 
-    private void Connection_OnReceiveGameStart(object sender, ReceiveGameStartEventArgs e) =>
-        Dispatcher.Dispatch(() => Navigation.PushModalAsync(new BoardPage(e.GameInfo.GameId, e.Game), true));
+    private void Connection_OnReceiveGameStart(object sender, ReceiveGameStartEventArgs e)
+    {
+        MySettings.NetworkGameManager.SaveGame(Connection.GameId, Connection.PlayerId, Connection.Color);
+        Dispatcher.Dispatch(() =>
+        {
+            Navigation.PushModalAsync(new BoardPage(e.GameInfo.GameId, e.Game), true);
+            MainPageMode = default;
+        });
+    }
 }
 
 public class MainPageModeConverter : IValueConverter
