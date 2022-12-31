@@ -26,19 +26,19 @@
             x:Name="MyGamesView"
             Grid.Row="1"
             IsVisible="{Binding Source={x:Reference this}, Path=MainPageMode, Converter={StaticResource pageModeConverter}, ConverterParameter='Default'}"
-            Connection="{Binding Source={x:Reference this}, Path=Connection}"/>
+            />
 
         <shogi:NewGameView
             x:Name="NewGameView"
             Grid.Row="1"
             IsVisible="{Binding Source={x:Reference this}, Path=MainPageMode, Converter={StaticResource pageModeConverter}, ConverterParameter='NewNetworkGame'}"
-            Connection="{Binding Source={x:Reference this}, Path=Connection}"/>
+            />
 
         <shogi:WaitView
             x:Name="WaitView"
             Grid.Row="1"
             IsVisible="{Binding Source={x:Reference this}, Path=MainPageMode, Converter={StaticResource pageModeConverter}, ConverterParameter='Wait'}"
-            Connection="{Binding Source={x:Reference this}, Path=Connection}"/>
+            />
 
         <HorizontalStackLayout
             x:Name="bottomRowBtns"

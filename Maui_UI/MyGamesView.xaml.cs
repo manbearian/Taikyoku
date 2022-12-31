@@ -1,7 +1,6 @@
 using System.Collections.ObjectModel;
 using System.Diagnostics.Contracts;
 
-using ShogiClient;
 using ShogiComms;
 using ShogiEngine;
 
@@ -64,18 +63,6 @@ public class GameListItem
 
 public partial class MyGamesView : ContentView
 {
-    //
-    // Bindable Proprerties
-    //
-
-    public static readonly BindableProperty ConnectionProperty = BindableProperty.Create(nameof(Connection), typeof(Connection), typeof(MyGamesView));
-
-    public Connection Connection
-    {
-        get => (Connection)GetValue(ConnectionProperty);
-        set => SetValue(ConnectionProperty, value);
-    }
-
     //
     // Non-Bindable Properties
     //
@@ -144,7 +131,7 @@ public partial class MyGamesView : ContentView
         ///////////////////////////////////////////////////
 
         var requestInfos = networkGameList.Select(i => new NetworkGameRequest(i.GameId, i.PlayerId));
-        // var clientGameInfos = await Connection.RequestGameInfo(requestInfos);
+        // var clientGameInfos = await MainPage.Default.Connection.RequestGameInfo(requestInfos);
         ///////////////////////////////////
         // TODO REMOVE THIS THACK
         var clientGameInfos = new ClientGameInfo[]
