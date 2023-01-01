@@ -174,7 +174,10 @@ internal class BoardDrawer : IDrawable
                 return;
 
             var loc = View.SelectedLoc.Value;
-            var selectedPiece = game.GetKnownPiece(loc);
+            var selectedPiece = game.GetPiece(loc);
+
+            if (selectedPiece is null)
+                return;
 
             var moves = game.GetLegalMoves(selectedPiece, loc);
 
@@ -329,9 +332,9 @@ public class BoardView : GraphicsView
         }
         else
         {
-            var selectedPiece = Game.GetKnownPiece(SelectedLoc.Value);
+            var selectedPiece = Game.GetPiece(SelectedLoc.Value);
 
-            if (selectedPiece.Owner == Game.CurrentPlayer)
+            if (selectedPiece is not null && selectedPiece.Owner == Game.CurrentPlayer)
             {
                 if (SelectedLoc2 is null
                     && Game.GetLegalMoves(selectedPiece, SelectedLoc.Value).Where(move => move.Loc == loc.Value).Any(move => move.Type == MoveType.Igui || move.Type == MoveType.Area))
