@@ -17,9 +17,9 @@ public partial class WaitView : ContentView
         {
             await MainPage.Default.Connection.CancelGame();
         }
-        catch (HubException ex) when (ex.Message == string.Format(HubExceptions.OpenGameNotFound, MainPage.Default.Connection.GameId))
+        catch (HubException ex) when (MainPage.Default.Connection.IsGameNotFoundException(ex))
         {
-            // TODO: This usually happens i the server already started the game... not sure what to do in this case as the oppponent probably thinks you're playing...
+            // TODO: This usually happens if the server already started the game... not sure what to do in this case as the oppponent probably thinks you're playing...
             // i need to ignore this cancel some how :(
         }
 
