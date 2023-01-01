@@ -56,6 +56,7 @@ public class MyGamesListItem
         {
             GameId = gameInfo.GameId,
             PlayerId = playerId,
+            MyColor = myColor,
             OpponentName = (myColor == PlayerColor.Black ? gameInfo.WhiteName : gameInfo.BlackName) ?? string.Empty,
             Status = gameInfo.Status switch
             {
