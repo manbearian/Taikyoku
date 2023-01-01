@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using System.Diagnostics.Contracts;
 
+using ShogiClient;
 using ShogiComms;
 using ShogiEngine;
 
@@ -42,20 +43,20 @@ public class MyGamesListItem
             IsLocal = true
         };
 
-    public static MyGamesListItem FromNetworkGame(ClientGameInfo gameInfo, PlayerColor myColor) =>
+    public static MyGamesListItem FromNetworkGame(ClientGameInfo? gameInfo, PlayerColor myColor) =>
         new()
         {
-            GameId = gameInfo.GameId,
+            GameId = gameInfo?.GameId ?? Guid.Empty,
             Game = new TaikyokuShogi(), // TODO: fix this
-            OpponentName = (myColor == PlayerColor.Black ? gameInfo.WhiteName : gameInfo.BlackName) ?? "(unknown)",
-            Status = gameInfo.Status switch
+            OpponentName = (myColor == PlayerColor.Black ? gameInfo?.WhiteName : gameInfo?.BlackName) ?? string.Empty,
+            Status = gameInfo?.Status switch
             {
                 GameStatus.BlackTurn => "Black's Turn",
                 GameStatus.WhiteTurn => "White's Turn",
                 GameStatus.Expired => "expired",
-                _ => "unknown"
+                _ => "expired"
             },
-            LastMove = gameInfo.LastPlayed.ToString(),
+            LastMove = gameInfo?.LastPlayed.ToString() ?? string.Empty,
             TurnCount = "-1", // TODO: Get actual game information
             IsLocal = false
         };
@@ -105,27 +106,42 @@ public partial class MyGamesView : ContentView
 
     private async Task PopulateMyGamesList()
     {
-        var localGameList = LocalGameManager.LocalGameList;
+        var localGameList = LocalGameManager.LocalGameList.OrderByDescending(g => g.lastPlayed);
         foreach (var (gameId, lastPlayed, game) in localGameList)
         {
             GamesList.Add(MyGamesListItem.FromLocalGame(gameId, lastPlayed, game));
         }
 
-        var networkGameList = NetworkGameManager.NetworkGameList;
-
-        var requestInfos = networkGameList.Select(i => new NetworkGameRequest(i.GameId, i.PlayerId));
-        var clientGameInfos = await MainPage.Default.Connection.RequestGameInfo(requestInfos);
-        foreach (var gameInfo in clientGameInfos)
+        try
         {
-            var matchedGames = networkGameList.Where(i => i.GameId == gameInfo.GameId);
-            Contract.Assert(matchedGames.Count() == 1 || matchedGames.Count() == 2);
-            foreach (var (_, _, myColor) in matchedGames)
+            var networkGameList = NetworkGameManager.NetworkGameList;
+            var requestInfos = networkGameList.Select(i => new NetworkGameRequest(i.GameId, i.PlayerId));
+            var clientGameInfos = await MainPage.Default.Connection.RequestGameInfo(requestInfos);
+            foreach (var (gameId, userId, myColor) in networkGameList)
             {
-                GamesList.Add(MyGamesListItem.FromNetworkGame(gameInfo, myColor));
+                var gameInfo = clientGameInfos.FirstOrDefault(g => g?.GameId == gameId, null);
+                InsertSortedGamesListItem(MyGamesListItem.FromNetworkGame(gameInfo, myColor));
             }
         }
+        catch (Exception ex) when (Connection.ExceptionFilter(ex))
+        {
+            // TOOD: retry server communications later???
+            // TODO: let the user know that network connection is down
+        }
 
-        // TODO: Make the GamesList sorted
+        void InsertSortedGamesListItem(MyGamesListItem item)
+        {
+            for (int i = 0; i < GamesList.Count; i++)
+            {
+                if (GamesList[i].LastMove.CompareTo(item.LastMove) < 0)
+                {
+                    GamesList.Insert(i, item);
+                    return;
+                }
+            }
+
+            GamesList.Add(item);
+        }
     }
 
     private void ListView_ItemSelected(object sender, SelectedItemChangedEventArgs e)
