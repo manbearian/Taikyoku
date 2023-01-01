@@ -23,7 +23,7 @@ public class MyGamesListItem
 
     public PlayerColor MyColor { get; set; } = PlayerColor.Black;
 
-    public TaikyokuShogi? Game { get; set; } = new TaikyokuShogi();
+    public TaikyokuShogi? Game { get; set; } = null;
 
     public DateTime? LastMoveOn { get; set; } = DateTime.MinValue;
 
@@ -51,20 +51,20 @@ public class MyGamesListItem
             IsLocal = true
         };
 
-    public static MyGamesListItem FromNetworkGame(ClientGameInfo? gameInfo, Guid playerId, PlayerColor myColor) =>
+    public static MyGamesListItem FromNetworkGame(ClientGameInfo gameInfo, Guid playerId, PlayerColor myColor) =>
         new()
         {
-            GameId = gameInfo?.GameId ?? Guid.Empty,
+            GameId = gameInfo.GameId,
             PlayerId = playerId,
-            OpponentName = (myColor == PlayerColor.Black ? gameInfo?.WhiteName : gameInfo?.BlackName) ?? string.Empty,
-            Status = gameInfo?.Status switch
+            OpponentName = (myColor == PlayerColor.Black ? gameInfo.WhiteName : gameInfo.BlackName) ?? string.Empty,
+            Status = gameInfo.Status switch
             {
                 GameStatus.BlackTurn => "Black's Turn",
                 GameStatus.WhiteTurn => "White's Turn",
-                GameStatus.Expired => "expired",
-                _ => "expired"
+                GameStatus.Expired => "Expired",
+                _ => "(unknown)"
             },
-            LastMoveOn = gameInfo?.LastPlayed,
+            LastMoveOn = gameInfo.LastPlayed,
             IsLocal = false
         };
 }
@@ -136,7 +136,10 @@ public partial class MyGamesView : ContentView
             foreach (var (gameId, userId, myColor) in networkGameList)
             {
                 var gameInfo = clientGameInfos.FirstOrDefault(g => g?.GameId == gameId, null);
-                InsertSorted(MyGamesListItem.FromNetworkGame(gameInfo, userId, myColor));
+                if (gameInfo is null)
+                    MySettings.NetworkGameManager.DeleteGame(gameId, userId);
+                else
+                    InsertSorted(MyGamesListItem.FromNetworkGame(gameInfo, userId, myColor));
             }
         }
         catch (Exception ex) when (Connection.ExceptionFilter(ex))
