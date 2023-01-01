@@ -184,8 +184,8 @@ public partial class MyGamesView : ContentView
         else
         {
             MainPage.Default.Connection.SetGameInfo(item.GameId, item.PlayerId, item.MyColor);
-            await MainPage.Default.Connection.RejoinGame();
             MainPage.Default.MainPageMode = MainPageMode.Wait;
+            await MainPage.Default.Connection.RejoinGame();
         }
     }
 
