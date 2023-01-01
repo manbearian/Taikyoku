@@ -137,7 +137,9 @@ namespace ShogiClient
         public void Dispose() =>
             _connection.DisposeAsync().AsTask().Wait();
 
-        public async Task ConnectAsync(int retry = 0)
+        public async Task ConnectAsync() => await ConnectAsync(0);
+
+        private async Task ConnectAsync(int retry)
         {
             try
             {
@@ -195,6 +197,10 @@ namespace ShogiClient
                _ when e is InvalidOperationException => true,  // Connection failure
                _ => false
            };
+
+        public bool IsGameNotFoundException(HubException ex) =>
+            ex.Message == string.Format(HubExceptions.OpenGameNotFound, GameId);
+
 
         public void SetGameInfo(Guid gameId, Guid playerId, PlayerColor color) => (GameId, PlayerId, Color) = (gameId, playerId, color);
     }
