@@ -10,13 +10,22 @@ namespace MauiUI;
 public class MyGamesListItem
 {
     public string OpponentName { get; set; } = string.Empty;
+
     public string Status { get; set; } = string.Empty;
-    public string LastMove { get; set; } = string.Empty;
-    public string TurnCount { get; set; } = string.Empty;
+
+    public string LastMove { get => LastMoveOn?.ToLocalTime().ToString() ?? string.Empty; }
+
+    public string TurnCount { get => Game?.MoveCount.ToString() ?? string.Empty; }
 
     public Guid GameId { get; set; } = Guid.Empty;
+    
+    public Guid PlayerId { get; set; } = Guid.Empty;
 
-    public TaikyokuShogi Game { get; set; } = new TaikyokuShogi();
+    public PlayerColor MyColor { get; set; } = PlayerColor.Black;
+
+    public TaikyokuShogi? Game { get; set; } = new TaikyokuShogi();
+
+    public DateTime? LastMoveOn { get; set; } = DateTime.MinValue;
 
     public bool IsLocal { get; set; } = true;
 
@@ -38,16 +47,15 @@ public class MyGamesListItem
                 },
                 _ => "unknown"
             },
-            LastMove = lastPlayed.ToString(),
-            TurnCount = game.MoveCount.ToString(),
+            LastMoveOn = lastPlayed,
             IsLocal = true
         };
 
-    public static MyGamesListItem FromNetworkGame(ClientGameInfo? gameInfo, PlayerColor myColor) =>
+    public static MyGamesListItem FromNetworkGame(ClientGameInfo? gameInfo, Guid playerId, PlayerColor myColor) =>
         new()
         {
             GameId = gameInfo?.GameId ?? Guid.Empty,
-            Game = new TaikyokuShogi(), // TODO: fix this
+            PlayerId = playerId,
             OpponentName = (myColor == PlayerColor.Black ? gameInfo?.WhiteName : gameInfo?.BlackName) ?? string.Empty,
             Status = gameInfo?.Status switch
             {
@@ -56,8 +64,7 @@ public class MyGamesListItem
                 GameStatus.Expired => "expired",
                 _ => "expired"
             },
-            LastMove = gameInfo?.LastPlayed.ToString() ?? string.Empty,
-            TurnCount = "-1", // TODO: Get actual game information
+            LastMoveOn = gameInfo?.LastPlayed,
             IsLocal = false
         };
 }
@@ -129,7 +136,7 @@ public partial class MyGamesView : ContentView
             foreach (var (gameId, userId, myColor) in networkGameList)
             {
                 var gameInfo = clientGameInfos.FirstOrDefault(g => g?.GameId == gameId, null);
-                InsertSorted(MyGamesListItem.FromNetworkGame(gameInfo, myColor));
+                InsertSorted(MyGamesListItem.FromNetworkGame(gameInfo, userId, myColor));
             }
         }
         catch (Exception ex) when (Connection.ExceptionFilter(ex))
@@ -142,7 +149,7 @@ public partial class MyGamesView : ContentView
         {
             for (int i = 0; i < GamesList.Count; i++)
             {
-                if (GamesList[i].LastMove.CompareTo(item.LastMove) < 0)
+                if (GamesList[i].LastMoveOn < item.LastMoveOn)
                 {
                     GamesList.Insert(i, item);
                     return;
@@ -159,13 +166,24 @@ public partial class MyGamesView : ContentView
         await AddNetworkGamesToMyGamesList();
     }
 
-    private void ListView_ItemSelected(object sender, SelectedItemChangedEventArgs e)
+    private async void ListView_ItemSelected(object sender, SelectedItemChangedEventArgs e)
     {
         var item = (MyGamesListItem)e.SelectedItem;
         if (item is null)
             return;
         ((ListView)sender).SelectedItem = null;
-        Navigation.PushModalAsync(new BoardPage(item.GameId, item.Game));
+
+        if (item.IsLocal)
+        {
+            Contract.Assert(item.Game is not null);
+            await MainPage.Default.Navigation.PushModalAsync(new BoardPage(item.Game, item.GameId), true);
+        }
+        else
+        {
+            MainPage.Default.Connection.SetGameInfo(item.GameId, item.PlayerId, item.MyColor);
+            await MainPage.Default.Connection.RejoinGame();
+            MainPage.Default.MainPageMode = MainPageMode.Wait;
+        }
     }
 
     private async void DeleteBtn_Clicked(object sender, EventArgs e)

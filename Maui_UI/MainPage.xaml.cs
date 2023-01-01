@@ -62,7 +62,7 @@ public partial class MainPage : ContentPage
     }
 
     private void NewLocalGameBtn_Clicked(object sender, EventArgs e) =>
-        Navigation.PushModalAsync(new BoardPage(Guid.Empty, new TaikyokuShogi()), true);
+        Navigation.PushModalAsync(new BoardPage(new TaikyokuShogi()), true);
 
     private void NewOnlineGameBtn_Clicked(object sender, EventArgs e) =>
         MainPageMode = MainPageMode.NewNetworkGame;
@@ -75,8 +75,8 @@ public partial class MainPage : ContentPage
         MySettings.NetworkGameManager.SaveGame(Connection.GameId, Connection.PlayerId, Connection.Color);
         Dispatcher.Dispatch(() =>
         {
-            Navigation.PushModalAsync(new BoardPage(e.GameInfo.GameId, e.Game), true);
-            MainPageMode = default;
+            Navigation.PushModalAsync(new BoardPage(e.Game, Connection), true);
+            MainPageMode = MainPageMode.Home;
         });
     }
 }
