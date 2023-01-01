@@ -17,13 +17,19 @@ public partial class BoardPage : ContentPage
         set => SetValue(GameProperty, value);
     }
 
+    public static readonly BindableProperty ConnectionProperty = BindableProperty.Create(nameof(Connection), typeof(Connection), typeof(BoardView));
+
+    public Connection? Connection
+    {
+        get => (Connection?)GetValue(ConnectionProperty);
+        set => SetValue(ConnectionProperty, value);
+    }
+
     //
     // Non-Bindable Properties
     //
 
     private Guid? LocalGameId { get;  }
-
-    private Connection? Connection { get; }
 
     private bool IsLocalGame { get => Connection is null; }
 

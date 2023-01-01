@@ -1,3 +1,4 @@
+using ShogiClient;
 using ShogiEngine;
 
 namespace MauiUI;
@@ -240,6 +241,14 @@ public class BoardView : GraphicsView
         set => SetValue(GameProperty, value);
     }
 
+    public static readonly BindableProperty ConnectionProperty = BindableProperty.Create(nameof(Connection), typeof(Connection), typeof(BoardView));
+
+    public Connection? Connection
+    {
+        get => (Connection?)GetValue(ConnectionProperty);
+        set => SetValue(ConnectionProperty, value);
+    }
+
     public static readonly BindableProperty IsRotatedProperty = BindableProperty.Create(nameof(IsRotated), typeof(bool), typeof(BoardView));
 
     public bool IsRotated
@@ -291,6 +300,18 @@ public class BoardView : GraphicsView
         tapRecognizer.Tapped += TapRecognizer_Tapped;
         GestureRecognizers.Add(tapRecognizer);
         EndInteraction += BoardView_EndInteraction;
+
+        PropertyChanged += BoardView_PropertyChanged;
+    }
+
+    private void BoardView_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(Game))
+        {
+            IsEnabled = Game.CurrentPlayer is not null && (Connection is null || Game.CurrentPlayer == Connection.Color);
+            //IsRotated = Connection?.Color == PlayerColor.White;
+            Invalidate();
+        }
     }
 
     // Translate a point on the View to a space on the board
@@ -310,7 +331,7 @@ public class BoardView : GraphicsView
         return (x < 0 || x >= BoardWidth || y < 0 || y >= BoardHeight) ? null : (x, y);
     }
 
-    private void TapRecognizer_Tapped(object? sender, EventArgs e)
+    private async void TapRecognizer_Tapped(object? sender, EventArgs e)
     {
         if (_lastTouchPoint is null)
             return;
@@ -356,7 +377,7 @@ public class BoardView : GraphicsView
                             //    promote = x.ShowDialog(Game, selectedPiece.Id, selectedPiece.Id.PromotesTo() ?? throw new Exception());
                         }
 
-                        MakeMove(SelectedLoc.Value, loc.Value, SelectedLoc2, promote);
+                        await MakeMove(SelectedLoc.Value, loc.Value, SelectedLoc2, promote);
 
                         SelectedLoc = null;
                         SelectedLoc2 = null;
@@ -377,15 +398,14 @@ public class BoardView : GraphicsView
 
         Invalidate();
 
-        void MakeMove((int X, int Y) startLoc, (int X, int Y) endLoc, (int X, int Y)? midLoc = null, bool promote = false)
+        async Task MakeMove((int X, int Y) startLoc, (int X, int Y) endLoc, (int X, int Y)? midLoc = null, bool promote = false)
         {
-            // TODO: NETWORK GAMES
-            //if (_networkConnection is not null)
-            //{
-            //    Task.Run(() => _networkConnection.RequestMove(startLoc, endLoc, midLoc, promote));
-            //    IsEnabled = false;
-            //    return;
-            //}
+            if (Connection is not null)
+            {
+                await Connection.RequestMove(startLoc, endLoc, midLoc, promote);
+                IsEnabled = false;
+                return;
+            }
 
             PlayerColor prevPlayer = Game.CurrentPlayer.Value;
 
