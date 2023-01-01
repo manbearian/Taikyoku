@@ -12,6 +12,9 @@ public enum MainPageMode
 
 public partial class MainPage : ContentPage
 {
+    public delegate void NetworkConnectedHandler(object sender, EventArgs e);
+    public event NetworkConnectedHandler? OnNetworkConnected;
+
     //
     // Bindabe Proprerties
     //
@@ -25,22 +28,32 @@ public partial class MainPage : ContentPage
     }
 
     // The one and only MainPage
-    public static MainPage Default { get; } = new MainPage();
+    public static MainPage Default { get; } = new();
 
-    public Connection Connection { get; } = new Connection();
+    public Connection Connection { get; } = new();
 
     public MainPage()
     {
         InitializeComponent();
 
-        Appearing += async (s, e) => await Connection.ConnectAsync();
         Loaded += MainPage_Loaded;
         Unloaded += MainPage_Unloaded;
     }
  
-    private void MainPage_Loaded(object? sender, EventArgs e)
+    private async void MainPage_Loaded(object? sender, EventArgs e)
     {
         Connection.OnReceiveGameStart += Connection_OnReceiveGameStart;
+
+        try
+        {
+            await Connection.ConnectAsync();
+            OnNetworkConnected?.Invoke(this, new EventArgs());
+        }
+        catch(Exception ex) when (Connection.ExceptionFilter(ex))
+        {
+            // failed to connect... that's okay
+            // TOOD: let the user know, allow them to try later
+        }
     }
 
     private void MainPage_Unloaded(object? sender, EventArgs e)

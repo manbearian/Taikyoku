@@ -73,16 +73,22 @@ public partial class MyGamesView : ContentView
         Loaded += MyGamesView_Loaded;
         Unloaded += MyGamesView_Unloaded;
     }
+
     private async void MyGamesView_Loaded(object? sender, EventArgs e)
     {
         await PopulateMyGamesList();
         MySettings.LocalGameManager.OnLocalGameUpdate += LocalGameManager_OnLocalGameUpdate;
+        MainPage.Default.OnNetworkConnected += Default_OnNetworkConnected;
     }
 
     private void MyGamesView_Unloaded(object? sender, EventArgs e)
     {
         MySettings.LocalGameManager.OnLocalGameUpdate -= LocalGameManager_OnLocalGameUpdate;
+        MainPage.Default.OnNetworkConnected -= Default_OnNetworkConnected;
     }
+
+    private async void Default_OnNetworkConnected(object sender, EventArgs e) =>
+        await AddNetworkGamesToMyGamesList();
 
     private void LocalGameManager_OnLocalGameUpdate(object sender, LocalGameUpdateEventArgs e)
     {
@@ -104,14 +110,17 @@ public partial class MyGamesView : ContentView
         throw new Exception("updated game not found...?");
     }
 
-    private async Task PopulateMyGamesList()
+    private void AddLocalGamesToMyGamesList()
     {
         var localGameList = LocalGameManager.LocalGameList.OrderByDescending(g => g.lastPlayed);
         foreach (var (gameId, lastPlayed, game) in localGameList)
         {
             GamesList.Add(MyGamesListItem.FromLocalGame(gameId, lastPlayed, game));
         }
+    }
 
+    private async Task AddNetworkGamesToMyGamesList()
+    {
         try
         {
             var networkGameList = NetworkGameManager.NetworkGameList;
@@ -120,7 +129,7 @@ public partial class MyGamesView : ContentView
             foreach (var (gameId, userId, myColor) in networkGameList)
             {
                 var gameInfo = clientGameInfos.FirstOrDefault(g => g?.GameId == gameId, null);
-                InsertSortedGamesListItem(MyGamesListItem.FromNetworkGame(gameInfo, myColor));
+                InsertSorted(MyGamesListItem.FromNetworkGame(gameInfo, myColor));
             }
         }
         catch (Exception ex) when (Connection.ExceptionFilter(ex))
@@ -129,7 +138,7 @@ public partial class MyGamesView : ContentView
             // TODO: let the user know that network connection is down
         }
 
-        void InsertSortedGamesListItem(MyGamesListItem item)
+        void InsertSorted(MyGamesListItem item)
         {
             for (int i = 0; i < GamesList.Count; i++)
             {
@@ -142,6 +151,12 @@ public partial class MyGamesView : ContentView
 
             GamesList.Add(item);
         }
+    }
+
+    private async Task PopulateMyGamesList()
+    {
+        AddLocalGamesToMyGamesList();
+        await AddNetworkGamesToMyGamesList();
     }
 
     private void ListView_ItemSelected(object sender, SelectedItemChangedEventArgs e)
