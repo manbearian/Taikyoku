@@ -12,10 +12,8 @@ internal class BoardDrawer : IDrawable
 
     public void Draw(ICanvas canvas, RectF dirtyRect)
     {
-        var width = View.CenterWidth;
-        var height = View.CenterHeight;
-        var fullWidth = (float)View.Width;
-        var fullHeight = (float)View.Height;
+        var width = (float)View.Width;
+        var height = (float)View.Height;
         var boardWidth = View.BoardWidth;
         var boardHeight = View.BoardHeight;
         var spaceWidth = View.SpaceWidth;
@@ -33,39 +31,7 @@ internal class BoardDrawer : IDrawable
 
         // Draw background
         canvas.FillColor = Colors.AntiqueWhite;
-        canvas.FillRectangle(0, 0, fullWidth, fullHeight);
-
-        if (View.IsLabeled)
-        {
-            var labelWidth = View.LabelWidth;
-            var labelHeight = View.LabelHeight;
-
-            canvas.FillColor = Colors.White;
-            canvas.FillRectangle(0, 0, fullWidth, labelHeight);
-            canvas.FillRectangle(0, 0, labelWidth, fullHeight);
-            canvas.FillRectangle(0, fullHeight - labelHeight, fullWidth, labelHeight);
-            canvas.FillRectangle(fullWidth - labelWidth, 0, labelWidth, fullHeight);
-
-            canvas.FontColor = Colors.Black;
-            canvas.FontSize = labelHeight;
-            var spacer = labelHeight * 0.7f;
-
-            for (int i = 0; i < boardWidth; ++i)
-            {
-                canvas.DrawString($"{boardWidth - i}", i * spaceWidth + (spaceWidth / 2) + labelWidth, spacer, HorizontalAlignment.Center);
-                canvas.DrawString($"{boardWidth - i}", i * spaceWidth + (spaceWidth / 2) + labelWidth, fullHeight - labelHeight + spacer, HorizontalAlignment.Center);
-            }
-
-            static string RowName(int i) => new((char)('A' + (i % 26)), i / 26 + 1);
-
-            for (int i = 0; i < boardHeight; ++i)
-            {
-                canvas.DrawString(RowName(i), labelWidth / 2, (i * spaceHeight) + (spaceHeight / 2) + labelHeight + spacer / 2, HorizontalAlignment.Center);
-                canvas.DrawString(RowName(i), labelWidth / 2 + fullWidth - labelWidth, (i * spaceHeight) + (spaceHeight / 2) + labelHeight + spacer / 2, HorizontalAlignment.Center);
-            }
-
-            canvas.Translate(labelWidth, labelHeight);
-        }
+        canvas.FillRectangle(0, 0, width, height);
 
         DrawBoard(canvas);
         DrawMoves(canvas);
@@ -227,8 +193,25 @@ internal class BoardDrawer : IDrawable
     }
 }
 
+
+public class PlayerChangeEventArgs : EventArgs
+{
+    public PlayerColor? OldPlayer { get; }
+
+    public PlayerColor? NewPlayer { get; }
+
+    public PlayerChangeEventArgs(PlayerColor? oldPlayer, PlayerColor? newPlayer) => (OldPlayer, NewPlayer) = (oldPlayer, newPlayer);
+}
+
 public class BoardView : GraphicsView
 {
+    //
+    // Events
+    //
+ 
+    public delegate void PlayerChangeHandler(object sender, PlayerChangeEventArgs e);
+    public event PlayerChangeHandler? OnPlayerChange;
+
     //
     // Bindabe Proprerties
     //
@@ -257,14 +240,6 @@ public class BoardView : GraphicsView
         set => SetValue(IsRotatedProperty, value);
     }
 
-    public static readonly BindableProperty IsLabeledProperty = BindableProperty.Create(nameof(IsLabeled), typeof(bool), typeof(BoardView));
-
-    public bool IsLabeled
-    {
-        get => (bool)GetValue(IsLabeledProperty);
-        set => SetValue(IsLabeledProperty, value);
-    }
-
     //
     // Standard Properties
     //
@@ -273,9 +248,9 @@ public class BoardView : GraphicsView
 
     public int BoardHeight { get => TaikyokuShogi.BoardHeight; }
 
-    public float SpaceWidth { get => CenterWidth / BoardWidth; }
+    public float SpaceWidth { get => (float)Width / BoardWidth; }
 
-    public float SpaceHeight { get => CenterHeight / BoardHeight; }
+    public float SpaceHeight { get => (float)Height / BoardHeight; }
 
     public (int X, int Y)? SelectedLoc { get; set; } = null;
     public (int X, int Y)? SelectedLoc2 { get; set; } = null;
@@ -285,10 +260,6 @@ public class BoardView : GraphicsView
     public float LabelWidth { get => 12.0f; }
 
     public float LabelHeight { get => 10.0f; }
-
-    public float CenterWidth { get => IsLabeled ? (float)Width - 2 * LabelWidth : (float)Width; }
-
-    public float CenterHeight { get => IsLabeled ? (float)Height - 2 * LabelHeight : (float)Height; }
 
     public BoardView()
     {
@@ -309,7 +280,10 @@ public class BoardView : GraphicsView
         if (e.PropertyName == nameof(Game))
         {
             IsEnabled = Game.CurrentPlayer is not null && (Connection is null || Game.CurrentPlayer == Connection.Color);
-            //IsRotated = Connection?.Color == PlayerColor.White;
+            IsRotated = Connection?.Color == PlayerColor.White;
+
+            OnPlayerChange?.Invoke(this, new PlayerChangeEventArgs(null, Game.CurrentPlayer));
+
             Invalidate();
         }
     }
@@ -317,9 +291,6 @@ public class BoardView : GraphicsView
     // Translate a point on the View to a space on the board
     public (int X, int Y)? GetBoardLoc(Point p)
     {
-        // compensate for adornments
-        p = new(p.X - LabelWidth, p.Y - LabelHeight);
-
         // check for negative values before rounding
         if (p.X < 0 || p.Y < 0)
             return null;
@@ -333,6 +304,9 @@ public class BoardView : GraphicsView
 
     private async void TapRecognizer_Tapped(object? sender, EventArgs e)
     {
+        var firstLoc = SelectedLoc;
+        var secondLoc = SelectedLoc2;
+        
         if (_lastTouchPoint is null)
             return;
 
@@ -346,38 +320,36 @@ public class BoardView : GraphicsView
 
         var clickedPiece = Game.GetPiece(loc.Value);
 
-        if (SelectedLoc is null)
+        if (firstLoc is null)
         {
             SelectedLoc = clickedPiece is null ? null : loc;
             SelectedLoc2 = null;
         }
         else
         {
-            var selectedPiece = Game.GetPiece(SelectedLoc.Value);
+            var selectedPiece = Game.GetPiece(firstLoc.Value);
 
             if (selectedPiece is not null && selectedPiece.Owner == Game.CurrentPlayer)
             {
-                if (SelectedLoc2 is null
-                    && Game.GetLegalMoves(selectedPiece, SelectedLoc.Value).Where(move => move.Loc == loc.Value).Any(move => move.Type == MoveType.Igui || move.Type == MoveType.Area))
+                if (secondLoc is null
+                    && Game.GetLegalMoves(selectedPiece, firstLoc.Value).Where(move => move.Loc == loc.Value).Any(move => move.Type == MoveType.Igui || move.Type == MoveType.Area))
                 {
                     SelectedLoc2 = loc;
                 }
                 else
                 {
-                    var legalMoves = Game.GetLegalMoves(selectedPiece, SelectedLoc.Value, SelectedLoc2).Where(move => move.Loc == loc.Value);
+                    var legalMoves = Game.GetLegalMoves(selectedPiece, firstLoc.Value, secondLoc).Where(move => move.Loc == loc.Value);
                     if (legalMoves.Any())
                     {
                         bool promote = legalMoves.Any(move => move.Promotion == PromotionType.Must);
 
                         if (!promote && legalMoves.Any(move => move.Promotion == PromotionType.May))
                         {
-                            // TODO: ASK THE PLAYER
-                            // must ask the player...
-                            //    var x = new PromotionWindow();
-                            //    promote = x.ShowDialog(Game, selectedPiece.Id, selectedPiece.Id.PromotesTo() ?? throw new Exception());
+                            // TOOD: show a better dialog
+                            promote = await MainPage.Default.DisplayAlert("Pormotion?", "Promte this piece?", "Yes", "No");
                         }
 
-                        await MakeMove(SelectedLoc.Value, loc.Value, SelectedLoc2, promote);
+                        await MakeMove(firstLoc.Value, loc.Value, secondLoc, promote);
 
                         SelectedLoc = null;
                         SelectedLoc2 = null;
@@ -421,9 +393,8 @@ public class BoardView : GraphicsView
                 //OnGameEnd?.Invoke(this, new GameEndEventArgs(Game.Ending.Value, Game.Winner));
             }
 
-            // TOOD: UPDATE UI EVENTS
-            //if (prevPlayer != Game.CurrentPlayer)
-            //    OnPlayerChange?.Invoke(this, new PlayerChangeEventArgs(prevPlayer, Game.CurrentPlayer));
+            if (prevPlayer != Game.CurrentPlayer)
+                OnPlayerChange?.Invoke(this, new PlayerChangeEventArgs(prevPlayer, Game.CurrentPlayer));
         }
     }
 

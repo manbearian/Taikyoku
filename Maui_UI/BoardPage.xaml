@@ -8,16 +8,29 @@
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="30" />
-            <RowDefinition Height="*" />
+            <RowDefinition Height="1*" />
+            <RowDefinition Height="98*" />
+            <RowDefinition Height="1*" />
         </Grid.RowDefinitions>
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="100" />
-            <ColumnDefinition Width="*" />
-            <ColumnDefinition Width="100" />
+            <ColumnDefinition Width="0.5*" />
+            <ColumnDefinition Width="99*" />
+            <ColumnDefinition Width="0.5*" />
         </Grid.ColumnDefinitions>
-        <Button x:Name="backBtn" Text="Back" Grid.Row="0" Grid.Column="0" Margin="2" Padding="-2" Clicked="BackBtn_Clicked"></Button>
-        <Button x:Name="optionsBtn" Text="Options" Grid.Row="0" Grid.Column="2" Margin="2" Padding="-2" Clicked="OptionsBtn_Clicked"></Button>
-        <shogi:BoardView Grid.Row="1" Grid.ColumnSpan="3" Game="{Binding Source={x:Reference this}, Path=Game}" Connection="{Binding Source={x:Reference this}, Path=Connection}" IsLabeled="True" />
+        <HorizontalStackLayout Grid.Row="0" Grid.ColumnSpan="2">
+            <Button x:Name="backBtn" Text="Back" Margin="2" Padding="-2" Clicked="BackBtn_Clicked" />
+            <Button x:Name="optionsBtn" Text="Options" Margin="2" Padding="-2" Clicked="OptionsBtn_Clicked" />
+        </HorizontalStackLayout>
+        <shogi:BoardPanelView x:Name="panel0" Grid.Row="1" Grid.Column="1" Orientation="Horizontal" />
+        <shogi:BoardPanelView x:Name="panel1" Grid.Row="3" Grid.Column="1" Orientation="Horizontal" />
+        <shogi:BoardPanelView x:Name="panel2" Grid.Row="2" Grid.Column="0" Orientation="Vertical" />
+        <shogi:BoardPanelView x:Name="panel3" Grid.Row="2" Grid.Column="2" Orientation="Vertical" />
+        <shogi:BoardPanelView x:Name="panel4" Grid.Row="1" Grid.Column="0" Orientation="Corner" />
+        <shogi:BoardPanelView x:Name="panel5" Grid.Row="1" Grid.Column="2" Orientation="Corner" />
+        <shogi:BoardPanelView x:Name="panel6" Grid.Row="3" Grid.Column="0" Orientation="Corner" />
+        <shogi:BoardPanelView x:Name="panel7" Grid.Row="3" Grid.Column="2" Orientation="Corner" />
+
+        <shogi:BoardView x:Name="board" Grid.Row="2" Grid.Column="1" Game="{Binding Source={x:Reference this}, Path=Game}" Connection="{Binding Source={x:Reference this}, Path=Connection}" />
     </Grid>
 
 </ContentPage>
