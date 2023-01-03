@@ -203,14 +203,32 @@ public class PlayerChangeEventArgs : EventArgs
     public PlayerChangeEventArgs(PlayerColor? oldPlayer, PlayerColor? newPlayer) => (OldPlayer, NewPlayer) = (oldPlayer, newPlayer);
 }
 
+
+public class SelectionChangedEventArgs : EventArgs
+{
+    public Piece? Piece { get; }
+
+    public (int X, int Y)? SelectedLoc { get; }
+
+    public SelectionChangedEventArgs((int X, int Y)? loc, Piece? piece) => (SelectedLoc, Piece) = (loc, piece);
+}
+
 public class BoardView : GraphicsView
 {
     //
     // Events
     //
- 
+
     public delegate void PlayerChangeHandler(object sender, PlayerChangeEventArgs e);
     public event PlayerChangeHandler? OnPlayerChange;
+
+    //
+    // Events
+    //
+
+    public delegate void SelectionChangedHandler(object sender, SelectionChangedEventArgs e);
+    public event SelectionChangedHandler? OnSelectionChanged;
+
 
     //
     // Bindabe Proprerties
@@ -306,7 +324,9 @@ public class BoardView : GraphicsView
     {
         var firstLoc = SelectedLoc;
         var secondLoc = SelectedLoc2;
-        
+        (int X, int Y)? newFirstLoc = null;
+        (int X, int Y)? newSecondLoc = null;
+
         if (_lastTouchPoint is null)
             return;
 
@@ -322,8 +342,7 @@ public class BoardView : GraphicsView
 
         if (firstLoc is null)
         {
-            SelectedLoc = clickedPiece is null ? null : loc;
-            SelectedLoc2 = null;
+            newFirstLoc = clickedPiece is null ? null : loc;
         }
         else
         {
@@ -334,7 +353,7 @@ public class BoardView : GraphicsView
                 if (secondLoc is null
                     && Game.GetLegalMoves(selectedPiece, firstLoc.Value).Where(move => move.Loc == loc.Value).Any(move => move.Type == MoveType.Igui || move.Type == MoveType.Area))
                 {
-                    SelectedLoc2 = loc;
+                    newSecondLoc = loc;
                 }
                 else
                 {
@@ -350,24 +369,22 @@ public class BoardView : GraphicsView
                         }
 
                         await MakeMove(firstLoc.Value, loc.Value, secondLoc, promote);
-
-                        SelectedLoc = null;
-                        SelectedLoc2 = null;
                     }
                     else
                     {
-                        SelectedLoc = clickedPiece is null ? null : loc;
-                        SelectedLoc2 = null;
+                        newFirstLoc = clickedPiece is null ? null : loc;
                     }
                 }
             }
             else
             {
-                SelectedLoc = clickedPiece is null ? null : loc;
-                SelectedLoc2 = null;
+                newFirstLoc = clickedPiece is null ? null : loc;
             }
         }
 
+        SelectedLoc = newFirstLoc;
+        SelectedLoc2 = newSecondLoc;
+        OnSelectionChanged?.Invoke(this, new SelectionChangedEventArgs(newFirstLoc, newFirstLoc is null ? null : Game.GetPiece(newFirstLoc.Value)));
         Invalidate();
 
         async Task MakeMove((int X, int Y) startLoc, (int X, int Y) endLoc, (int X, int Y)? midLoc = null, bool promote = false)

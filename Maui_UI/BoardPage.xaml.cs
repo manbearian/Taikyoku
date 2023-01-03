@@ -1,5 +1,6 @@
 using ShogiClient;
 using ShogiEngine;
+using System.Diagnostics.Contracts;
 
 namespace MauiUI;
 
@@ -55,6 +56,49 @@ public partial class BoardPage : ContentPage
         NavigatingFrom += BoardPage_NavigatingFrom;
 
         board.OnPlayerChange += Board_OnPlayerChange;
+        board.OnSelectionChanged += Board_OnSelectionChanged;
+    }
+
+    private async void Board_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        var transX = infoPanel.Width;
+        if (e.Piece is null)
+        {
+            if (infoPanel.IsShown)
+            {
+                if (infoPanel.TranslationX == 0)
+                {
+                    await infoPanel.TranslateTo(-transX, 0);
+                    infoPanel.Hide();
+                }
+                else
+                {
+                    await infoPanel.TranslateTo(Width + transX, 0);
+                    infoPanel.Hide();
+                }
+            }
+        }
+        else
+        {
+            Contract.Assert(e.SelectedLoc != null);
+            bool renderLeft = e.SelectedLoc?.X > TaikyokuShogi.BoardWidth / 2;
+            bool isLeft = infoPanel.TranslationX == 0;
+            bool wasShown = infoPanel.IsShown;
+            infoPanel.Show(e.Piece.Id);
+            if (!wasShown || (isLeft ^ renderLeft))
+            {
+                if (renderLeft)
+                {
+                    infoPanel.TranslationX = -transX;
+                    await infoPanel.TranslateTo(0, 0);
+                }
+                else
+                {
+                    infoPanel.TranslationX = Width + transX;
+                    await infoPanel.TranslateTo(Width - transX, 0);
+                }
+            }
+        }
     }
 
     private void BoardPage_Loaded(object? sender, EventArgs e)

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:shogi="clr-namespace:MauiUI"
+             x:Name="this"
+             x:Class="MauiUI.PieceInfoPanel">
+    <Grid>
+        <VerticalStackLayout BackgroundColor="White" >
+            <Label x:Name="titleLabel" Text="Piece info" FontSize="Title" TextColor="Black"/>
+            <Label x:Name="subtitleLabel" Text="Piece info" FontSize="Subtitle" TextColor="Black"/>
+            <shogi:PieceMoveView x:Name="moveView" HeightRequest="250" WidthRequest="250" Game="{Binding Source={x:Reference this}, Path=Game}" />
+        </VerticalStackLayout>
+        <Button Clicked="CloseBtn_Clicked" Opacity="0" HorizontalOptions="Fill" VerticalOptions="Fill"/>
+    </Grid>
+
+</ContentView>

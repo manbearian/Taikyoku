@@ -127,6 +127,9 @@
 	  <MauiXaml Update="MyGamesView.xaml">
 	    <Generator>MSBuild:Compile</Generator>
 	  </MauiXaml>
+	  <MauiXaml Update="PieceInfoPanel.xaml">
+	    <Generator>MSBuild:Compile</Generator>
+	  </MauiXaml>
 	  <MauiXaml Update="WaitView.xaml">
 	    <Generator>MSBuild:Compile</Generator>
 	  </MauiXaml>
