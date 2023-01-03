@@ -1,5 +1,4 @@
 using ShogiEngine;
-using System.Runtime.CompilerServices;
 
 namespace MauiUI;
 
@@ -40,7 +39,17 @@ public partial class PieceInfoPanel : ContentView
         titleLabel.Text = p.Name();
         subtitleLabel.Text = $"{p.Kanji()} ({p.Romanji()})";
 
-        // TOOD: show more info
+        var promoId = p.PromotesTo();
+        promoLabel.IsVisible = promoId is not null;
+        promoTitleLabel.IsEnabled = promoId is not null;
+        promoSubtitleLabel.IsVisible = promoId is not null;
+        promoView.IsVisible = promoId is not null;
+        if (promoId is not null)
+        {
+            promoTitleLabel.Text = promoId.Value.Name();
+            promoSubtitleLabel.Text = $"{promoId.Value.Kanji()} ({promoId.Value.Romanji()})";
+            promoView.ShowPiece(promoId.Value);
+        }
 
         Opacity = 1.0;
         InputTransparent = false;

@@ -22,7 +22,7 @@ public class PieceMoveView : ContentView
     // Internal Properties
     //
 
-    private readonly float CellSize = 20.0f;
+    private float CellSize { get => (float)Width / 10; }
     
     private Grid MoveGrid { get; } = new();
 
@@ -85,8 +85,8 @@ public class PieceMoveView : ContentView
         MoveGrid.HeightRequest = gridSize * CellSize;
         for (int i = 0; i < gridSize; ++i)
         {
-            MoveGrid.ColumnDefinitions.Add(new ColumnDefinition());
-            MoveGrid.RowDefinitions.Add(new RowDefinition());
+            MoveGrid.ColumnDefinitions.Add(new());
+            MoveGrid.RowDefinitions.Add(new());
         }
 
         //
@@ -101,14 +101,16 @@ public class PieceMoveView : ContentView
             {
                 var background = new Rectangle()
                 {
-                    BackgroundColor = Colors.White
+                    BackgroundColor = BackgroundColor,
+                    WidthRequest = CellSize,
+                    HeightRequest = CellSize
                 };
                 MoveGrid.Add(background, i, j);
 
                 var glyphBox = new Label
                 {
                     Text = "",
-                    FontSize = 12,
+                    FontSize = CellSize * 0.6,
                     TextColor = Colors.Black,
                     HorizontalTextAlignment = TextAlignment.Center,
                     VerticalTextAlignment = TextAlignment.Center
@@ -121,7 +123,7 @@ public class PieceMoveView : ContentView
 
         var pieceIcon = glyphGrid[gridSize / 2, gridSize / 2].TextBlock;
         pieceIcon.Text = "☖";
-        pieceIcon.FontSize = 14;
+        pieceIcon.FontSize = CellSize * 0.8;
 
         for (int direction = 0; direction < moves.StepRange.Length; ++direction)
         {
@@ -299,6 +301,7 @@ public class PieceMoveView : ContentView
         //
         // Draw Grid Lines
         //
+
         for (int i = 0; i < gridSize - 1; ++i)
         {
             var hl = new Line(0, 0, CellSize * gridSize, 0);
