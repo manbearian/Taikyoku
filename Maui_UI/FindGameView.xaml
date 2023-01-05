@@ -4,6 +4,7 @@
              xmlns:shogi="clr-namespace:MauiUI"
              x:Name="this"
              x:Class="MauiUI.FindGameView">
+    <VerticalStackLayout>
     <Frame x:Name="frame"
            BorderColor="Silver" BackgroundColor="White"
            MaximumWidthRequest="300" Padding="5">
@@ -33,5 +34,7 @@
                 </DataTemplate>
             </ListView.ItemTemplate>
         </ListView>
-    </Frame>
+        </Frame>
+        <Button Text="Cancel" Clicked="CancelBtn_Clicked"/>
+    </VerticalStackLayout>
 </ContentView>

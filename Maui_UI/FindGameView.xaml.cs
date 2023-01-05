@@ -9,13 +9,29 @@ namespace MauiUI;
 
 public class FindGameListItem
 {
-    public string OpponentName { get => GameInfo.WaitingPlayerName(); }
-    public string MyColor { get => GameInfo.UnassignedColor().ToString(); }
-    public string CreatedOn { get => GameInfo.LastPlayed.ToLocalTime().ToString(); }
+    public virtual string OpponentName { get => GameInfo.WaitingPlayerName(); }
+    public virtual string MyColor { get => GameInfo.UnassignedColor().ToString(); }
+    public virtual string CreatedOn { get => GameInfo.LastPlayed.ToLocalTime().ToString(); }
 
     public ClientGameInfo GameInfo { get; }
 
     public FindGameListItem(ClientGameInfo g) => GameInfo = g;
+}
+
+public class FindGameListNullItem : FindGameListItem
+{
+    public override string OpponentName { get => "Connection Unavailable"; }
+    public override string MyColor { get => ""; }
+    public override string CreatedOn { get => ""; }
+    public FindGameListNullItem() : base(new ClientGameInfo()) { }
+}
+
+public class FindGameListLoadingItem : FindGameListItem
+{
+    public override string OpponentName { get => "Connecting..."; }
+    public override string MyColor { get => ""; }
+    public override string CreatedOn { get => ""; }
+    public FindGameListLoadingItem() : base(new ClientGameInfo()) { }
 }
 
 public partial class FindGameView : ContentView
@@ -40,8 +56,8 @@ public partial class FindGameView : ContentView
         // Update display only when visible
         if (IsVisible)
         {
-            await PopulateGamesList();
             MainPage.Default.Connection.OnReceiveGameList += Connection_OnReceiveGameList;
+            await PopulateGamesList();
         }
         else
         {
@@ -55,23 +71,37 @@ public partial class FindGameView : ContentView
     private async Task PopulateGamesList()
     {
         GamesList.Clear();
+        GamesList.Add(new FindGameListLoadingItem());
 
-        var gameList = await MainPage.Default.Connection.RequestAllOpenGameInfo();
-        var sortedList = gameList.OrderByDescending(g => g.LastPlayed);
-        foreach(var game in sortedList)
+        try
         {
-            GamesList.Add(new FindGameListItem(game));
+            var gameList = await MainPage.Default.Connection.RequestAllOpenGameInfo();
+            var sortedList = gameList.OrderByDescending(g => g.LastPlayed);
+
+            GamesList.Clear();
+            foreach (var game in sortedList)
+            {
+                GamesList.Add(new FindGameListItem(game));
+            }
+        }
+        catch(Exception ex) when (Connection.ExceptionFilter(ex))
+        {
+            GamesList.Clear();
+            GamesList.Add(new FindGameListNullItem());
         }
     }
 
     private async void ListView_ItemSelected(object sender, SelectedItemChangedEventArgs e)
     {
         var item = (FindGameListItem)e.SelectedItem;
-        if (item is null)
+        if (item is null || item is FindGameListNullItem || item is FindGameListLoadingItem)
             return;
         ((ListView)sender).SelectedItem = null;
         MainPage.Default.Connection.SetGameInfo(item.GameInfo.GameId, Guid.Empty, item.GameInfo.UnassignedColor());
         await MainPage.Default.Connection.JoinGame("no name yet"); // TOOD: Get a name
         MainPage.Default.MainPageMode = MainPageMode.Wait;
     }
+
+    private void CancelBtn_Clicked(object sender, EventArgs e) =>
+        MainPage.Default.MainPageMode = MainPageMode.Home;
 }
