@@ -27,6 +27,14 @@ public partial class MainPage : ContentPage
         set => SetValue(MainPageModeProperty, value);
     }
 
+    public static readonly BindableProperty PlayerNameProperty = BindableProperty.Create(nameof(PlayerName), typeof(string), typeof(MyGamesView), string.Empty, BindingMode.OneWay);
+
+    public string PlayerName
+    {
+        get => (string)GetValue(PlayerNameProperty);
+        set => SetValue(PlayerNameProperty, value);
+    }
+
     // The one and only MainPage
     public static MainPage Default { get; } = new();
 
@@ -35,6 +43,8 @@ public partial class MainPage : ContentPage
     public MainPage()
     {
         InitializeComponent();
+
+        PlayerNameEntry.Text = MySettings.PlayerName == string.Empty ? Environment.UserName : MySettings.PlayerName;
 
         Loaded += MainPage_Loaded;
         Unloaded += MainPage_Unloaded;
@@ -78,6 +88,13 @@ public partial class MainPage : ContentPage
             Navigation.PushModalAsync(new BoardPage(e.Game, Connection), true);
             MainPageMode = MainPageMode.Home;
         });
+    }
+
+    // TODO: validate user name (not empty, not too long, etc.)
+    private void PlayerNameEntry_TextChanged(object sender, TextChangedEventArgs e)
+    {
+        PlayerName = e.NewTextValue;
+        MySettings.PlayerName = e.NewTextValue;
     }
 }
 

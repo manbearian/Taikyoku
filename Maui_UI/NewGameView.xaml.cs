@@ -7,6 +7,18 @@ namespace MauiUI;
 
 public partial class NewGameView : ContentView
 {
+    //
+    // Bindabe Proprerties
+    //
+
+    public static readonly BindableProperty PlayerNameProperty = BindableProperty.Create(nameof(PlayerName), typeof(string), typeof(MyGamesView), string.Empty, BindingMode.OneWay);
+
+    public string PlayerName
+    {
+        get => (string)GetValue(PlayerNameProperty);
+        set => SetValue(PlayerNameProperty, value);
+    }
+    
     public NewGameView()
     {
         InitializeComponent();
@@ -19,7 +31,7 @@ public partial class NewGameView : ContentView
     {
         try
         {
-            await MainPage.Default.Connection.RequestNewGame(nameFld.Text, blackBtn.IsChecked, new TaikyokuShogi());
+            await MainPage.Default.Connection.RequestNewGame(PlayerName, blackBtn.IsChecked, new TaikyokuShogi());
             MainPage.Default.MainPageMode = MainPageMode.Wait;
         }
         catch(Exception ex) when (Connection.ExceptionFilter(ex))

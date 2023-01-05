@@ -9,39 +9,47 @@
         <shogi:MainPageModeConverter x:Key="pageModeConverter"/>
     </ContentPage.Resources>
 
-    <Grid BackgroundColor="White" RowDefinitions="7*, 10*, 5*" RowSpacing="20">
+    <Grid BackgroundColor="White"
+          RowDefinitions="14*, 2*, 20*, 10*"
+          ColumnDefinitions="33*,33*,33*"
+          RowSpacing="20" >
 
         <Image
-            Grid.Row="0"
+            Grid.Row="0" Grid.ColumnSpan="3"
             Source="logo.png"
             SemanticProperties.Description="Taikyoku Shogi Logo" />
 
+        <HorizontalStackLayout
+            Grid.Row="1" Grid.Column="1" HorizontalOptions="Start">
+            <Label TextColor="Black" FontAttributes="Bold" Text="Name: " VerticalOptions="Center" Padding="20,0,0,0"/>
+            <Entry TextColor="CornflowerBlue" x:Name="PlayerNameEntry" VerticalOptions="Center" TextChanged="PlayerNameEntry_TextChanged"/>
+        </HorizontalStackLayout>
+
         <shogi:MyGamesView
-            Grid.Row="1"
+            Grid.Row="2" Grid.Column="1"
             IsVisible="{Binding Source={x:Reference this}, Path=MainPageMode, Converter={StaticResource pageModeConverter}, ConverterParameter='Home'}"
             />
 
         <shogi:NewGameView
-            Grid.Row="1"
+            Grid.Row="2" Grid.Column="1"
+            PlayerName="{Binding Source={x:Reference this}, Path=PlayerName}"
             IsVisible="{Binding Source={x:Reference this}, Path=MainPageMode, Converter={StaticResource pageModeConverter}, ConverterParameter='NewNetworkGame'}"
             />
 
         <shogi:FindGameView
-            Grid.Row="1"
+            Grid.Row="2" Grid.Column="1"
+            PlayerName="{Binding Source={x:Reference this}, Path=PlayerName}"
             IsVisible="{Binding Source={x:Reference this}, Path=MainPageMode, Converter={StaticResource pageModeConverter}, ConverterParameter='FindNetworkGame'}"
             />
 
         <shogi:WaitView
-            Grid.Row="1"
+            Grid.Row="2" Grid.Column="1"
             IsVisible="{Binding Source={x:Reference this}, Path=MainPageMode, Converter={StaticResource pageModeConverter}, ConverterParameter='Wait'}"
             />
 
-        <HorizontalStackLayout
-            x:Name="bottomRowBtns"
-            Grid.Row="2"
-            IsVisible="{Binding Source={x:Reference this}, Path=MainPageMode, Converter={StaticResource pageModeConverter}, ConverterParameter='Home'}"
-            HorizontalOptions="Center" >
-            <ImageButton
+        <ImageButton
+                Grid.Row="3" Grid.Column="0"
+                IsVisible="{Binding Source={x:Reference this}, Path=MainPageMode, Converter={StaticResource pageModeConverter}, ConverterParameter='Home'}"
                 x:Name="NewLocalGameBtn"
                 Source="newlocalgame.png"
                 Margin="25,0"
@@ -49,7 +57,9 @@
                 HorizontalOptions="Center"
                 Clicked="NewLocalGameBtn_Clicked" />
 
-            <ImageButton
+        <ImageButton
+                Grid.Row="3" Grid.Column="1"
+                IsVisible="{Binding Source={x:Reference this}, Path=MainPageMode, Converter={StaticResource pageModeConverter}, ConverterParameter='Home'}"
                 x:Name="NewOnlineGameBtn"
                 Source="newonlinegame.png"
                 Margin="25,0"
@@ -57,21 +67,14 @@
                 HorizontalOptions="Center"
                 Clicked="NewOnlineGameBtn_Clicked"/>
 
-            <ImageButton
+        <ImageButton
+                Grid.Row="3" Grid.Column="2"
+                IsVisible="{Binding Source={x:Reference this}, Path=MainPageMode, Converter={StaticResource pageModeConverter}, ConverterParameter='Home'}"
                 x:Name="FindGameBtn"
                 Source="joinonlinegame.png"
                 Margin="25,0"
                 SemanticProperties.Hint="Find and join an online game"
                 HorizontalOptions="Center"
                 Clicked="JoinOnlineGameBtn_Clicked" />
-
-            <Button
-                x:Name="SignInBtn"
-                Text="Sign in..."
-                Margin="25,0"
-                SemanticProperties.Hint="Sign in to Taikyoku Shogi"
-                HorizontalOptions="Center" />
-
-        </HorizontalStackLayout>
     </Grid>
 </ContentPage>

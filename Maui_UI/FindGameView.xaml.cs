@@ -36,6 +36,18 @@ public class FindGameListLoadingItem : FindGameListItem
 
 public partial class FindGameView : ContentView
 {
+    //
+    // Bindabe Proprerties
+    //
+
+    public static readonly BindableProperty PlayerNameProperty = BindableProperty.Create(nameof(PlayerName), typeof(string), typeof(MyGamesView), string.Empty, BindingMode.OneWay);
+
+    public string PlayerName
+    {
+        get => (string)GetValue(PlayerNameProperty);
+        set => SetValue(PlayerNameProperty, value);
+    }
+
     public ObservableCollection<FindGameListItem> GamesList { get; set; } = new();
     
     public FindGameView()
@@ -98,7 +110,8 @@ public partial class FindGameView : ContentView
             return;
         ((ListView)sender).SelectedItem = null;
         MainPage.Default.Connection.SetGameInfo(item.GameInfo.GameId, Guid.Empty, item.GameInfo.UnassignedColor());
-        await MainPage.Default.Connection.JoinGame("no name yet"); // TOOD: Get a name
+        // TODO: validate PlayerName
+        await MainPage.Default.Connection.JoinGame(PlayerName);
         MainPage.Default.MainPageMode = MainPageMode.Wait;
     }
 
