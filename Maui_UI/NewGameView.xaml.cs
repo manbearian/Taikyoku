@@ -24,7 +24,7 @@ public partial class NewGameView : ContentView
         }
         catch(Exception ex) when (Connection.ExceptionFilter(ex))
         {
-            // TODO: handle hand connection
+            await MainPage.Default.DisplayAlert("Game Creation Failed", "Unable to create a new game due to a network or server error.", "Okay");
         }
     }
 }
