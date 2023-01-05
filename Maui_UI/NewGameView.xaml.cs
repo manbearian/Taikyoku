@@ -1,5 +1,6 @@
 using System.Globalization;
 
+using ShogiClient;
 using ShogiEngine;
 
 namespace MauiUI;
@@ -16,8 +17,15 @@ public partial class NewGameView : ContentView
 
     private async void CreateBtn_Clicked(object sender, EventArgs e)
     {
-        await MainPage.Default.Connection.RequestNewGame(nameFld.Text, blackBtn.IsChecked, new TaikyokuShogi());
-        MainPage.Default.MainPageMode = MainPageMode.Wait;
+        try
+        {
+            await MainPage.Default.Connection.RequestNewGame(nameFld.Text, blackBtn.IsChecked, new TaikyokuShogi());
+            MainPage.Default.MainPageMode = MainPageMode.Wait;
+        }
+        catch(Exception ex) when (Connection.ExceptionFilter(ex))
+        {
+            // TODO: handle hand connection
+        }
     }
 }
 
