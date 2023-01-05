@@ -27,6 +27,8 @@ public partial class PieceInfoPanel : ContentView
 
     public void Hide()
     {
+        // Note that 'IsVisible' isn't used because if it is set our view isn't drawn
+        // and the animations don't work.
         Opacity = 0.0;
         InputTransparent = true;
         IsEnabled = false;
