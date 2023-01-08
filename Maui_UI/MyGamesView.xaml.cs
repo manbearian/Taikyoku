@@ -151,16 +151,20 @@ public partial class MyGamesView : ContentView
 
         void InsertSorted(MyGamesListItem item)
         {
+            GamesList.Add(item);
+
+            // Inserting at the head of the list seems to have a bug that causes the ItemList
+            // to duplicate the inesrted item and not display other items, so do this insert-at-end
+            // and swap dance.
             for (int i = 0; i < GamesList.Count; i++)
             {
                 if (GamesList[i].LastMoveOn < item.LastMoveOn)
                 {
-                    GamesList.Insert(i, item);
+                    GamesList.Move(GamesList.Count - 1, i);
                     return;
                 }
             }
 
-            GamesList.Add(item);
         }
     }
 
