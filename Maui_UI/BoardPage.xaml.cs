@@ -32,24 +32,26 @@ public partial class BoardPage : ContentPage
 
     private Guid? LocalGameId { get; }
 
+    private string? OpponentName { get; }
+
     private bool IsLocalGame { get => Connection is null; }
 
     private BoardPanelView[] Panels { get; }
 
     // Create board for a local game
-    public BoardPage(TaikyokuShogi game, Guid? localGameId = null) : this(game, null, localGameId) { }
+    public BoardPage(TaikyokuShogi game, Guid? localGameId = null) : this(game, null, null, localGameId) { }
 
     // Create board for a network game
-    public BoardPage(TaikyokuShogi game, Connection connection) : this(game, connection, null) { }
+    public BoardPage(TaikyokuShogi game, Connection connection, string opponentName) : this(game, connection, opponentName, null) { }
 
-    private BoardPage(TaikyokuShogi game, Connection? connection, Guid? localGameId)
+    private BoardPage(TaikyokuShogi game, Connection? connection, string? opponentName, Guid? localGameId)
     {
         InitializeComponent();
 
-        (Connection, LocalGameId, Game) = (connection, localGameId, game);
+        (Connection, OpponentName, LocalGameId, Game) = (connection, opponentName, localGameId, game);
 
         Panels = new BoardPanelView[8] { panel0, panel1, panel2, panel3, panel4, panel5, panel6, panel7 };
-        SetPanelColors();
+        UpdateBorder();
 
         Loaded += BoardPage_Loaded;
         Unloaded += BoardPage_Unloaded;
@@ -115,7 +117,7 @@ public partial class BoardPage : ContentPage
     {
         Game = e.Game;
     }
- 
+
     private async void BoardPage_NavigatingFrom(object? sender, NavigatingFromEventArgs e)
     {
         if (IsLocalGame)
@@ -135,7 +137,7 @@ public partial class BoardPage : ContentPage
     }
 
     private void Board_OnPlayerChange(object sender, PlayerChangeEventArgs e) =>
-        SetPanelColors();
+        UpdateBorder();
 
     private async void BackBtn_Clicked(object sender, EventArgs e) =>
         await Navigation.PopModalAsync();
@@ -144,12 +146,22 @@ public partial class BoardPage : ContentPage
     private async void OptionsBtn_Clicked(object sender, EventArgs e) =>
         await DisplayAlert("NYI", "Not yet implemented", "OK");
 
-    private void SetPanelColors()
+    private void UpdateBorder()
     {
+        var activePlayer = Game?.CurrentPlayer;
+        StatusLbl.Text = activePlayer switch
+        {
+            _ when activePlayer == Connection?.Color => "Your Turn",
+            _ when activePlayer == Connection?.Color.Opponent() => $"Waiting for {OpponentName} to make a move",
+            PlayerColor.Black => "Black's Turn",
+            PlayerColor.White => "White's Turn",
+            _ => ""
+        };
+
         foreach (var p in Panels)
         {
-            p.BackgroundColor = Game?.CurrentPlayer == PlayerColor.Black ? Colors.Black : Colors.White;
-            p.TextColor = Game?.CurrentPlayer == PlayerColor.Black ? Colors.White : Colors.Black;
+            p.BackgroundColor = activePlayer == PlayerColor.Black ? Colors.Black : Colors.White;
+            p.TextColor = activePlayer == PlayerColor.Black ? Colors.White : Colors.Black;
             p.Invalidate();
         }
     }

@@ -49,7 +49,7 @@ public partial class MainPage : ContentPage
         Loaded += MainPage_Loaded;
         Unloaded += MainPage_Unloaded;
     }
- 
+
     private async void MainPage_Loaded(object? sender, EventArgs e)
     {
         Connection.OnReceiveGameStart += Connection_OnReceiveGameStart;
@@ -59,7 +59,7 @@ public partial class MainPage : ContentPage
             await Connection.ConnectAsync();
             OnNetworkConnected?.Invoke(this, new EventArgs());
         }
-        catch(Exception ex) when (Connection.ExceptionFilter(ex))
+        catch (Exception ex) when (Connection.ExceptionFilter(ex))
         {
             // failed to connect... that's okay
             // TOOD: let the user know, allow them to try later
@@ -83,9 +83,10 @@ public partial class MainPage : ContentPage
     private void Connection_OnReceiveGameStart(object sender, ReceiveGameStartEventArgs e)
     {
         MySettings.NetworkGameManager.SaveGame(Connection.GameId, Connection.PlayerId, Connection.Color);
+        string opponentName = (Connection.Color == PlayerColor.Black ? e.GameInfo.WhiteName : e.GameInfo.BlackName) ?? throw new Exception("Opponent name is null");
         Dispatcher.Dispatch(() =>
         {
-            Navigation.PushModalAsync(new BoardPage(e.Game, Connection), true);
+            Navigation.PushModalAsync(new BoardPage(e.Game, Connection, opponentName), true);
             MainPageMode = MainPageMode.Home;
         });
     }
