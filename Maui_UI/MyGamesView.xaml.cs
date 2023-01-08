@@ -60,8 +60,11 @@ public class MyGamesListItem
             OpponentName = (myColor == PlayerColor.Black ? gameInfo.WhiteName : gameInfo.BlackName) ?? string.Empty,
             Status = gameInfo.Status switch
             {
-                GameStatus.BlackTurn => "Black's Turn",
-                GameStatus.WhiteTurn => "White's Turn",
+                GameStatus.BlackTurn when myColor == PlayerColor.Black => "Your Turn",
+                GameStatus.BlackTurn => "Their Turn",
+                GameStatus.WhiteTurn when myColor == PlayerColor.White => "Your Turn",
+                GameStatus.WhiteTurn => "Their Turn",
+                GameStatus.Completed => "Completed",
                 GameStatus.Expired => "Expired",
                 _ => "(unknown)"
             },
