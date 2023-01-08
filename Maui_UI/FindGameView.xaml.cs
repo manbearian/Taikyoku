@@ -103,12 +103,11 @@ public partial class FindGameView : ContentView
         }
     }
 
-    private async void ListView_ItemSelected(object sender, SelectedItemChangedEventArgs e)
+    private async void ListView_ItemTapped(object sender, ItemTappedEventArgs e)
     {
-        var item = (FindGameListItem)e.SelectedItem;
+        var item = (FindGameListItem)e.Item;
         if (item is null || item is FindGameListNullItem || item is FindGameListLoadingItem)
             return;
-        ((ListView)sender).SelectedItem = null;
         MainPage.Default.Connection.SetGameInfo(item.GameInfo.GameId, Guid.Empty, item.GameInfo.UnassignedColor());
         // TODO: validate PlayerName
         await MainPage.Default.Connection.JoinGame(PlayerName);

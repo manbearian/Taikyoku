@@ -170,12 +170,11 @@ public partial class MyGamesView : ContentView
         await AddNetworkGamesToMyGamesList();
     }
 
-    private async void ListView_ItemSelected(object sender, SelectedItemChangedEventArgs e)
+    private async void ListView_ItemTapped(object sender, ItemTappedEventArgs e)
     {
-        var item = (MyGamesListItem)e.SelectedItem;
+        var item = (MyGamesListItem)e.Item;
         if (item is null)
             return;
-        ((ListView)sender).SelectedItem = null;
 
         if (item.IsLocal)
         {

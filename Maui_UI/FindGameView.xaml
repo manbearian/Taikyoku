@@ -11,8 +11,8 @@
         <ListView
             x:Name="listView"
             WidthRequest="{Binding Source={x:Reference frame}, Path=Width}"
-            SelectionMode="Single"
-            ItemSelected="ListView_ItemSelected"
+            SelectionMode="None"
+            ItemTapped="ListView_ItemTapped"
             ItemsSource="{Binding Source={x:Reference this}, Path=GamesList}" >
             <ListView.ItemTemplate>
                 <DataTemplate x:DataType="shogi:FindGameListItem">
