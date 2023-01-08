@@ -117,7 +117,13 @@ namespace ShogiServerless
                 Created = Created,
                 LastPlayed = LastPlayed,
                 BlackName = BlackPlayer.PlayerName,
-                WhiteName = WhitePlayer.PlayerName
+                WhiteName = WhitePlayer.PlayerName,
+                Status = Game.CurrentPlayer switch
+                {
+                    PlayerColor.Black => GameStatus.BlackTurn,
+                    PlayerColor.White => GameStatus.WhiteTurn,
+                    _ => GameStatus.Completed
+                }
             };
 
         //

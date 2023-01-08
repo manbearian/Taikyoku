@@ -6,7 +6,7 @@ namespace ShogiComms
 {
     public enum GameStatus
     {
-        BlackTurn, WhiteTurn, Expired
+        BlackTurn, WhiteTurn, Completed, Expired
     }
 
     public class NetworkGameRequest

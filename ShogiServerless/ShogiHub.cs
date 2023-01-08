@@ -254,6 +254,7 @@ namespace ShogiServerless
         private async Task UpdateGame(GameInfo gameInfo,
             ILogger logger)
         {
+            gameInfo.LastPlayed = DateTime.UtcNow;
             gameInfo = await TableStorage.UpdateGame(gameInfo)
                 ?? throw new UpdateGameException(gameInfo.Id);
 
@@ -289,15 +290,13 @@ namespace ShogiServerless
             try
             {
                 gameInfo.Game.MakeMove(((int, int))startLoc, ((int, int))endLoc, ((int, int)?)midLoc, promote);
-                gameInfo.LastPlayed = DateTime.Now;
+                await UpdateGame(gameInfo, logger);
             }
             catch (ShogiEngine.InvalidMoveException ex)
             {
                 logger.LogError(ex, $"Invalid move '{ex.Message}' for '{gameId}'");
                 throw new InvalidMoveException(gameId, ex);
             }
-
-            await UpdateGame(gameInfo, logger);
         }
 
         [FunctionName(nameof(ResignGame))]
@@ -310,8 +309,6 @@ namespace ShogiServerless
                 ?? throw new HubException($"failed to find game: {gameId}");
 
             gameInfo.Game.Resign(gameInfo.GetPlayerColor(playerId));
-            gameInfo.LastPlayed = DateTime.Now;
-
             await UpdateGame(gameInfo, logger);
         }
 
