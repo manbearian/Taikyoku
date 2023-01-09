@@ -18,10 +18,10 @@
                     <ViewCell>
                         <Grid WidthRequest="{Binding Source={x:Reference listView}, Path=Width}">
                             <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="175" />
-                                <ColumnDefinition Width="100" />
-                                <ColumnDefinition Width="175" />
-                                <ColumnDefinition Width="50" />
+                                <ColumnDefinition Width="130" />
+                                <ColumnDefinition Width="90" />
+                                <ColumnDefinition Width="170" />
+                                <ColumnDefinition Width="25" />
                                 <ColumnDefinition Width="50" />
                             </Grid.ColumnDefinitions>
                             <Grid.RowDefinitions>
@@ -31,7 +31,7 @@
                             <Label Grid.Column="1" TextColor="Black" Text="{Binding Status}" HorizontalTextAlignment="Start" VerticalTextAlignment="Center"/>
                             <Label Grid.Column="2" TextColor="Black" Text="{Binding LastMove}" HorizontalTextAlignment="Start" VerticalTextAlignment="Center"/>
                             <Label Grid.Column="3" TextColor="Black" Text="{Binding TurnCount}" HorizontalTextAlignment="Center" VerticalTextAlignment="Center"/>
-                            <ImageButton Grid.Column="4" Source="trash.png" Clicked="DeleteBtn_Clicked" HeightRequest="30" IsVisible="{Binding IsLocal}" />
+                            <ImageButton Grid.Column="4" Source="trash.png" Clicked="DeleteBtn_Clicked" HeightRequest="20" IsVisible="{Binding IsLocal}" />
                         </Grid>
                     </ViewCell>
                 </DataTemplate>
