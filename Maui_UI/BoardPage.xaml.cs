@@ -39,7 +39,7 @@ public partial class BoardPage : ContentPage
 
     private bool AutoRotateEnabled { get; set; } = SettingsManager.Default.AutoRotateBoard;
 
-    private BoardPanelView[] Panels { get; }
+    private BoardBorderView[] Panels { get; }
 
     // Create board for a local game
     public BoardPage(TaikyokuShogi game, Guid? localGameId = null) : this(game, null, null, localGameId) { }
@@ -54,7 +54,7 @@ public partial class BoardPage : ContentPage
 
         (Connection, OpponentName, LocalGameId, Game) = (connection, opponentName, localGameId, game);
 
-        Panels = new BoardPanelView[8] { panelN, panelS, panelE, panelW, panelNE, panelNW, panelSE, panelSW };
+        Panels = new BoardBorderView[8] { panelN, panelS, panelE, panelW, panelNE, panelNW, panelSE, panelSW };
         UpdateBorder();
 
         Loaded += BoardPage_Loaded;

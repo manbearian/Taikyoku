@@ -14,14 +14,14 @@
         </Grid>
 
         <!-- Border: wraps board with grid numbers and turn color -->
-        <shogi:BoardPanelView x:Name="panelN" Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2" Orientation="Horizontal" />
-        <shogi:BoardPanelView x:Name="panelS" Grid.Row="3" Grid.Column="1" Grid.ColumnSpan="2" Orientation="Horizontal" />
-        <shogi:BoardPanelView x:Name="panelE" Grid.Row="2" Grid.Column="0" Orientation="Vertical" />
-        <shogi:BoardPanelView x:Name="panelW" Grid.Row="2" Grid.Column="3" Orientation="Vertical" />
-        <shogi:BoardPanelView x:Name="panelNE" Grid.Row="1" Grid.Column="0" Orientation="Corner" />
-        <shogi:BoardPanelView x:Name="panelNW" Grid.Row="1" Grid.Column="3" Orientation="Corner" />
-        <shogi:BoardPanelView x:Name="panelSE" Grid.Row="3" Grid.Column="0" Orientation="Corner" />
-        <shogi:BoardPanelView x:Name="panelSW" Grid.Row="3" Grid.Column="3" Orientation="Corner" />
+        <shogi:BoardBorderView x:Name="panelN" Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2" Orientation="Horizontal" />
+        <shogi:BoardBorderView x:Name="panelS" Grid.Row="3" Grid.Column="1" Grid.ColumnSpan="2" Orientation="Horizontal" />
+        <shogi:BoardBorderView x:Name="panelE" Grid.Row="2" Grid.Column="0" Orientation="Vertical" />
+        <shogi:BoardBorderView x:Name="panelW" Grid.Row="2" Grid.Column="3" Orientation="Vertical" />
+        <shogi:BoardBorderView x:Name="panelNE" Grid.Row="1" Grid.Column="0" Orientation="Corner" />
+        <shogi:BoardBorderView x:Name="panelNW" Grid.Row="1" Grid.Column="3" Orientation="Corner" />
+        <shogi:BoardBorderView x:Name="panelSE" Grid.Row="3" Grid.Column="0" Orientation="Corner" />
+        <shogi:BoardBorderView x:Name="panelSW" Grid.Row="3" Grid.Column="3" Orientation="Corner" />
 
         <!-- Board: actual playfield -->
         <shogi:BoardView x:Name="Board" Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="2" Game="{Binding Source={x:Reference this}, Path=Game}" Connection="{Binding Source={x:Reference this}, Path=Connection}" />
