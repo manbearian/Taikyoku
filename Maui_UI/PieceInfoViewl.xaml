@@ -3,13 +3,14 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:shogi="clr-namespace:MauiUI"
              x:Name="this"
-             x:Class="MauiUI.PieceInfoPanel">
+             x:Class="MauiUI.PieceInfoView">
     <Grid RowDefinitions="30, 20, *, 20, 15, 15, *" BackgroundColor="White">
         <Label Grid.Row="0" x:Name="titleLabel" Text="Piece info" FontSize="Subtitle" TextColor="Black"/>
         <Label Grid.Row="1" x:Name="subtitleLabel" Text="Piece info" FontSize="Body" TextColor="Black"/>
         <shogi:PieceMoveView Grid.Row="2" x:Name="moveView" 
                              HeightRequest="{Binding Source={RelativeSource Self}, Path=WidthRequest}"
-                             Game="{Binding Source={x:Reference this}, Path=Game}" 
+                             Game="{Binding Source={x:Reference this}, Path=Game}"
+                             PieceId="{Binding Source={x:Reference this}, Path=PieceId}" 
                              BackgroundColor="AntiqueWhite" />
         <Label Grid.Row="3" x:Name="promoLabel" Text="Promotoes to" FontSize="Body" TextColor="Black"/>
         <Label Grid.Row="4" x:Name="promoTitleLabel" Text="Piece info" FontSize="Caption" TextColor="Gray"/>
@@ -17,7 +18,6 @@
         <shogi:PieceMoveView Grid.Row="6" x:Name="promoView"
                              HeightRequest="{Binding Source={RelativeSource Self}, Path=WidthRequest}"
                              Game="{Binding Source={x:Reference this}, Path=Game}" BackgroundColor="LightGray" />
-        <Button Clicked="CloseBtn_Clicked" Opacity="0" HorizontalOptions="Fill" VerticalOptions="Fill"/>
     </Grid>
 
 </ContentView>

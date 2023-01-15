@@ -1,6 +1,7 @@
+using System.Diagnostics.Contracts;
+
 using ShogiClient;
 using ShogiEngine;
-using System.Diagnostics.Contracts;
 
 namespace MauiUI;
 
@@ -63,43 +64,19 @@ public partial class BoardPage : ContentPage
 
     private async void Board_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
     {
-        var transX = infoPanel.Width;
+        if (infoPanel.IsShowingSettings)
+            await HideInfoPanel();
+
         if (e.Piece is null)
         {
-            if (infoPanel.IsShown)
-            {
-                if (infoPanel.TranslationX == 0)
-                {
-                    await infoPanel.TranslateTo(-transX, 0);
-                    infoPanel.Hide();
-                }
-                else
-                {
-                    await infoPanel.TranslateTo(Width + transX, 0);
-                    infoPanel.Hide();
-                }
-            }
+            await HideInfoPanel();
         }
         else
         {
             Contract.Assert(e.SelectedLoc != null);
+            infoPanel.DisplayPiece(e.Piece.Id);
             bool renderLeft = e.SelectedLoc?.X > TaikyokuShogi.BoardWidth / 2;
-            bool isLeft = infoPanel.TranslationX == 0;
-            bool wasShown = infoPanel.IsShown;
-            infoPanel.Show(e.Piece.Id);
-            if (!wasShown || (isLeft ^ renderLeft))
-            {
-                if (renderLeft)
-                {
-                    infoPanel.TranslationX = -transX;
-                    await infoPanel.TranslateTo(0, 0);
-                }
-                else
-                {
-                    infoPanel.TranslationX = Width + transX;
-                    await infoPanel.TranslateTo(Width - transX, 0);
-                }
-            }
+            await ShowInfoPanel(renderLeft);
         }
     }
 
@@ -142,9 +119,44 @@ public partial class BoardPage : ContentPage
     private async void BackBtn_Clicked(object sender, EventArgs e) =>
         await Navigation.PopModalAsync();
 
-    // TODO: implement this???
-    private async void OptionsBtn_Clicked(object sender, EventArgs e) =>
-        await DisplayAlert("NYI", "Not yet implemented", "OK");
+    private async void OptionsBtn_Clicked(object sender, EventArgs e)
+    {
+        if (infoPanel.IsShowingPieceInfo)
+            await HideInfoPanel();
+
+        if (infoPanel.IsShown)
+        {
+            await HideInfoPanel();
+        }
+        else
+        {
+            infoPanel.DisplayOptions();
+            await ShowInfoPanel(false);
+        }
+    }
+
+    private async Task HideInfoPanel()
+    {
+        if (!infoPanel.IsShown)
+            return;
+
+        var transX = infoPanel.Width;
+        bool onLeft = infoPanel.TranslationX == 0;
+        await infoPanel.TranslateTo(onLeft ? -transX : Width + transX, 0);
+        infoPanel.Hide();
+    }
+
+    private async Task ShowInfoPanel(bool renderLeft)
+    {
+        bool isLeft = infoPanel.TranslationX == 0;
+        if (infoPanel.IsShown && isLeft == renderLeft)
+            return;
+
+        var transX = infoPanel.Width;
+        infoPanel.TranslationX = renderLeft ? -transX : Width + transX;
+        infoPanel.Show();
+        await infoPanel.TranslateTo(renderLeft ? 0 : Width - transX, 0);
+    }
 
     private void UpdateBorder()
     {

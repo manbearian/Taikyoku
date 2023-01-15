@@ -22,7 +22,7 @@
 
         <shogi:BoardView x:Name="board" Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="2" Game="{Binding Source={x:Reference this}, Path=Game}" Connection="{Binding Source={x:Reference this}, Path=Connection}" />
 
-        <shogi:PieceInfoPanel x:Name="infoPanel" Grid.Row="1" Grid.RowSpan="3" Grid.ColumnSpan="2" Game="{Binding Source={x:Reference this}, Path=Game}" />
+        <shogi:InfoPanel x:Name="infoPanel" Grid.Row="1" Grid.RowSpan="3" Grid.ColumnSpan="2" Game="{Binding Source={x:Reference this}, Path=Game}" />
     </Grid>
 
 </ContentPage>

@@ -10,12 +10,21 @@ public class PieceMoveView : ContentView
     // Bindabe Proprerties
     //
 
-    public static readonly BindableProperty GameProperty = BindableProperty.Create(nameof(Game), typeof(TaikyokuShogi), typeof(BoardView));
+    public static readonly BindableProperty GameProperty = BindableProperty.Create(nameof(Game), typeof(TaikyokuShogi), typeof(PieceMoveView));
 
     public TaikyokuShogi Game
     {
         get => (TaikyokuShogi)GetValue(GameProperty);
         set => SetValue(GameProperty, value);
+    }
+
+
+    public static readonly BindableProperty PieceIdProperty = BindableProperty.Create(nameof(PieceId), typeof(PieceIdentity), typeof(PieceMoveView));
+
+    public PieceIdentity PieceId
+    {
+        get => (PieceIdentity)GetValue(PieceIdProperty);
+        set => SetValue(PieceIdProperty, value);
     }
 
     //
@@ -33,15 +42,25 @@ public class PieceMoveView : ContentView
         MoveGrid.BackgroundColor = Colors.White;
     }
 
+    protected override void OnPropertyChanged([CallerMemberName] string? propertyName = null)
+    {
+        if (propertyName == nameof(PieceId))
+        {
+            UpdateMoveGrid();
+        }
+
+        base.OnPropertyChanged(propertyName);
+    }
+
     // render moves in a grid
     //     | ○ |  
     //  ---+---+---
     //   ─ | ☖| ─
     //  ---+---+---
     //   ○ |   | ○
-    public void ShowPiece(PieceIdentity id)
+    private void UpdateMoveGrid()
     {
-        var moves = Game.GetMovement(id);
+        var moves = Game.GetMovement(PieceId);
 
         //
         // Compute the grid layout
@@ -313,7 +332,11 @@ public class PieceMoveView : ContentView
             MoveGrid.Add(vl, i, 0);
             MoveGrid.SetRowSpan(vl, gridSize);
         }
-        
+
+        //
+        // Helper Functions
+        //
+
         static void SetLineInfo(Line l)
         {
             l.Stroke = Colors.Black;

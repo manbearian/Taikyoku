@@ -112,6 +112,12 @@
 	  <Compile Update="NewGameView.xaml.cs">
 	    <DependentUpon>NewGameView.xaml</DependentUpon>
 	  </Compile>
+	  <Compile Update="InfoPanel.xaml.cs">
+	    <DependentUpon>InfoPanel.xaml</DependentUpon>
+	  </Compile>
+	  <Compile Update="PieceInfoViewl.xaml.cs">
+	    <DependentUpon>PieceInfoViewl.xaml</DependentUpon>
+	  </Compile>
 	</ItemGroup>
 
 	<ItemGroup>
@@ -127,7 +133,10 @@
 	  <MauiXaml Update="MyGamesView.xaml">
 	    <Generator>MSBuild:Compile</Generator>
 	  </MauiXaml>
-	  <MauiXaml Update="PieceInfoPanel.xaml">
+	  <MauiXaml Update="InfoPanel.xaml">
+	    <Generator>MSBuild:Compile</Generator>
+	  </MauiXaml>
+	  <MauiXaml Update="PieceInfoViewl.xaml">
 	    <Generator>MSBuild:Compile</Generator>
 	  </MauiXaml>
 	  <MauiXaml Update="WaitView.xaml">
