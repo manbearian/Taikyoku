@@ -3,197 +3,6 @@ using ShogiEngine;
 
 namespace MauiUI;
 
-internal class BoardDrawer : IDrawable
-{
-    private BoardView View { get; set; }
-
-    public BoardDrawer(BoardView view) =>
-        View = view;
-
-    public void Draw(ICanvas canvas, RectF dirtyRect)
-    {
-        var width = (float)View.Width;
-        var height = (float)View.Height;
-        var boardWidth = View.BoardWidth;
-        var boardHeight = View.BoardHeight;
-        var spaceWidth = View.SpaceWidth;
-        var spaceHeight = View.SpaceHeight;
-        var game = View.Game;
-
-        // we need at least 1 px to draw the grid
-        if (width == 0 || height == 0)
-            return;
-
-        if (game is null)
-            return;
-
-        canvas.Rotate(View.IsRotated ? 180 : 0, width / 2, height / 2);
-
-        // Draw background
-        canvas.FillColor = Colors.AntiqueWhite;
-        canvas.FillRectangle(0, 0, width, height);
-
-        DrawBoard(canvas);
-        DrawMoves(canvas);
-        DrawPieces(canvas);
-
-        canvas.ResetState();
-
-        void DrawBoard(ICanvas canvas)
-        {
-            canvas.StrokeColor = Colors.Black;
-            canvas.StrokeSize = 1.0f;
-
-            for (int i = 0; i < boardWidth + 1; ++i)
-            {
-                canvas.DrawLine(new Point(width / boardWidth * i, 0.0), new Point(width / boardWidth * i, height));
-            }
-
-            for (int i = 0; i < boardHeight + 1; ++i)
-            {
-                canvas.DrawLine(new Point(0.0, height / boardHeight * i), new Point(width, height / boardHeight * i));
-            }
-        }
-
-        void DrawPieces(ICanvas canvas)
-        {
-            PathF ComputePieceGeometry()
-            {
-                var border = spaceWidth * 0.05; // 5% border
-
-                var pieceWidth = (spaceWidth - (2 * border)) * 0.7; // narrow piece
-                var pieceHeight = (spaceHeight - (2 * border));
-
-                var upperWidth = pieceWidth * 0.2;
-                var upperHeight = pieceHeight * 0.3;
-
-                var upperLeft = new Point((pieceWidth - upperWidth) / 2, upperHeight);
-                var upperRight = new Point(spaceWidth - upperLeft.X, upperHeight);
-                var upperMid = new Point(spaceWidth / 2, border);
-
-                var lowerLeft = new Point((spaceWidth - pieceWidth) / 2, spaceHeight - border);
-                var lowerRight = new Point(spaceWidth - lowerLeft.X, spaceHeight - border);
-
-                var path = new PathF();
-                path.MoveTo(upperLeft);
-                path.LineTo(upperMid);        //  /
-                path.LineTo(upperRight);      //    \
-                path.LineTo(lowerRight);      //    |
-                path.LineTo(lowerLeft);       //  __
-                path.LineTo(upperLeft);       // |
-                return path;
-            }
-
-            // Compute geometry once as all the pieces are identical
-            var pieceGeometry = ComputePieceGeometry();
-
-            for (int i = 0; i < boardWidth; ++i)
-            {
-                for (int j = 0; j < boardHeight; ++j)
-                {
-                    var piece = game.GetPiece((i, j));
-
-                    if (piece is not null)
-                    {
-                        DrawPiece(canvas, pieceGeometry, (i, j), piece);
-                    }
-                }
-            }
-
-            void DrawPiece(ICanvas canvas, PathF pieceGeometry, (int X, int Y) loc, Piece piece)
-            {
-                canvas.SaveState();
-                canvas.Translate(spaceWidth * loc.X, spaceHeight * loc.Y);
-                canvas.Rotate(piece.Owner == PlayerColor.White ? 180 : 0, spaceWidth / 2, spaceHeight / 2);
-
-                canvas.StrokeColor = (loc == View.SelectedLoc) ? ((piece.Owner == game.CurrentPlayer) ? Colors.Blue : Colors.Red) : Colors.Black;
-                canvas.StrokeSize = (loc == View.SelectedLoc) ? 3.0f : 1.0f;
-                canvas.DrawPath(pieceGeometry);
-                canvas.FillColor = Colors.SandyBrown;
-                canvas.FillPath(pieceGeometry);
-
-                var chars = piece.Kanji.EnumerateRunes();
-                var verticalKanji = string.Join("\n", chars);
-                canvas.FontSize = spaceHeight * 0.33f;
-                canvas.Font = new Microsoft.Maui.Graphics.Font("MS Gothic");
-                canvas.FontColor = piece.Promoted ? Colors.Gold : Colors.Black;
-                canvas.DrawString(verticalKanji, spaceWidth / 2, spaceHeight / 2, HorizontalAlignment.Center);
-
-                canvas.RestoreState();
-            }
-        }
-
-        void DrawMoves(ICanvas canvas)
-        {
-            Rect BoardLocToRect((int X, int Y) loc) =>
-                new(loc.X * spaceWidth, loc.Y * spaceHeight, spaceWidth, spaceHeight);
-
-            Rect GetRect((int X, int Y) loc)
-            {
-                var rect = BoardLocToRect(loc);
-                rect.Location = new Point(rect.X + 1, rect.Y + 1);
-                rect.Height -= 2;
-                rect.Width -= 2;
-                return rect;
-            }
-
-            if (View.SelectedLoc is null)
-                return;
-
-            var loc = View.SelectedLoc.Value;
-            var selectedPiece = game.GetPiece(loc);
-
-            if (selectedPiece is null)
-                return;
-
-            var moves = game.GetLegalMoves(selectedPiece, loc);
-
-            // first color in the basic background for movable squares
-            foreach (var move in moves)
-            {
-                var rect = GetRect(move.Loc);
-                canvas.FillColor = selectedPiece.Owner == game.CurrentPlayer ? Colors.LightBlue : Colors.Pink;
-                canvas.FillRectangle(rect);
-
-                if (game.GetPiece(move.Loc) is not null)
-                {
-                    canvas.StrokeColor = selectedPiece.Owner == game.CurrentPlayer ? Colors.Blue : Colors.Red;
-                    canvas.StrokeSize = 1.0f;
-                    canvas.DrawRectangle(rect);
-                }
-            }
-
-            if (View.SelectedLoc2 is null)
-                return;
-
-            var secondMoves = game.GetLegalMoves(selectedPiece, loc, View.SelectedLoc2.Value);
-
-            // Color in the location for secondary moves
-            foreach (var move in secondMoves)
-            {
-                var rect = GetRect(move.Loc);
-                var captureOwner = game.GetPiece(move.Loc)?.Owner ?? game.CurrentPlayer;
-
-                canvas.FillColor = Colors.LightGreen;
-                canvas.FillRectangle(rect);
-
-                if (captureOwner != game.CurrentPlayer)
-                {
-                    canvas.StrokeColor = selectedPiece.Owner == game.CurrentPlayer ? Colors.Blue : Colors.Red;
-                    canvas.StrokeSize = 1.0f;
-                    canvas.DrawRectangle(rect);
-                }
-            }
-
-            // outline the Selected square
-            canvas.StrokeColor = Colors.Green;
-            canvas.StrokeSize = 1.0f;
-            canvas.DrawRectangle(GetRect(View.SelectedLoc2.Value));
-        }
-    }
-}
-
-
 public class PlayerChangeEventArgs : EventArgs
 {
     public PlayerColor? OldPlayer { get; }
@@ -213,7 +22,7 @@ public class SelectionChangedEventArgs : EventArgs
     public SelectionChangedEventArgs((int X, int Y)? loc, Piece? piece) => (SelectedLoc, Piece) = (loc, piece);
 }
 
-public class BoardView : GraphicsView
+public class BoardView : GraphicsView, IDrawable
 {
     //
     // Events
@@ -250,14 +59,6 @@ public class BoardView : GraphicsView
         set => SetValue(ConnectionProperty, value);
     }
 
-    public static readonly BindableProperty IsRotatedProperty = BindableProperty.Create(nameof(IsRotated), typeof(bool), typeof(BoardView));
-
-    public bool IsRotated
-    {
-        get => (bool)GetValue(IsRotatedProperty);
-        set => SetValue(IsRotatedProperty, value);
-    }
-
     //
     // Standard Properties
     //
@@ -275,14 +76,10 @@ public class BoardView : GraphicsView
 
     private PointF? _lastTouchPoint = null;
 
-    public float LabelWidth { get => 12.0f; }
-
-    public float LabelHeight { get => 10.0f; }
-
     public BoardView()
     {
         // Enable custom draw
-        Drawable = new BoardDrawer(this);
+        Drawable = this;
 
         // Enable tap interactions
         var tapRecognizer = new TapGestureRecognizer();
@@ -298,7 +95,6 @@ public class BoardView : GraphicsView
         if (e.PropertyName == nameof(Game))
         {
             IsEnabled = Game.CurrentPlayer is not null && (Connection is null || Game.CurrentPlayer == Connection.Color);
-            IsRotated = Connection?.Color == PlayerColor.White;
 
             OnPlayerChange?.Invoke(this, new PlayerChangeEventArgs(null, Game.CurrentPlayer));
 
@@ -313,10 +109,8 @@ public class BoardView : GraphicsView
         if (p.X < 0 || p.Y < 0)
             return null;
 
-        var (x, y) = IsRotated ?
-            (BoardWidth - 1 - (int)(p.X / SpaceWidth), BoardHeight - 1 - (int)(p.Y / SpaceHeight))
-                : ((int)(p.X / SpaceWidth), (int)(p.Y / SpaceHeight));
-
+        var x = (int)(p.X / SpaceWidth);
+        var y = (int)(p.Y / SpaceHeight);
         return (x < 0 || x >= BoardWidth || y < 0 || y >= BoardHeight) ? null : (x, y);
     }
 
@@ -417,4 +211,182 @@ public class BoardView : GraphicsView
 
     private void BoardView_EndInteraction(object? sender, TouchEventArgs e) =>
          _lastTouchPoint = e.IsInsideBounds ? e.Touches.FirstOrDefault() : null;
+
+    public void Draw(ICanvas canvas, RectF dirtyRect)
+    {
+        // we need at least 1 px to draw the grid
+        if (Width == 0 || Height == 0)
+            return;
+
+        if (Game is null)
+            return;
+
+        // Draw background
+        canvas.FillColor = Colors.AntiqueWhite;
+        canvas.FillRectangle(0, 0, (float)Width, (float)Height);
+
+        DrawBoard(canvas);
+        DrawMoves(canvas);
+        DrawPieces(canvas);
+
+        canvas.ResetState();
+
+        return;
+
+        //
+        // Helper Functions
+        //
+
+        void DrawBoard(ICanvas canvas)
+        {
+            canvas.StrokeColor = Colors.Black;
+            canvas.StrokeSize = 1.0f;
+
+            for (int i = 0; i < BoardWidth + 1; ++i)
+            {
+                canvas.DrawLine(new Point(Width / BoardWidth * i, 0.0), new Point(Width / BoardWidth * i, Height));
+            }
+
+            for (int i = 0; i < BoardHeight + 1; ++i)
+            {
+                canvas.DrawLine(new Point(0.0, Height / BoardHeight * i), new Point(Width, Height / BoardHeight * i));
+            }
+        }
+
+        void DrawPieces(ICanvas canvas)
+        {
+            PathF ComputePieceGeometry()
+            {
+                var border = SpaceWidth * 0.05; // 5% border
+
+                var pieceWidth = (SpaceWidth - (2 * border)) * 0.7; // narrow piece
+                var pieceHeight = (SpaceHeight - (2 * border));
+
+                var upperWidth = pieceWidth * 0.2;
+                var upperHeight = pieceHeight * 0.3;
+
+                var upperLeft = new Point((pieceWidth - upperWidth) / 2, upperHeight);
+                var upperRight = new Point(SpaceWidth - upperLeft.X, upperHeight);
+                var upperMid = new Point(SpaceWidth / 2, border);
+
+                var lowerLeft = new Point((SpaceWidth - pieceWidth) / 2, SpaceHeight - border);
+                var lowerRight = new Point(SpaceWidth - lowerLeft.X, SpaceHeight - border);
+
+                var path = new PathF();
+                path.MoveTo(upperLeft);
+                path.LineTo(upperMid);        //  /
+                path.LineTo(upperRight);      //    \
+                path.LineTo(lowerRight);      //    |
+                path.LineTo(lowerLeft);       //  __
+                path.LineTo(upperLeft);       // |
+                return path;
+            }
+
+            // Compute geometry once as all the pieces are identical
+            var pieceGeometry = ComputePieceGeometry();
+
+            for (int i = 0; i < BoardWidth; ++i)
+            {
+                for (int j = 0; j < BoardHeight; ++j)
+                {
+                    var piece = Game.GetPiece((i, j));
+
+                    if (piece is not null)
+                    {
+                        DrawPiece(canvas, pieceGeometry, (i, j), piece);
+                    }
+                }
+            }
+
+            void DrawPiece(ICanvas canvas, PathF pieceGeometry, (int X, int Y) loc, Piece piece)
+            {
+                canvas.SaveState();
+                canvas.Translate(SpaceWidth * loc.X, SpaceHeight * loc.Y);
+                canvas.Rotate(piece.Owner == PlayerColor.White ? 180 : 0, SpaceWidth / 2, SpaceHeight / 2);
+
+                canvas.StrokeColor = (loc == SelectedLoc) ? ((piece.Owner == Game.CurrentPlayer) ? Colors.Blue : Colors.Red) : Colors.Black;
+                canvas.StrokeSize = (loc == SelectedLoc) ? 3.0f : 1.0f;
+                canvas.DrawPath(pieceGeometry);
+                canvas.FillColor = Colors.SandyBrown;
+                canvas.FillPath(pieceGeometry);
+
+                var chars = piece.Kanji.EnumerateRunes();
+                var verticalKanji = string.Join("\n", chars);
+                canvas.FontSize = SpaceHeight * 0.33f;
+                canvas.Font = new Microsoft.Maui.Graphics.Font("MS Gothic");
+                canvas.FontColor = piece.Promoted ? Colors.Gold : Colors.Black;
+                canvas.DrawString(verticalKanji, SpaceWidth / 2, SpaceHeight / 2, HorizontalAlignment.Center);
+
+                canvas.RestoreState();
+            }
+        }
+
+        void DrawMoves(ICanvas canvas)
+        {
+            Rect BoardLocToRect((int X, int Y) loc) =>
+                new(loc.X * SpaceWidth, loc.Y * SpaceHeight, SpaceWidth, SpaceHeight);
+
+            Rect GetRect((int X, int Y) loc)
+            {
+                var rect = BoardLocToRect(loc);
+                rect.Location = new Point(rect.X + 1, rect.Y + 1);
+                rect.Height -= 2;
+                rect.Width -= 2;
+                return rect;
+            }
+
+            if (SelectedLoc is null)
+                return;
+
+            var loc = SelectedLoc.Value;
+            var selectedPiece = Game.GetPiece(loc);
+
+            if (selectedPiece is null)
+                return;
+
+            var moves = Game.GetLegalMoves(selectedPiece, loc);
+
+            // first color in the basic background for movable squares
+            foreach (var move in moves)
+            {
+                var rect = GetRect(move.Loc);
+                canvas.FillColor = selectedPiece.Owner == Game.CurrentPlayer ? Colors.LightBlue : Colors.Pink;
+                canvas.FillRectangle(rect);
+
+                if (Game.GetPiece(move.Loc) is not null)
+                {
+                    canvas.StrokeColor = selectedPiece.Owner == Game.CurrentPlayer ? Colors.Blue : Colors.Red;
+                    canvas.StrokeSize = 1.0f;
+                    canvas.DrawRectangle(rect);
+                }
+            }
+
+            if (SelectedLoc2 is null)
+                return;
+
+            var secondMoves = Game.GetLegalMoves(selectedPiece, loc, SelectedLoc2.Value);
+
+            // Color in the location for secondary moves
+            foreach (var move in secondMoves)
+            {
+                var rect = GetRect(move.Loc);
+                var captureOwner = Game.GetPiece(move.Loc)?.Owner ?? Game.CurrentPlayer;
+
+                canvas.FillColor = Colors.LightGreen;
+                canvas.FillRectangle(rect);
+
+                if (captureOwner != Game.CurrentPlayer)
+                {
+                    canvas.StrokeColor = selectedPiece.Owner == Game.CurrentPlayer ? Colors.Blue : Colors.Red;
+                    canvas.StrokeSize = 1.0f;
+                    canvas.DrawRectangle(rect);
+                }
+            }
+
+            // outline the Selected square
+            canvas.StrokeColor = Colors.Green;
+            canvas.StrokeSize = 1.0f;
+            canvas.DrawRectangle(GetRect(SelectedLoc2.Value));
+        }
+    }
 }
