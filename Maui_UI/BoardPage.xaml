@@ -6,11 +6,14 @@
              x:Name="this"
              Title="BoardPage">
     <Grid RowDefinitions="30, 1*, 98*, 1*" ColumnDefinitions="0.5*, 20*, 79*, 0.5*">
+        <!-- Header: Shows menu + state -->
         <Grid ColumnDefinitions="60, *, 60" Grid.ColumnSpan="4" BackgroundColor="LightGray">
             <ImageButton Grid.Column="0" Source="back.png" Margin="3" Clicked="BackBtn_Clicked" />
             <Label x:Name="StatusLbl" Grid.Column="1" Text="Taikyoku Shogi!" VerticalTextAlignment="Center" Padding="10,0,0,0" TextColor="Black" FontSize="Micro" />
             <ImageButton Grid.Column="2" Source="settings.png" Clicked="OptionsBtn_Clicked" HorizontalOptions="End" />
         </Grid>
+
+        <!-- Border: wraps board with grid numbers and turn color -->
         <shogi:BoardPanelView x:Name="panel0" Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2" Orientation="Horizontal" />
         <shogi:BoardPanelView x:Name="panel1" Grid.Row="3" Grid.Column="1" Grid.ColumnSpan="2" Orientation="Horizontal" />
         <shogi:BoardPanelView x:Name="panel2" Grid.Row="2" Grid.Column="0" Orientation="Vertical" />
@@ -20,8 +23,10 @@
         <shogi:BoardPanelView x:Name="panel6" Grid.Row="3" Grid.Column="0" Orientation="Corner" />
         <shogi:BoardPanelView x:Name="panel7" Grid.Row="3" Grid.Column="3" Orientation="Corner" />
 
+        <!-- Board: actual playfield -->
         <shogi:BoardView x:Name="board" Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="2" Game="{Binding Source={x:Reference this}, Path=Game}" Connection="{Binding Source={x:Reference this}, Path=Connection}" />
 
+        <!-- InfoPanel: Slide out panel used to show extra info, options, etc. -->
         <shogi:InfoPanel x:Name="infoPanel" Grid.Row="1" Grid.RowSpan="3" Grid.ColumnSpan="2" Game="{Binding Source={x:Reference this}, Path=Game}" />
     </Grid>
 
