@@ -113,18 +113,42 @@ public class NetworkGameManager
     }
 }
 
-internal static class SettingsManager
+internal class SettingChangedEventArgs
 {
-    public static string PlayerName
+    public string SettingName { get; }
+
+    public SettingChangedEventArgs(string settingName) =>
+        SettingName = settingName;
+}
+
+internal class SettingsManager
+{
+    public delegate void SettingChangedHandler(object sender, SettingChangedEventArgs e);
+    public event SettingChangedHandler? OnSettingChanged;
+
+    public static SettingsManager Default { get; } = new SettingsManager();
+
+    public string PlayerName
     {
         get => Preferences.Default.Get(nameof(PlayerName), "");
-        set => Preferences.Default.Set(nameof(PlayerName), value);
+        set
+        {
+            if (value != PlayerName)
+            {
+                Preferences.Default.Set(nameof(PlayerName), value);
+                OnSettingChanged?.Invoke(this, new SettingChangedEventArgs(nameof(PlayerName)));
+            }
+        }
     }
 
-    public static bool RotateBoard
+    public bool AutoRotateBoard
     {
-        get => Preferences.Default.Get(nameof(RotateBoard), false);
-        set => Preferences.Default.Set(nameof(RotateBoard), value);
+        get => Preferences.Default.Get(nameof(AutoRotateBoard), false);
+        set
+        {
+            Preferences.Default.Set(nameof(AutoRotateBoard), value);
+            OnSettingChanged?.Invoke(this, new SettingChangedEventArgs(nameof(AutoRotateBoard)));
+        }
     }
 
     public static LocalGameManager LocalGameManager { get; } = new();

@@ -1,5 +1,6 @@
 
 using ShogiEngine;
+using System.Runtime.CompilerServices;
 
 namespace MauiUI;
 
@@ -10,6 +11,8 @@ public enum BoardPanelOrientation
 
 internal class BoardPanelDrawer : IDrawable
 {
+    public bool IsRotated { get; set; }
+
     private BoardPanelView View { get; set; }
 
     public BoardPanelDrawer(BoardPanelView view) =>
@@ -43,7 +46,8 @@ internal class BoardPanelDrawer : IDrawable
 
         for (int i = 0; i < TaikyokuShogi.BoardWidth; ++i)
         {
-            canvas.DrawString(ColumnName(i), i * spacing + (spacing / 2), rect.Height * 0.75f, HorizontalAlignment.Center);
+            var index = View.IsRotated ? TaikyokuShogi.BoardWidth - i - 1 : i;
+            canvas.DrawString(ColumnName(index), i * spacing + (spacing / 2), rect.Height * 0.75f, HorizontalAlignment.Center);
         }
     }
 
@@ -57,7 +61,8 @@ internal class BoardPanelDrawer : IDrawable
 
         for (int i = 0; i < TaikyokuShogi.BoardHeight; ++i)
         {
-            canvas.DrawString(RowName(i), rect.Width / 2, i * spacing + (spacing / 2), HorizontalAlignment.Center);
+            var index = View.IsRotated ? TaikyokuShogi.BoardHeight - i - 1 : i;
+            canvas.DrawString(RowName(index), rect.Width / 2, i * spacing + (spacing / 2), HorizontalAlignment.Center);
         }
     }
 }
@@ -84,9 +89,25 @@ public class BoardPanelView : GraphicsView
         set => SetValue(TextColorProperty, value);
     }
 
+    public static readonly BindableProperty IsRotatedProperty = BindableProperty.Create(nameof(IsRotated), typeof(bool), typeof(BoardPanelView));
+
+    public bool IsRotated
+    {
+        get => (bool)GetValue(IsRotatedProperty);
+        set => SetValue(IsRotatedProperty, value);
+    }
+
     public BoardPanelView()
     {
         // Enable custom draw
         Drawable = new BoardPanelDrawer(this);
+    }
+
+    protected override void OnPropertyChanged([CallerMemberName] string? propertyName = null)
+    {
+        if (propertyName == nameof(IsRotated))
+            Invalidate();
+
+        base.OnPropertyChanged(propertyName);
     }
 }

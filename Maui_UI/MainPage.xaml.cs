@@ -44,7 +44,8 @@ public partial class MainPage : ContentPage
     {
         InitializeComponent();
 
-        PlayerNameEntry.Text = SettingsManager.PlayerName == string.Empty ? Environment.UserName : SettingsManager.PlayerName;
+        PlayerNameEntry.Text = SettingsManager.Default.PlayerName == string.Empty ?
+            Environment.UserName : SettingsManager.Default.PlayerName;
 
         Loaded += MainPage_Loaded;
         Unloaded += MainPage_Unloaded;
@@ -95,7 +96,7 @@ public partial class MainPage : ContentPage
     private void PlayerNameEntry_TextChanged(object sender, TextChangedEventArgs e)
     {
         PlayerName = e.NewTextValue;
-        SettingsManager.PlayerName = e.NewTextValue;
+        SettingsManager.Default.PlayerName = e.NewTextValue;
     }
 }
 

@@ -37,6 +37,8 @@ public partial class BoardPage : ContentPage
 
     private bool IsLocalGame { get => Connection is null; }
 
+    private bool AutoRotateEnabled { get; set; } = SettingsManager.Default.AutoRotateBoard;
+
     private BoardPanelView[] Panels { get; }
 
     // Create board for a local game
@@ -52,15 +54,26 @@ public partial class BoardPage : ContentPage
 
         (Connection, OpponentName, LocalGameId, Game) = (connection, opponentName, localGameId, game);
 
-        Panels = new BoardPanelView[8] { panel0, panel1, panel2, panel3, panel4, panel5, panel6, panel7 };
+        Panels = new BoardPanelView[8] { panelN, panelS, panelE, panelW, panelNE, panelNW, panelSE, panelSW };
         UpdateBorder();
 
         Loaded += BoardPage_Loaded;
         Unloaded += BoardPage_Unloaded;
         NavigatingFrom += BoardPage_NavigatingFrom;
 
-        board.OnPlayerChange += Board_OnPlayerChange;
-        board.OnSelectionChanged += Board_OnSelectionChanged;
+        Board.OnPlayerChange += Board_OnPlayerChange;
+        Board.OnSelectionChanged += Board_OnSelectionChanged;
+
+        SettingsManager.Default.OnSettingChanged += OnSettingChanged;
+    }
+
+    private void OnSettingChanged(object sender, SettingChangedEventArgs e)
+    {
+        if (e.SettingName == nameof(SettingsManager.AutoRotateBoard))
+        {
+            AutoRotateEnabled = SettingsManager.Default.AutoRotateBoard;
+            UpdateBorder();
+        }
     }
 
     private async void Board_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -170,6 +183,11 @@ public partial class BoardPage : ContentPage
             PlayerColor.White => "White's Turn",
             _ => ""
         };
+
+        bool rotateBoard = activePlayer == PlayerColor.White && (!IsLocalGame || AutoRotateEnabled);
+        Board.RotationX = rotateBoard ? 180 : 0;
+        panelE.IsRotated = rotateBoard;
+        panelW.IsRotated = rotateBoard;
 
         foreach (var p in Panels)
         {

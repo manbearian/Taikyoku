@@ -7,25 +7,6 @@
     <Grid>
         <Button Clicked="CloseBtn_Clicked" Opacity="0" HorizontalOptions="Fill" VerticalOptions="Fill"/>
         <shogi:PieceInfoView x:Name="PieceInfoView" Game="{Binding Source={x:Reference this}, Path=Game}"/>
-        <VerticalStackLayout x:Name="SettingsView" BackgroundColor="Gray" Padding="5">
-            <Label Text="Settings"/>
-            <VerticalStackLayout Padding="5">
-                <HorizontalStackLayout>
-                    <CheckBox />
-                    <Label Text="Automatically Rotate Board" VerticalTextAlignment="Center" />
-                </HorizontalStackLayout>
-                <HorizontalStackLayout>
-                    <CheckBox IsEnabled="False"/>
-                    <Label Text="SecondOption" VerticalTextAlignment="Center" />
-                </HorizontalStackLayout>
-                <HorizontalStackLayout>
-                    <CheckBox IsEnabled="False"/>
-                    <Label Text="ThirdOption" VerticalTextAlignment="Center" />
-                </HorizontalStackLayout>
-            </VerticalStackLayout>
-            <VerticalStackLayout Padding="5,20">
-                <Button Text="Resign" Margin="5" />
-            </VerticalStackLayout>
-        </VerticalStackLayout>
+        <shogi:SettingsView x:Name="SettingsView" />
     </Grid>
 </ContentView>
