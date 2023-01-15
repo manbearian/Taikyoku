@@ -90,6 +90,7 @@ public partial class BoardPage : ContentPage
             Contract.Assert(e.SelectedLoc != null);
             infoPanel.DisplayPiece(e.Piece.Id);
             bool renderLeft = e.SelectedLoc?.X > TaikyokuShogi.BoardWidth / 2;
+            renderLeft = Board.IsRotated ? !renderLeft : renderLeft;
             await ShowInfoPanel(renderLeft);
         }
     }
@@ -185,9 +186,9 @@ public partial class BoardPage : ContentPage
         };
 
         bool rotateBoard = activePlayer == PlayerColor.White && (!IsLocalGame || AutoRotateEnabled);
-        Board.RotationX = rotateBoard ? 180 : 0;
-        panelE.IsRotated = rotateBoard;
-        panelW.IsRotated = rotateBoard;
+        Board.IsRotated = rotateBoard;
+        foreach (var panel in Panels)
+            panel.IsRotated = rotateBoard;
 
         foreach (var p in Panels)
         {

@@ -59,6 +59,14 @@ public class BoardView : GraphicsView, IDrawable
         set => SetValue(ConnectionProperty, value);
     }
 
+    public static readonly BindableProperty IsRotatedProperty = BindableProperty.Create(nameof(IsRotated), typeof(bool), typeof(BoardView));
+
+    public bool IsRotated
+    {
+        get => (bool)GetValue(IsRotatedProperty);
+        set => SetValue(IsRotatedProperty, value);
+    }
+
     //
     // Standard Properties
     //
@@ -111,6 +119,7 @@ public class BoardView : GraphicsView, IDrawable
 
         var x = (int)(p.X / SpaceWidth);
         var y = (int)(p.Y / SpaceHeight);
+        (x, y) = IsRotated ? (BoardWidth - 1 - x, BoardHeight - 1 - y) : (x, y);
         return (x < 0 || x >= BoardWidth || y < 0 || y >= BoardHeight) ? null : (x, y);
     }
 
@@ -220,6 +229,8 @@ public class BoardView : GraphicsView, IDrawable
 
         if (Game is null)
             return;
+
+        canvas.Rotate(IsRotated ? 180 : 0, (float)Width / 2, (float)Height / 2);
 
         // Draw background
         canvas.FillColor = Colors.AntiqueWhite;
