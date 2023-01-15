@@ -44,7 +44,7 @@ public partial class MainPage : ContentPage
     {
         InitializeComponent();
 
-        PlayerNameEntry.Text = MySettings.PlayerName == string.Empty ? Environment.UserName : MySettings.PlayerName;
+        PlayerNameEntry.Text = SettingsManager.PlayerName == string.Empty ? Environment.UserName : SettingsManager.PlayerName;
 
         Loaded += MainPage_Loaded;
         Unloaded += MainPage_Unloaded;
@@ -82,7 +82,7 @@ public partial class MainPage : ContentPage
 
     private void Connection_OnReceiveGameStart(object sender, ReceiveGameStartEventArgs e)
     {
-        MySettings.NetworkGameManager.SaveGame(Connection.GameId, Connection.PlayerId, Connection.Color);
+        SettingsManager.NetworkGameManager.SaveGame(Connection.GameId, Connection.PlayerId, Connection.Color);
         string opponentName = (Connection.Color == PlayerColor.Black ? e.GameInfo.WhiteName : e.GameInfo.BlackName) ?? throw new Exception("Opponent name is null");
         Dispatcher.Dispatch(() =>
         {
@@ -95,7 +95,7 @@ public partial class MainPage : ContentPage
     private void PlayerNameEntry_TextChanged(object sender, TextChangedEventArgs e)
     {
         PlayerName = e.NewTextValue;
-        MySettings.PlayerName = e.NewTextValue;
+        SettingsManager.PlayerName = e.NewTextValue;
     }
 }
 

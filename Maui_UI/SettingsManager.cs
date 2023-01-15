@@ -113,7 +113,7 @@ public class NetworkGameManager
     }
 }
 
-internal static class MySettings
+internal static class SettingsManager
 {
     public static string PlayerName
     {

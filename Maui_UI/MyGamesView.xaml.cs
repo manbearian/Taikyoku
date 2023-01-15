@@ -88,13 +88,13 @@ public partial class MyGamesView : ContentView
     private async void MyGamesView_Loaded(object? sender, EventArgs e)
     {
         await PopulateMyGamesList();
-        MySettings.LocalGameManager.OnLocalGameUpdate += LocalGameManager_OnLocalGameUpdate;
+        SettingsManager.LocalGameManager.OnLocalGameUpdate += LocalGameManager_OnLocalGameUpdate;
         MainPage.Default.OnNetworkConnected += Default_OnNetworkConnected;
     }
 
     private void MyGamesView_Unloaded(object? sender, EventArgs e)
     {
-        MySettings.LocalGameManager.OnLocalGameUpdate -= LocalGameManager_OnLocalGameUpdate;
+        SettingsManager.LocalGameManager.OnLocalGameUpdate -= LocalGameManager_OnLocalGameUpdate;
         MainPage.Default.OnNetworkConnected -= Default_OnNetworkConnected;
     }
 
@@ -141,7 +141,7 @@ public partial class MyGamesView : ContentView
             {
                 var gameInfo = clientGameInfos.FirstOrDefault(g => g?.GameId == gameId, null);
                 if (gameInfo is null)
-                    MySettings.NetworkGameManager.DeleteGame(gameId, userId);
+                    SettingsManager.NetworkGameManager.DeleteGame(gameId, userId);
                 else
                     InsertSorted(MyGamesListItem.FromNetworkGame(gameInfo, userId, myColor));
             }
@@ -213,7 +213,7 @@ public partial class MyGamesView : ContentView
         bool confirmed = await parentPage.DisplayAlert("Delete Game?", "Would you like to delete this game?", "Yes", "No");
         if (confirmed)
         {
-            MySettings.LocalGameManager.DeleteGame(item.GameId);
+            SettingsManager.LocalGameManager.DeleteGame(item.GameId);
         }
     }
 }

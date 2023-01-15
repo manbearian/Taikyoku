@@ -45,6 +45,7 @@ public partial class BoardPage : ContentPage
     // Create board for a network game
     public BoardPage(TaikyokuShogi game, Connection connection, string opponentName) : this(game, connection, opponentName, null) { }
 
+    // Internal constructor called by public constructors
     private BoardPage(TaikyokuShogi game, Connection? connection, string? opponentName, Guid? localGameId)
     {
         InitializeComponent();
@@ -109,7 +110,7 @@ public partial class BoardPage : ContentPage
                 }
             }
             if (saveGameId is not null)
-                MySettings.LocalGameManager.SaveGame(saveGameId.Value, Game);
+                SettingsManager.LocalGameManager.SaveGame(saveGameId.Value, Game);
         }
     }
 
