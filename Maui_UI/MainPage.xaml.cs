@@ -43,6 +43,8 @@ public partial class MainPage : ContentPage
 
     internal GameManager GameManager { get; } = new();
 
+    private IDispatcherTimer NetworkReconnectTimer { get; }
+
     public MainPage()
     {
         InitializeComponent();
@@ -50,15 +52,27 @@ public partial class MainPage : ContentPage
         PlayerNameEntry.Text = SettingsManager.Default.PlayerName == string.Empty ?
             Environment.UserName : SettingsManager.Default.PlayerName;
 
-        Loaded += MainPage_Loaded;
-        Unloaded += MainPage_Unloaded;
+        Loaded += async (s, e) =>
+        {
+            Connection.OnReceiveGameStart += Connection_OnReceiveGameStart;
+            GameManager.IsListening = true;
+            await ConnectNetwork();
+        };
+
+        Unloaded += (s, e) =>
+        {
+            Connection.OnReceiveGameStart -= Connection_OnReceiveGameStart;
+            GameManager.IsListening = false;
+        };
+
+        NetworkReconnectTimer = Dispatcher.CreateTimer();
+        NetworkReconnectTimer.Interval = TimeSpan.FromSeconds(0.5);
+        NetworkReconnectTimer.IsRepeating = false;
+        NetworkReconnectTimer.Tick += async (s, e) => await ConnectNetwork();
     }
 
-    private async void MainPage_Loaded(object? sender, EventArgs e)
+    private async Task ConnectNetwork()
     {
-        Connection.OnReceiveGameStart += Connection_OnReceiveGameStart;
-        GameManager.IsListening = true;
-
         try
         {
             await Connection.ConnectAsync();
@@ -66,15 +80,13 @@ public partial class MainPage : ContentPage
         }
         catch (Exception ex) when (Connection.ExceptionFilter(ex))
         {
-            // failed to connect... that's okay
-            // TOOD: let the user know, allow them to try later
+            // failed to connect... that's okay try again in a bit
+            var maxWait = TimeSpan.FromSeconds(32);
+            NetworkReconnectTimer.Interval *= 2;
+            if (NetworkReconnectTimer.Interval > maxWait)
+                NetworkReconnectTimer.Interval = maxWait;
+            NetworkReconnectTimer.Start();
         }
-    }
-
-    private void MainPage_Unloaded(object? sender, EventArgs e)
-    {
-        Connection.OnReceiveGameStart -= Connection_OnReceiveGameStart;
-        GameManager.IsListening = false;
     }
 
     private async void NewLocalGameBtn_Clicked(object sender, EventArgs e) =>
