@@ -10,14 +10,6 @@ public partial class PieceInfoView : ContentView
     // Bindabe Proprerties
     //
 
-    public static readonly BindableProperty GameProperty = BindableProperty.Create(nameof(Game), typeof(TaikyokuShogi), typeof(PieceInfoView));
-
-    public TaikyokuShogi Game
-    {
-        get => (TaikyokuShogi)GetValue(GameProperty);
-        set => SetValue(GameProperty, value);
-    }
-
     public static readonly BindableProperty PieceIdProperty = BindableProperty.Create(nameof(PieceId), typeof(PieceIdentity), typeof(PieceInfoView));
 
     public PieceIdentity PieceId

@@ -8,57 +8,33 @@ namespace MauiUI;
 public partial class BoardPage : ContentPage
 {
     //
-    // Bindabe Proprerties
-    //
-
-    public static readonly BindableProperty GameProperty = BindableProperty.Create(nameof(Game), typeof(TaikyokuShogi), typeof(BoardView));
-
-    public TaikyokuShogi Game
-    {
-        get => (TaikyokuShogi)GetValue(GameProperty);
-        set => SetValue(GameProperty, value);
-    }
-
-    public static readonly BindableProperty ConnectionProperty = BindableProperty.Create(nameof(Connection), typeof(Connection), typeof(BoardView));
-
-    public Connection? Connection
-    {
-        get => (Connection?)GetValue(ConnectionProperty);
-        set => SetValue(ConnectionProperty, value);
-    }
-
-    //
     // Non-Bindable Properties
     //
 
-    private Guid? LocalGameId { get; }
+    private static TaikyokuShogi Game { get => MainPage.Default.Game; }
 
-    private string? OpponentName { get; }
+    private static Connection Connection { get => MainPage.Default.Connection; }
 
-    private bool IsLocalGame { get => Connection is null; }
+    private static Guid? LocalGameId { get => MainPage.Default.LocalGameId; }
 
-    private bool AutoRotateEnabled { get; set; } = SettingsManager.Default.AutoRotateBoard;
+    private static string? OpponentName { get => MainPage.Default.OpponentName; }
+
+    private static bool IsLocalGame { get => MainPage.Default.IsLocalGame; }
+
+    private static bool AutoRotateEnabled { get; set; } = SettingsManager.Default.AutoRotateBoard;
 
     private BoardBorderView[] Panels { get; }
 
-    // Create board for a local game
-    public BoardPage(TaikyokuShogi game, Guid? localGameId = null) : this(game, null, null, localGameId) { }
-
-    // Create board for a network game
-    public BoardPage(TaikyokuShogi game, Connection connection, string opponentName) : this(game, connection, opponentName, null) { }
+    public static BoardPage Default { get; } = new BoardPage();
 
     // Internal constructor called by public constructors
-    private BoardPage(TaikyokuShogi game, Connection? connection, string? opponentName, Guid? localGameId)
+    private BoardPage()
     {
         InitializeComponent();
 
-        (Connection, OpponentName, LocalGameId, Game) = (connection, opponentName, localGameId, game);
-
         Panels = new BoardBorderView[8] { panelN, panelS, panelE, panelW, panelNE, panelNW, panelSE, panelSW };
-        UpdateBorder();
 
-        Loaded += BoardPage_Loaded;
-        Unloaded += BoardPage_Unloaded;
+        NavigatedTo += BoardPage_NavigatedTo;
         NavigatingFrom += BoardPage_NavigatingFrom;
 
         Board.OnPlayerChange += Board_OnPlayerChange;
@@ -95,19 +71,10 @@ public partial class BoardPage : ContentPage
         }
     }
 
-    private void BoardPage_Loaded(object? sender, EventArgs e)
+    private void BoardPage_NavigatedTo(object? sender, NavigatedToEventArgs e)
     {
-        MainPage.Default.Connection.OnReceiveGameUpdate += Connection_OnReceiveGameUpdate;
-    }
-
-    private void BoardPage_Unloaded(object? sender, EventArgs e)
-    {
-        MainPage.Default.Connection.OnReceiveGameUpdate -= Connection_OnReceiveGameUpdate;
-    }
-
-    private void Connection_OnReceiveGameUpdate(object sender, ReceiveGameUpdateEventArgs e)
-    {
-        Game = e.Game;
+        UpdateBorder();
+        Board.Refresh();
     }
 
     private async void BoardPage_NavigatingFrom(object? sender, NavigatingFromEventArgs e)
@@ -115,7 +82,7 @@ public partial class BoardPage : ContentPage
         if (IsLocalGame)
         {
             var saveGameId = LocalGameId;
-            if (saveGameId == null && !Game.BoardStateEquals(new TaikyokuShogi()))
+            if (saveGameId is null && !Game.BoardStateEquals(new()))
             {
                 bool saveGame = await DisplayAlert("Save Game?", "Would you like to save this game?", "Yes", "No");
                 if (saveGame)
@@ -175,17 +142,17 @@ public partial class BoardPage : ContentPage
 
     private void UpdateBorder()
     {
-        var activePlayer = Game?.CurrentPlayer;
+        var activePlayer = Game.CurrentPlayer;
         StatusLbl.Text = activePlayer switch
         {
-            _ when activePlayer == Connection?.Color => "Your Turn",
-            _ when activePlayer == Connection?.Color.Opponent() => $"Waiting for {OpponentName} to make a move",
-            PlayerColor.Black => "Black's Turn",
-            PlayerColor.White => "White's Turn",
+            PlayerColor.Black when IsLocalGame => "Black's Turn",
+            PlayerColor.White when IsLocalGame => "White's Turn",
+            _ when !IsLocalGame && activePlayer == Connection.Color => "Your Turn",
+            _ when !IsLocalGame && activePlayer == Connection.Color.Opponent() => $"Waiting for {OpponentName} to make a move",
             _ => ""
         };
 
-        bool rotateBoard = activePlayer == PlayerColor.White && (!IsLocalGame || AutoRotateEnabled);
+        bool rotateBoard = (IsLocalGame && AutoRotateEnabled) || (!IsLocalGame && Connection.Color == PlayerColor.White);
         Board.IsRotated = rotateBoard;
         foreach (var panel in Panels)
             panel.IsRotated = rotateBoard;

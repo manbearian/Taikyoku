@@ -4,18 +4,6 @@ namespace MauiUI;
 
 public partial class InfoPanel : ContentView
 {
-    //
-    // Bindabe Proprerties
-    //
-
-    public static readonly BindableProperty GameProperty = BindableProperty.Create(nameof(Game), typeof(TaikyokuShogi), typeof(BoardView));
-
-    public TaikyokuShogi Game
-    {
-        get => (TaikyokuShogi)GetValue(GameProperty);
-        set => SetValue(GameProperty, value);
-    }
-
     public bool IsShown { get; private set; }
 
     public bool IsShowingPieceInfo { get => PieceInfoView.IsVisible; }

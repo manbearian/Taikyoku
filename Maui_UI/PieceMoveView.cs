@@ -10,15 +10,6 @@ public class PieceMoveView : ContentView
     // Bindabe Proprerties
     //
 
-    public static readonly BindableProperty GameProperty = BindableProperty.Create(nameof(Game), typeof(TaikyokuShogi), typeof(PieceMoveView));
-
-    public TaikyokuShogi Game
-    {
-        get => (TaikyokuShogi)GetValue(GameProperty);
-        set => SetValue(GameProperty, value);
-    }
-
-
     public static readonly BindableProperty PieceIdProperty = BindableProperty.Create(nameof(PieceId), typeof(PieceIdentity), typeof(PieceMoveView));
 
     public PieceIdentity PieceId
@@ -60,7 +51,7 @@ public class PieceMoveView : ContentView
     //   ○ |   | ○
     private void UpdateMoveGrid()
     {
-        var moves = Game.GetMovement(PieceId);
+        var moves = MainPage.Default.Game.GetMovement(PieceId);
 
         //
         // Compute the grid layout

@@ -6,7 +6,7 @@
              x:Class="MauiUI.InfoPanel">
     <Grid>
         <Button Clicked="CloseBtn_Clicked" Opacity="0" HorizontalOptions="Fill" VerticalOptions="Fill"/>
-        <shogi:PieceInfoView x:Name="PieceInfoView" Game="{Binding Source={x:Reference this}, Path=Game}"/>
+        <shogi:PieceInfoView x:Name="PieceInfoView" />
         <shogi:SettingsView x:Name="SettingsView" />
     </Grid>
 </ContentView>

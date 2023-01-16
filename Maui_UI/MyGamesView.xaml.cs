@@ -186,13 +186,11 @@ public partial class MyGamesView : ContentView
         if (item.IsLocal)
         {
             Contract.Assert(item.Game is not null);
-            await MainPage.Default.Navigation.PushModalAsync(new BoardPage(item.Game, item.GameId), true);
+            await MainPage.Default.LaunchGame(item.Game, item.GameId);
         }
         else
         {
-            MainPage.Default.Connection.SetGameInfo(item.GameId, item.PlayerId, item.MyColor);
-            MainPage.Default.MainPageMode = MainPageMode.Wait;
-            await MainPage.Default.Connection.RejoinGame();
+            await MainPage.Default.LaunchGame(item.GameId, item.PlayerId, item.MyColor);
         }
     }
 

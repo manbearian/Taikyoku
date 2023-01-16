@@ -24,10 +24,10 @@
         <shogi:BoardBorderView x:Name="panelSW" Grid.Row="3" Grid.Column="3" Orientation="Corner" />
 
         <!-- Board: actual playfield -->
-        <shogi:BoardView x:Name="Board" Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="2" Game="{Binding Source={x:Reference this}, Path=Game}" Connection="{Binding Source={x:Reference this}, Path=Connection}" />
+        <shogi:BoardView x:Name="Board" Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="2" />
 
         <!-- InfoPanel: Slide out panel used to show extra info, options, etc. -->
-        <shogi:InfoPanel x:Name="infoPanel" Grid.Row="1" Grid.RowSpan="3" Grid.ColumnSpan="2" Game="{Binding Source={x:Reference this}, Path=Game}" />
+        <shogi:InfoPanel x:Name="infoPanel" Grid.Row="1" Grid.RowSpan="3" Grid.ColumnSpan="2" />
     </Grid>
 
 </ContentPage>

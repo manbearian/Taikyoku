@@ -43,22 +43,6 @@ public class BoardView : GraphicsView, IDrawable
     // Bindabe Proprerties
     //
 
-    public static readonly BindableProperty GameProperty = BindableProperty.Create(nameof(Game), typeof(TaikyokuShogi), typeof(BoardView));
-
-    public TaikyokuShogi Game
-    {
-        get => (TaikyokuShogi)GetValue(GameProperty);
-        set => SetValue(GameProperty, value);
-    }
-
-    public static readonly BindableProperty ConnectionProperty = BindableProperty.Create(nameof(Connection), typeof(Connection), typeof(BoardView));
-
-    public Connection? Connection
-    {
-        get => (Connection?)GetValue(ConnectionProperty);
-        set => SetValue(ConnectionProperty, value);
-    }
-
     public static readonly BindableProperty IsRotatedProperty = BindableProperty.Create(nameof(IsRotated), typeof(bool), typeof(BoardView));
 
     public bool IsRotated
@@ -70,6 +54,12 @@ public class BoardView : GraphicsView, IDrawable
     //
     // Standard Properties
     //
+
+    private static TaikyokuShogi Game { get => MainPage.Default.Game; }
+
+    private static Connection Connection{ get => MainPage.Default.Connection; }
+
+    private static bool IsLocalGame { get => MainPage.Default.IsLocalGame; }
 
     public int BoardWidth { get => TaikyokuShogi.BoardWidth; }
 
@@ -95,19 +85,36 @@ public class BoardView : GraphicsView, IDrawable
         GestureRecognizers.Add(tapRecognizer);
         EndInteraction += BoardView_EndInteraction;
 
-        PropertyChanged += BoardView_PropertyChanged;
+        Loaded += BoardView_Loaded;
+        Unloaded += BoardView_Unloaded;
     }
 
-    private void BoardView_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    private void BoardView_Unloaded(object? sender, EventArgs e)
     {
-        if (e.PropertyName == nameof(Game))
-        {
-            IsEnabled = Game.CurrentPlayer is not null && (Connection is null || Game.CurrentPlayer == Connection.Color);
+        Connection.OnReceiveGameUpdate -= Connection_OnReceiveGameUpdate;
+    }
 
-            OnPlayerChange?.Invoke(this, new PlayerChangeEventArgs(null, Game.CurrentPlayer));
+    private void BoardView_Loaded(object? sender, EventArgs e)
+    {
+        Connection.OnReceiveGameUpdate += Connection_OnReceiveGameUpdate;
+    }
+
+    private void Connection_OnReceiveGameUpdate(object sender, ReceiveGameUpdateEventArgs e)
+    {
+        Refresh();
+    }
+
+    // Invoke when externally updating the underlying game state
+    public void Refresh()
+    {
+        Dispatcher.Dispatch(() =>
+        {
+            IsEnabled = Game.CurrentPlayer is not null && (IsLocalGame || Game.CurrentPlayer == Connection.Color);
+
+            OnPlayerChange?.Invoke(this, new(null, Game.CurrentPlayer));
 
             Invalidate();
-        }
+        });
     }
 
     // Translate a point on the View to a space on the board
@@ -192,14 +199,14 @@ public class BoardView : GraphicsView, IDrawable
 
         async Task MakeMove((int X, int Y) startLoc, (int X, int Y) endLoc, (int X, int Y)? midLoc = null, bool promote = false)
         {
-            if (Connection is not null)
+            if (!IsLocalGame)
             {
                 await Connection.RequestMove(startLoc, endLoc, midLoc, promote);
                 IsEnabled = false;
                 return;
             }
 
-            PlayerColor prevPlayer = Game.CurrentPlayer.Value;
+            var prevPlayer = Game.CurrentPlayer;
 
             Game.MakeMove(startLoc, endLoc, midLoc, promote);
 
@@ -214,7 +221,7 @@ public class BoardView : GraphicsView, IDrawable
             }
 
             if (prevPlayer != Game.CurrentPlayer)
-                OnPlayerChange?.Invoke(this, new PlayerChangeEventArgs(prevPlayer, Game.CurrentPlayer));
+                OnPlayerChange?.Invoke(this, new(prevPlayer, Game.CurrentPlayer));
         }
     }
 

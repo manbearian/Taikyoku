@@ -9,7 +9,6 @@
         <Label Grid.Row="1" x:Name="subtitleLabel" Text="Piece info" FontSize="Body" TextColor="Black"/>
         <shogi:PieceMoveView Grid.Row="2" x:Name="moveView" 
                              HeightRequest="{Binding Source={RelativeSource Self}, Path=WidthRequest}"
-                             Game="{Binding Source={x:Reference this}, Path=Game}"
                              PieceId="{Binding Source={x:Reference this}, Path=PieceId}" 
                              BackgroundColor="AntiqueWhite" />
         <Label Grid.Row="3" x:Name="promoLabel" Text="Promotoes to" FontSize="Body" TextColor="Black"/>
@@ -17,7 +16,7 @@
         <Label Grid.Row="5" x:Name="promoSubtitleLabel" Text="Piece info" FontSize="Caption" TextColor="Gray"/>
         <shogi:PieceMoveView Grid.Row="6" x:Name="promoView"
                              HeightRequest="{Binding Source={RelativeSource Self}, Path=WidthRequest}"
-                             Game="{Binding Source={x:Reference this}, Path=Game}" BackgroundColor="LightGray" />
+                             BackgroundColor="LightGray" />
     </Grid>
 
 </ContentView>
