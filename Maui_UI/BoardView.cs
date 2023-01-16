@@ -3,16 +3,6 @@ using ShogiEngine;
 
 namespace MauiUI;
 
-public class PlayerChangeEventArgs : EventArgs
-{
-    public PlayerColor? OldPlayer { get; }
-
-    public PlayerColor? NewPlayer { get; }
-
-    public PlayerChangeEventArgs(PlayerColor? oldPlayer, PlayerColor? newPlayer) => (OldPlayer, NewPlayer) = (oldPlayer, newPlayer);
-}
-
-
 public class SelectionChangedEventArgs : EventArgs
 {
     public Piece? Piece { get; }
@@ -24,13 +14,6 @@ public class SelectionChangedEventArgs : EventArgs
 
 public class BoardView : GraphicsView, IDrawable
 {
-    //
-    // Events
-    //
-
-    public delegate void PlayerChangeHandler(object sender, PlayerChangeEventArgs e);
-    public event PlayerChangeHandler? OnPlayerChange;
-
     //
     // Events
     //
@@ -52,14 +35,18 @@ public class BoardView : GraphicsView, IDrawable
     }
 
     //
-    // Standard Properties
+    // Private Redirected Properties
     //
 
-    private static TaikyokuShogi Game { get => MainPage.Default.Game; }
+    private static GameManager GameManager { get => MainPage.Default.GameManager; }
 
-    private static Connection Connection{ get => MainPage.Default.Connection; }
+    private static TaikyokuShogi Game { get => MainPage.Default.GameManager.Game; }
 
-    private static bool IsLocalGame { get => MainPage.Default.IsLocalGame; }
+    private static Connection Connection { get => MainPage.Default.Connection; }
+
+    //
+    // Standard Properties
+    //
 
     public int BoardWidth { get => TaikyokuShogi.BoardWidth; }
 
@@ -85,36 +72,18 @@ public class BoardView : GraphicsView, IDrawable
         GestureRecognizers.Add(tapRecognizer);
         EndInteraction += BoardView_EndInteraction;
 
-        Loaded += BoardView_Loaded;
-        Unloaded += BoardView_Unloaded;
+        Loaded += (s, e) => GameManager.OnGameChange += GameManager_OnGameChange;
+        Unloaded += (s, e) => GameManager.OnGameChange -= GameManager_OnGameChange;
     }
 
-    private void BoardView_Unloaded(object? sender, EventArgs e)
-    {
-        Connection.OnReceiveGameUpdate -= Connection_OnReceiveGameUpdate;
-    }
-
-    private void BoardView_Loaded(object? sender, EventArgs e)
-    {
-        Connection.OnReceiveGameUpdate += Connection_OnReceiveGameUpdate;
-    }
-
-    private void Connection_OnReceiveGameUpdate(object sender, ReceiveGameUpdateEventArgs e)
-    {
-        Refresh();
-    }
+    private void GameManager_OnGameChange(object sender, GameChangeEventArgs e) =>
+        Dispatcher.Dispatch(() => Refresh());
 
     // Invoke when externally updating the underlying game state
     public void Refresh()
     {
-        Dispatcher.Dispatch(() =>
-        {
-            IsEnabled = Game.CurrentPlayer is not null && (IsLocalGame || Game.CurrentPlayer == Connection.Color);
-
-            OnPlayerChange?.Invoke(this, new(null, Game.CurrentPlayer));
-
-            Invalidate();
-        });
+        IsEnabled = Game.CurrentPlayer is not null && (GameManager.IsLocalGame || Game.CurrentPlayer == Connection.Color);
+        Invalidate();
     }
 
     // Translate a point on the View to a space on the board
@@ -174,11 +143,10 @@ public class BoardView : GraphicsView, IDrawable
 
                         if (!promote && legalMoves.Any(move => move.Promotion == PromotionType.May))
                         {
-                            // TOOD: show a better dialog
                             promote = await MainPage.Default.DisplayAlert("Pormotion?", "Promte this piece?", "Yes", "No");
                         }
 
-                        await MakeMove(firstLoc.Value, loc.Value, secondLoc, promote);
+                        await GameManager.MakeMove(firstLoc.Value, loc.Value, secondLoc, promote);
                     }
                     else
                     {
@@ -196,33 +164,6 @@ public class BoardView : GraphicsView, IDrawable
         SelectedLoc2 = newSecondLoc;
         OnSelectionChanged?.Invoke(this, new SelectionChangedEventArgs(newFirstLoc, newFirstLoc is null ? null : Game.GetPiece(newFirstLoc.Value)));
         Invalidate();
-
-        async Task MakeMove((int X, int Y) startLoc, (int X, int Y) endLoc, (int X, int Y)? midLoc = null, bool promote = false)
-        {
-            if (!IsLocalGame)
-            {
-                await Connection.RequestMove(startLoc, endLoc, midLoc, promote);
-                IsEnabled = false;
-                return;
-            }
-
-            var prevPlayer = Game.CurrentPlayer;
-
-            Game.MakeMove(startLoc, endLoc, midLoc, promote);
-
-            if (Game.Ending is not null)
-            {
-                IsEnabled = false;
-
-                Invalidate();
-
-                // TOOD: UPDATE UI EVENTS
-                //OnGameEnd?.Invoke(this, new GameEndEventArgs(Game.Ending.Value, Game.Winner));
-            }
-
-            if (prevPlayer != Game.CurrentPlayer)
-                OnPlayerChange?.Invoke(this, new(prevPlayer, Game.CurrentPlayer));
-        }
     }
 
     private void BoardView_EndInteraction(object? sender, TouchEventArgs e) =>

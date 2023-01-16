@@ -22,6 +22,8 @@ public class PieceMoveView : ContentView
     // Internal Properties
     //
 
+    private static TaikyokuShogi Game { get => MainPage.Default.GameManager.Game; }
+
     private float CellSize { get => (float)Width / 10; }
     
     private Grid MoveGrid { get; } = new();
@@ -51,7 +53,7 @@ public class PieceMoveView : ContentView
     //   ○ |   | ○
     private void UpdateMoveGrid()
     {
-        var moves = MainPage.Default.Game.GetMovement(PieceId);
+        var moves = Game.GetMovement(PieceId);
 
         //
         // Compute the grid layout

@@ -39,15 +39,9 @@ public partial class MainPage : ContentPage
     // The one and only MainPage
     public static MainPage Default { get; } = new();
 
-    public Connection Connection { get; } = new();
+    internal Connection Connection { get; } = new();
 
-    public TaikyokuShogi Game { get; private set; } = new TaikyokuShogi();
-
-    public Guid? LocalGameId { get; private set; }
-
-    public string OpponentName { get; private set; } = string.Empty;
-
-    public bool IsLocalGame { get; private set; }
+    internal GameManager GameManager { get; } = new();
 
     public MainPage()
     {
@@ -63,7 +57,7 @@ public partial class MainPage : ContentPage
     private async void MainPage_Loaded(object? sender, EventArgs e)
     {
         Connection.OnReceiveGameStart += Connection_OnReceiveGameStart;
-        Connection.OnReceiveGameUpdate += Connection_OnReceiveGameUpdate;
+        GameManager.IsListening = true;
 
         try
         {
@@ -80,7 +74,7 @@ public partial class MainPage : ContentPage
     private void MainPage_Unloaded(object? sender, EventArgs e)
     {
         Connection.OnReceiveGameStart -= Connection_OnReceiveGameStart;
-        Connection.OnReceiveGameUpdate -= Connection_OnReceiveGameUpdate;
+        GameManager.IsListening = false;
     }
 
     private async void NewLocalGameBtn_Clicked(object sender, EventArgs e) =>
@@ -95,19 +89,13 @@ public partial class MainPage : ContentPage
     private void Connection_OnReceiveGameStart(object sender, ReceiveGameStartEventArgs e)
     {
         SettingsManager.NetworkGameManager.SaveGame(Connection.GameId, Connection.PlayerId, Connection.Color);
-        OpponentName = (Connection.Color == PlayerColor.Black ? e.GameInfo.WhiteName : e.GameInfo.BlackName) ?? throw new Exception("Opponent name is null");
-        (Game, LocalGameId, IsLocalGame) = (e.Game, null, false);
+        var opponentName = (Connection.Color == PlayerColor.Black ? e.GameInfo.WhiteName : e.GameInfo.BlackName) ?? throw new Exception("Opponent name is null");
+        GameManager.SetNetworkGame(e.Game, opponentName);
         Dispatcher.Dispatch(() =>
         {
             Navigation.PushModalAsync(BoardPage.Default, true);
             MainPageMode = MainPageMode.Home;
         });
-    }
-
-    private void Connection_OnReceiveGameUpdate(object sender, ReceiveGameUpdateEventArgs e)
-    {
-        Contract.Assert(!IsLocalGame);
-        Game = e.Game;
     }
 
     // TODO: validate user name (not empty, not too long, etc.)
@@ -119,7 +107,7 @@ public partial class MainPage : ContentPage
 
     public async Task LaunchGame(TaikyokuShogi game, Guid? gameId = null)
     {
-        (Game, LocalGameId, IsLocalGame) = (game, gameId, true);
+        GameManager.SetLocalGame(game, gameId);
         await Navigation.PushModalAsync(BoardPage.Default, true);
     }
 

@@ -8,26 +8,31 @@ namespace MauiUI;
 public partial class BoardPage : ContentPage
 {
     //
-    // Non-Bindable Properties
+    // Private Wrapper Properties
     //
 
-    private static TaikyokuShogi Game { get => MainPage.Default.Game; }
+    private static PlayerColor MyColor { get => MainPage.Default.Connection.Color; }
 
-    private static Connection Connection { get => MainPage.Default.Connection; }
+    private static GameManager GameManager { get => MainPage.Default.GameManager; }
+    
+    private static TaikyokuShogi Game { get => MainPage.Default.GameManager.Game; }
 
-    private static Guid? LocalGameId { get => MainPage.Default.LocalGameId; }
+    private static Guid? LocalGameId { get => MainPage.Default.GameManager.LocalGameId; }
 
-    private static string? OpponentName { get => MainPage.Default.OpponentName; }
+    private static string? OpponentName { get => MainPage.Default.GameManager.OpponentName; }
 
-    private static bool IsLocalGame { get => MainPage.Default.IsLocalGame; }
+    private static bool IsLocalGame { get => MainPage.Default.GameManager.IsLocalGame; }
+
+    //
+    // Non-Bindable Properties
+    //
 
     private static bool AutoRotateEnabled { get; set; } = SettingsManager.Default.AutoRotateBoard;
 
     private BoardBorderView[] Panels { get; }
 
-    public static BoardPage Default { get; } = new BoardPage();
+    public static BoardPage Default { get; } = new();
 
-    // Internal constructor called by public constructors
     private BoardPage()
     {
         InitializeComponent();
@@ -37,8 +42,9 @@ public partial class BoardPage : ContentPage
         NavigatedTo += BoardPage_NavigatedTo;
         NavigatingFrom += BoardPage_NavigatingFrom;
 
-        Board.OnPlayerChange += Board_OnPlayerChange;
         Board.OnSelectionChanged += Board_OnSelectionChanged;
+
+        GameManager.OnGameChange += GameManager_OnGameChange; ;
 
         SettingsManager.Default.OnSettingChanged += OnSettingChanged;
     }
@@ -95,8 +101,8 @@ public partial class BoardPage : ContentPage
         }
     }
 
-    private void Board_OnPlayerChange(object sender, PlayerChangeEventArgs e) =>
-        UpdateBorder();
+    private void GameManager_OnGameChange(object sender, GameChangeEventArgs e) =>
+        Dispatcher.Dispatch(() => UpdateBorder());
 
     private async void BackBtn_Clicked(object sender, EventArgs e) =>
         await Navigation.PopModalAsync();
@@ -147,12 +153,12 @@ public partial class BoardPage : ContentPage
         {
             PlayerColor.Black when IsLocalGame => "Black's Turn",
             PlayerColor.White when IsLocalGame => "White's Turn",
-            _ when !IsLocalGame && activePlayer == Connection.Color => "Your Turn",
-            _ when !IsLocalGame && activePlayer == Connection.Color.Opponent() => $"Waiting for {OpponentName} to make a move",
+            _ when !IsLocalGame && activePlayer == MyColor => "Your Turn",
+            _ when !IsLocalGame && activePlayer == MyColor.Opponent() => $"Waiting for {OpponentName} to make a move",
             _ => ""
         };
 
-        bool rotateBoard = (IsLocalGame && AutoRotateEnabled) || (!IsLocalGame && Connection.Color == PlayerColor.White);
+        bool rotateBoard = (IsLocalGame && AutoRotateEnabled) || (!IsLocalGame && MyColor == PlayerColor.White);
         Board.IsRotated = rotateBoard;
         foreach (var panel in Panels)
             panel.IsRotated = rotateBoard;
