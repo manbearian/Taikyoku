@@ -1,0 +1,3 @@
+[submodule "external/CommunityToolkit"]
+	path = external/CommunityToolkit
+	url = https://github.com/CommunityToolkit/Maui.git
