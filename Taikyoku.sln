@@ -5,7 +5,7 @@ VisualStudioVersion = 17.5.33103.201
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WPF_UI", "WPF_UI\WPF_UI.csproj", "{9E4B9B81-6B13-45C4-99F2-31C895DBCCCA}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EngineTest", "EngineTest\EngineTest.csproj", "{A3DFA40E-D491-4F95-A9E8-7BD678ABBD37}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TestEngine", "TestEngine\TestEngine.csproj", "{A3DFA40E-D491-4F95-A9E8-7BD678ABBD37}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ShogiEngine", "ShogiEngine\ShogiEngine.csproj", "{B525EF98-4C3F-4C5F-9E9B-B80ADD604141}"
 EndProject
@@ -15,7 +15,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ShogiComms", "ShogiComms\Sh
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ShogiServerless", "ShogiServerless\ShogiServerless.csproj", "{745B2D4A-2657-4FA5-A523-E0DF8DC1C17B}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ServerTest", "ServerTest\ServerTest.csproj", "{BDAB4654-5AA9-4733-80D2-ABF46F3EA026}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TestServer", "TestServer\TestServer.csproj", "{BDAB4654-5AA9-4733-80D2-ABF46F3EA026}"
 	ProjectSection(ProjectDependencies) = postProject
 		{745B2D4A-2657-4FA5-A523-E0DF8DC1C17B} = {745B2D4A-2657-4FA5-A523-E0DF8DC1C17B}
 	EndProjectSection
