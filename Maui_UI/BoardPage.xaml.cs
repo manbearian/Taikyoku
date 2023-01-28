@@ -82,19 +82,26 @@ public partial class BoardPage : ContentPage
 
     private async void BoardPage_NavigatingFrom(object? sender, NavigatingFromEventArgs e)
     {
-        if (IsLocalGame)
+        if (!IsLocalGame)
+            return;
+
+        var saveGameId = LocalGameId;
+
+        // If the game is still in progress and not yet recorded, ask the user if they want to save it
+        if (saveGameId is null && Game.CurrentPlayer is not null && !Game.BoardStateEquals(new()))
         {
-            var saveGameId = LocalGameId;
-            if (saveGameId is null && !Game.BoardStateEquals(new()))
-            {
-                bool saveGame = await DisplayAlert("Save Game?", "Would you like to save this game?", "Yes", "No");
-                if (saveGame)
-                {
-                    saveGameId = Guid.NewGuid();
-                }
-            }
-            if (saveGameId is not null)
+            bool saveGame = await DisplayAlert("Save Game?", "Would you like to save this game?", "Yes", "No");
+            if (saveGame)
+                saveGameId = Guid.NewGuid();
+        }
+
+        // If the game is being recorded, save the game state (and delete completed games)
+        if (saveGameId is not null)
+        {
+            if (Game.Ending is null)
                 SettingsManager.LocalGameManager.SaveGame(saveGameId.Value, Game);
+            else
+                SettingsManager.LocalGameManager.DeleteGame(saveGameId.Value);
         }
     }
 
