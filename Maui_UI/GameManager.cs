@@ -28,6 +28,8 @@ internal class GameManager
 
     public bool IsLocalGame { get; private set; }
 
+    public PlayerColor? CurrentPlayer { get => Game.CurrentPlayer; }
+
     private static Connection Connection { get => MainPage.Default.Connection; }
 
     public bool IsListening
@@ -48,20 +50,37 @@ internal class GameManager
         }
     }
 
-    public void SetLocalGame(TaikyokuShogi game, Guid? localGameId) =>
+    public void SetLocalGame(TaikyokuShogi game, Guid? localGameId)
+    {
         (Game, LocalGameId, IsLocalGame, OpponentName) = (game, localGameId, true, string.Empty);
+        OnGameChange?.Invoke(this, new GameChangeEventArgs());
+    }
 
-    public void SetNetworkGame(TaikyokuShogi game, string opponentName) =>
+    public void SetNetworkGame(TaikyokuShogi game, string opponentName)
+    {
         (Game, LocalGameId, IsLocalGame, OpponentName) = (game, null, false, opponentName);
- 
+        OnGameChange?.Invoke(this, new GameChangeEventArgs());
+    }
+
     public async Task MakeMove((int X, int Y) startLoc, (int X, int Y) endLoc, (int X, int Y)? midLoc = null, bool promote = false)
     {
-        Contract.Assert(Game is not null);
-
         Game.MakeMove(startLoc, endLoc, midLoc, promote);
         OnGameChange?.Invoke(this, new GameChangeEventArgs());
 
         if (!IsLocalGame)
             await Connection.RequestMove(startLoc, endLoc, midLoc, promote);
+    }
+
+    public async Task Resign()
+    {
+        if (CurrentPlayer is null)
+            return;
+
+        var resigningPlayer = IsLocalGame ? CurrentPlayer.Value : Connection.Color;
+        Game.Resign(resigningPlayer);
+        OnGameChange?.Invoke(this, new GameChangeEventArgs());
+
+        if (!IsLocalGame)
+            await Connection.ResignGame();
     }
 }

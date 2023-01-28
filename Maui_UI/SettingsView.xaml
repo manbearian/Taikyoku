@@ -19,7 +19,7 @@
             </HorizontalStackLayout>
         </VerticalStackLayout>
         <VerticalStackLayout Padding="5,20">
-            <Button Text="Resign" Margin="5" />
+            <Button x:Name="ResignBtn" Text="Resign" Margin="5" Clicked="ResignBtn_Clicked" />
         </VerticalStackLayout>
     </VerticalStackLayout>
 </ContentView>
