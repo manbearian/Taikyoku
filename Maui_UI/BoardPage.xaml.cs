@@ -54,7 +54,7 @@ public partial class BoardPage : ContentPage
         if (e.SettingName == nameof(SettingsManager.AutoRotateBoard))
         {
             AutoRotateEnabled = SettingsManager.Default.AutoRotateBoard;
-            RedrawBorder();
+            RedrawBoardAndBorder();
         }
     }
 
@@ -77,10 +77,8 @@ public partial class BoardPage : ContentPage
         }
     }
 
-    private void BoardPage_NavigatedTo(object? sender, NavigatedToEventArgs e)
-    {
-        RedrawGameBoardAndBorder();
-    }
+    private void BoardPage_NavigatedTo(object? sender, NavigatedToEventArgs e) =>
+        RedrawBoardAndBorder();
 
     private async void BoardPage_NavigatingFrom(object? sender, NavigatingFromEventArgs e)
     {
@@ -101,7 +99,7 @@ public partial class BoardPage : ContentPage
     }
 
     private void GameManager_OnGameChange(object sender, GameChangeEventArgs e) =>
-        Dispatcher.Dispatch(() => RedrawGameBoardAndBorder());
+        Dispatcher.Dispatch(() => RedrawBoardAndBorder());
 
     private async void BackBtn_Clicked(object sender, EventArgs e) =>
         await Navigation.PopModalAsync();
@@ -122,7 +120,7 @@ public partial class BoardPage : ContentPage
         }
     }
 
-    private async Task HideInfoPanel()
+    public async Task HideInfoPanel()
     {
         if (!infoPanel.IsShown)
             return;
@@ -145,13 +143,8 @@ public partial class BoardPage : ContentPage
         await infoPanel.TranslateTo(renderLeft ? 0 : Width - transX, 0);
     }
 
-    private async void RedrawGameBoardAndBorder()
+    private void RedrawBoardAndBorder()
     {
-        Board.Refresh();
-
-        // close the info panel if its open
-        await HideInfoPanel();
-
         var activePlayer = Game.CurrentPlayer;
         StatusLbl.Text = activePlayer switch
         {
@@ -165,17 +158,13 @@ public partial class BoardPage : ContentPage
             _ => ""
         };
 
-        RedrawBorder();
-    }
-
-    private void RedrawBorder()
-    {
-        bool rotateBoard = (IsLocalGame && AutoRotateEnabled) || (!IsLocalGame && MyColor == PlayerColor.White);
+        bool rotateBoard = !IsLocalGame && MyColor == PlayerColor.White;
+        if (IsLocalGame && AutoRotateEnabled)
+            rotateBoard = Game.CurrentPlayer == PlayerColor.White;
         Board.IsRotated = rotateBoard;
         foreach (var panel in Panels)
             panel.IsRotated = rotateBoard;
 
-        var activePlayer = Game.CurrentPlayer;
         foreach (var p in Panels)
         {
             p.BackgroundColor = Colors.Grey;
@@ -188,5 +177,7 @@ public partial class BoardPage : ContentPage
 
             p.Invalidate();
         }
+
+        Board.Refresh();
     }
 }

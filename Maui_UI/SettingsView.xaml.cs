@@ -42,5 +42,6 @@ public partial class SettingsView : ContentView
     {
         Contract.Assert(GameManager.CurrentPlayer is not null);
         await GameManager.Resign();
+        await BoardPage.Default.HideInfoPanel();
     }
 }
