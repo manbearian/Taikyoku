@@ -15,13 +15,13 @@ public partial class BoardPage : ContentPage
 
     private static GameManager GameManager { get => MainPage.Default.GameManager; }
     
-    private static TaikyokuShogi Game { get => MainPage.Default.GameManager.Game; }
+    private static TaikyokuShogi Game { get => GameManager.Game; }
 
-    private static Guid? LocalGameId { get => MainPage.Default.GameManager.LocalGameId; }
+    private static Guid? LocalGameId { get => GameManager.LocalGameId; }
 
-    private static string? OpponentName { get => MainPage.Default.GameManager.OpponentName; }
+    private static string? OpponentName { get => GameManager.OpponentName; }
 
-    private static bool IsLocalGame { get => MainPage.Default.GameManager.IsLocalGame; }
+    private static bool IsLocalGame { get => GameManager.IsLocalGame; }
 
     //
     // Non-Bindable Properties
@@ -54,7 +54,7 @@ public partial class BoardPage : ContentPage
         if (e.SettingName == nameof(SettingsManager.AutoRotateBoard))
         {
             AutoRotateEnabled = SettingsManager.Default.AutoRotateBoard;
-            UpdateBorder();
+            RedrawBorder();
         }
     }
 
@@ -79,8 +79,7 @@ public partial class BoardPage : ContentPage
 
     private void BoardPage_NavigatedTo(object? sender, NavigatedToEventArgs e)
     {
-        UpdateBorder();
-        Board.Refresh();
+        RedrawGameBoardAndBorder();
     }
 
     private async void BoardPage_NavigatingFrom(object? sender, NavigatingFromEventArgs e)
@@ -102,7 +101,7 @@ public partial class BoardPage : ContentPage
     }
 
     private void GameManager_OnGameChange(object sender, GameChangeEventArgs e) =>
-        Dispatcher.Dispatch(() => UpdateBorder());
+        Dispatcher.Dispatch(() => RedrawGameBoardAndBorder());
 
     private async void BackBtn_Clicked(object sender, EventArgs e) =>
         await Navigation.PopModalAsync();
@@ -146,27 +145,47 @@ public partial class BoardPage : ContentPage
         await infoPanel.TranslateTo(renderLeft ? 0 : Width - transX, 0);
     }
 
-    private void UpdateBorder()
+    private async void RedrawGameBoardAndBorder()
     {
+        Board.Refresh();
+
+        // close the info panel if its open
+        await HideInfoPanel();
+
         var activePlayer = Game.CurrentPlayer;
         StatusLbl.Text = activePlayer switch
         {
             PlayerColor.Black when IsLocalGame => "Black's Turn",
             PlayerColor.White when IsLocalGame => "White's Turn",
-            _ when !IsLocalGame && activePlayer == MyColor => "Your Turn",
-            _ when !IsLocalGame && activePlayer == MyColor.Opponent() => $"Waiting for {OpponentName} to make a move",
+            not null when !IsLocalGame && activePlayer == MyColor => "Your Turn",
+            not null when !IsLocalGame && activePlayer == MyColor.Opponent() => $"Waiting for {OpponentName} to make a move",
+            null when IsLocalGame && Game.Winner is not null => $"{Game.Winner} Wins!",
+            null when !IsLocalGame && Game.Winner == MyColor => $"You Won!",
+            null when !IsLocalGame && Game.Winner == MyColor.Opponent() => $"{OpponentName} Won!",
             _ => ""
         };
 
+        RedrawBorder();
+    }
+
+    private void RedrawBorder()
+    {
         bool rotateBoard = (IsLocalGame && AutoRotateEnabled) || (!IsLocalGame && MyColor == PlayerColor.White);
         Board.IsRotated = rotateBoard;
         foreach (var panel in Panels)
             panel.IsRotated = rotateBoard;
 
+        var activePlayer = Game.CurrentPlayer;
         foreach (var p in Panels)
         {
-            p.BackgroundColor = activePlayer == PlayerColor.Black ? Colors.Black : Colors.White;
-            p.TextColor = activePlayer == PlayerColor.Black ? Colors.White : Colors.Black;
+            p.BackgroundColor = Colors.Grey;
+            p.TextColor = Colors.Black;
+            if (activePlayer is not null)
+            {
+                p.BackgroundColor = activePlayer == PlayerColor.Black ? Colors.Black : Colors.White;
+                p.TextColor = activePlayer == PlayerColor.Black ? Colors.White : Colors.Black;
+            }
+
             p.Invalidate();
         }
     }
