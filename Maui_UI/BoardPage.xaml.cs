@@ -99,9 +99,9 @@ public partial class BoardPage : ContentPage
         if (saveGameId is not null)
         {
             if (Game.Ending is null)
-                SettingsManager.LocalGameManager.SaveGame(saveGameId.Value, Game);
+                LocalGamesManager.Default.SaveGame(saveGameId.Value, Game);
             else
-                SettingsManager.LocalGameManager.DeleteGame(saveGameId.Value);
+                LocalGamesManager.Default.DeleteGame(saveGameId.Value);
         }
     }
 

@@ -100,7 +100,7 @@ public partial class MainPage : ContentPage
 
     private void Connection_OnReceiveGameStart(object sender, ReceiveGameStartEventArgs e)
     {
-        SettingsManager.NetworkGameManager.SaveGame(Connection.GameId, Connection.PlayerId, Connection.Color);
+        NetworkGamesManager.Default.SaveGame(Connection.GameId, Connection.PlayerId, Connection.Color);
         var opponentName = (Connection.Color == PlayerColor.Black ? e.GameInfo.WhiteName : e.GameInfo.BlackName) ?? throw new Exception("Opponent name is null");
         GameManager.SetNetworkGame(e.Game, opponentName);
         Dispatcher.Dispatch(() =>

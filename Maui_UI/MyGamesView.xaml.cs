@@ -77,28 +77,31 @@ public partial class MyGamesView : ContentView
 {
     public ObservableCollection<MyGamesListItem> GamesList { get; set; } = new();
 
-    public MyGamesView()
+    private readonly ILocalGamesManager LocalGamesManager;
+ 
+    public MyGamesView() : this (null) { }
+
+    public MyGamesView(ILocalGamesManager? localGamesManager)
     {
         InitializeComponent();
 
-        Loaded += MyGamesView_Loaded;
-        Unloaded += MyGamesView_Unloaded;
+        LocalGamesManager = localGamesManager ?? MauiUI.LocalGamesManager.Default;
+        AddLocalGamesToMyGamesList();
+
+        Loaded += (s, e) =>
+        {
+            LocalGamesManager.OnLocalGameUpdate += LocalGameManager_OnLocalGameUpdate;
+            MainPage.Default.OnNetworkConnected += MainPage_OnNetworkConnected;
+        };
+
+        Unloaded += (s, e) =>
+        {
+            LocalGamesManager.OnLocalGameUpdate -= LocalGameManager_OnLocalGameUpdate;
+            MainPage.Default.OnNetworkConnected -= MainPage_OnNetworkConnected;
+        };
     }
 
-    private async void MyGamesView_Loaded(object? sender, EventArgs e)
-    {
-        await PopulateMyGamesList();
-        SettingsManager.LocalGameManager.OnLocalGameUpdate += LocalGameManager_OnLocalGameUpdate;
-        MainPage.Default.OnNetworkConnected += Default_OnNetworkConnected;
-    }
-
-    private void MyGamesView_Unloaded(object? sender, EventArgs e)
-    {
-        SettingsManager.LocalGameManager.OnLocalGameUpdate -= LocalGameManager_OnLocalGameUpdate;
-        MainPage.Default.OnNetworkConnected -= Default_OnNetworkConnected;
-    }
-
-    private async void Default_OnNetworkConnected(object sender, EventArgs e) =>
+    private async void MainPage_OnNetworkConnected(object sender, EventArgs e) =>
         await AddNetworkGamesToMyGamesList();
 
     private void LocalGameManager_OnLocalGameUpdate(object sender, LocalGameUpdateEventArgs e)
@@ -123,7 +126,7 @@ public partial class MyGamesView : ContentView
 
     private void AddLocalGamesToMyGamesList()
     {
-        var localGameList = LocalGameManager.LocalGameList.OrderByDescending(g => g.lastPlayed);
+        var localGameList = LocalGamesManager.LocalGameList.OrderByDescending(g => g.lastPlayed);
         foreach (var (gameId, lastPlayed, game) in localGameList)
         {
             GamesList.Add(MyGamesListItem.FromLocalGame(gameId, lastPlayed, game));
@@ -134,14 +137,14 @@ public partial class MyGamesView : ContentView
     {
         try
         {
-            var networkGameList = NetworkGameManager.NetworkGameList;
+            var networkGameList = NetworkGamesManager.NetworkGameList;
             var requestInfos = networkGameList.Select(i => new NetworkGameRequest(i.GameId, i.PlayerId));
             var clientGameInfos = await MainPage.Default.Connection.RequestGameInfo(requestInfos);
             foreach (var (gameId, userId, myColor) in networkGameList)
             {
                 var gameInfo = clientGameInfos.FirstOrDefault(g => g?.GameId == gameId, null);
                 if (gameInfo is null)
-                    SettingsManager.NetworkGameManager.DeleteGame(gameId, userId);
+                    NetworkGamesManager.Default.DeleteGame(gameId, userId);
                 else
                     InsertSorted(MyGamesListItem.FromNetworkGame(gameInfo, userId, myColor));
             }
@@ -171,13 +174,7 @@ public partial class MyGamesView : ContentView
         }
     }
 
-    private async Task PopulateMyGamesList()
-    {
-        AddLocalGamesToMyGamesList();
-        await AddNetworkGamesToMyGamesList();
-    }
-
-    private async void ListView_ItemTapped(object sender, ItemTappedEventArgs e)
+    private async void GameListView_ItemTapped(object sender, ItemTappedEventArgs e)
     {
         var item = (MyGamesListItem)e.Item;
         if (item is null)
@@ -211,7 +208,7 @@ public partial class MyGamesView : ContentView
         bool confirmed = await parentPage.DisplayAlert("Delete Game?", "Would you like to delete this game?", "Yes", "No");
         if (confirmed)
         {
-            SettingsManager.LocalGameManager.DeleteGame(item.GameId);
+            LocalGamesManager.DeleteGame(item.GameId);
         }
     }
 }

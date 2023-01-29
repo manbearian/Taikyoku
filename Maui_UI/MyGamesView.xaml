@@ -8,15 +8,15 @@
            BorderColor="Silver" BackgroundColor="White"
            MaximumWidthRequest="550" Padding="5">
         <ListView
-            x:Name="listView"
+            x:Name="GameListView"
             WidthRequest="{Binding Source={x:Reference frame}, Path=Width}"
             SelectionMode="None"
-            ItemTapped="ListView_ItemTapped"
+            ItemTapped="GameListView_ItemTapped"
             ItemsSource="{Binding Source={x:Reference this}, Path=GamesList}" >
             <ListView.ItemTemplate>
                 <DataTemplate x:DataType="shogi:MyGamesListItem">
                     <ViewCell>
-                        <Grid WidthRequest="{Binding Source={x:Reference listView}, Path=Width}">
+                        <Grid WidthRequest="{Binding Source={x:Reference GameListView}, Path=Width}">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="130" />
                                 <ColumnDefinition Width="90" />

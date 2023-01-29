@@ -1,8 +1,6 @@
 ﻿
 using System.Text.Json;
-using System.Text.Json.Serialization;
-using Microsoft.Maui.Storage;
-using ShogiClient;
+
 using ShogiEngine;
 
 namespace MauiUI;
@@ -25,10 +23,21 @@ public class LocalGameUpdateEventArgs : EventArgs
     public LocalGameUpdateEventArgs(Guid gameId, TaikyokuShogi? game, DateTime lastMove, LocalGameUpdate update) => (GameId, Game, LastMove, Update) = (gameId, game, lastMove, update);
 }
 
-public class LocalGameManager
+public interface ILocalGamesManager
 {
-    public delegate void LocalGameUpdateHandler(object sender, LocalGameUpdateEventArgs e);
-    public event LocalGameUpdateHandler? OnLocalGameUpdate;
+    delegate void LocalGameUpdateHandler(object sender, LocalGameUpdateEventArgs e);
+    event LocalGameUpdateHandler? OnLocalGameUpdate;
+
+    void SaveGame(Guid gameId, TaikyokuShogi game);
+    void DeleteGame(Guid gameId);
+    IEnumerable<(Guid GameId, DateTime lastPlayed, TaikyokuShogi Game)> LocalGameList { get; }
+}
+
+public class LocalGamesManager : ILocalGamesManager
+{
+    public static LocalGamesManager Default { get; } = new();
+
+    public event ILocalGamesManager.LocalGameUpdateHandler? OnLocalGameUpdate;
 
     private static string MakeFileName(Guid gameId) =>
         Path.Combine(FileSystem.Current.CacheDirectory, gameId.ToString() + ".shogi");
@@ -60,7 +69,7 @@ public class LocalGameManager
         OnLocalGameUpdate?.Invoke(this, new LocalGameUpdateEventArgs(gameId, null, DateTime.UtcNow, LocalGameUpdate.Remove));
     }
 
-    public static IEnumerable<(Guid GameId, DateTime lastPlayed, TaikyokuShogi Game)> LocalGameList
+    public IEnumerable<(Guid GameId, DateTime lastPlayed, TaikyokuShogi Game)> LocalGameList
     {
         get
         {
@@ -82,8 +91,10 @@ public class LocalGameManager
         }
     }
 }
-public class NetworkGameManager
+public class NetworkGamesManager
 {
+    public static NetworkGamesManager Default { get; } = new();
+    
     static readonly JsonSerializerOptions serializationOptions = new() { IncludeFields = true };
 
     public void SaveGame(Guid gameId, Guid playerId, PlayerColor myColor)
@@ -150,8 +161,4 @@ internal class SettingsManager
             OnSettingChanged?.Invoke(this, new SettingChangedEventArgs(nameof(AutoRotateBoard)));
         }
     }
-
-    public static LocalGameManager LocalGameManager { get; } = new();
-
-    public static NetworkGameManager NetworkGameManager { get; } = new();
 }
