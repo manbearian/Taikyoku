@@ -77,17 +77,21 @@ public partial class MyGamesView : ContentView
 {
     public ObservableCollection<MyGamesListItem> GamesList { get; set; } = new();
 
-    private readonly ILocalGamesManager LocalGamesManager;
- 
-    public MyGamesView() : this (null) { }
+    private readonly ILocalGameSaver LocalGameSaver;
 
-    public MyGamesView(ILocalGamesManager? localGamesManager)
+    private readonly INetworkGameSaver NetworkGameSaver;
+
+    public MyGamesView() : this (null, null) { }
+
+    public MyGamesView(ILocalGameSaver? localGameSaver, INetworkGameSaver? networkGameSaver)
     {
         InitializeComponent();
 
-        LocalGamesManager = localGamesManager ?? MauiUI.LocalGamesManager.Default;
+        LocalGameSaver = localGameSaver ?? MauiUI.LocalGameSaver.Default;
+        NetworkGameSaver = networkGameSaver ?? MauiUI.NetworkGameSaver.Default;
+
         AddLocalGamesToMyGamesList();
-        LocalGamesManager.OnLocalGameUpdate += LocalGameManager_OnLocalGameUpdate;
+        LocalGameSaver.OnLocalGameUpdate += LocalGameManager_OnLocalGameUpdate;
 
         Loaded += (s, e) =>
         {
@@ -102,7 +106,7 @@ public partial class MyGamesView : ContentView
     
     ~MyGamesView()
     {
-        LocalGamesManager.OnLocalGameUpdate -= LocalGameManager_OnLocalGameUpdate;
+        LocalGameSaver.OnLocalGameUpdate -= LocalGameManager_OnLocalGameUpdate;
     }
 
     private async void MainPage_OnNetworkConnected(object sender, EventArgs e) =>
@@ -138,7 +142,7 @@ public partial class MyGamesView : ContentView
 
     private void AddLocalGamesToMyGamesList()
     {
-        var localGameList = LocalGamesManager.LocalGameList.OrderByDescending(g => g.lastPlayed);
+        var localGameList = LocalGameSaver.LocalGameList.OrderByDescending(g => g.lastPlayed);
         foreach (var (gameId, lastPlayed, game) in localGameList)
         {
             GamesList.Add(MyGamesListItem.FromLocalGame(gameId, lastPlayed, game));
@@ -149,14 +153,14 @@ public partial class MyGamesView : ContentView
     {
         try
         {
-            var networkGameList = NetworkGamesManager.NetworkGameList;
+            var networkGameList = NetworkGameSaver.NetworkGameList;
             var requestInfos = networkGameList.Select(i => new NetworkGameRequest(i.GameId, i.PlayerId));
             var clientGameInfos = await MainPage.Default.Connection.RequestGameInfo(requestInfos);
             foreach (var (gameId, userId, myColor) in networkGameList)
             {
                 var gameInfo = clientGameInfos.FirstOrDefault(g => g?.GameId == gameId, null);
                 if (gameInfo is null)
-                    NetworkGamesManager.Default.DeleteGame(gameId, userId);
+                    NetworkGameSaver.DeleteGame(gameId, userId);
                 else
                     InsertSorted(MyGamesListItem.FromNetworkGame(gameInfo, userId, myColor));
             }
@@ -219,7 +223,7 @@ public partial class MyGamesView : ContentView
         bool confirmed = await parentPage.DisplayAlert("Delete Game?", "Would you like to delete this game?", "Yes", "No");
         if (confirmed)
         {
-            LocalGamesManager.DeleteGame(item.GameId);
+            LocalGameSaver.DeleteGame(item.GameId);
         }
     }
 }

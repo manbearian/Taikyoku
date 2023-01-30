@@ -10,7 +10,7 @@ static class MockGuid
     public static Guid NewGuid(int id) => Guid.Parse($"00000000-0000-0000-0000-{id:000000000000}");
 }
 
-class MockLocalGamesManager : ILocalGamesManager
+class MockLocalGamesManager : ILocalGameSaver
 {
     public List<(Guid GameId, DateTime lastPlayed, TaikyokuShogi Game)> LocalGames = new();
 
@@ -18,7 +18,7 @@ class MockLocalGamesManager : ILocalGamesManager
 
     public MockLocalGamesManager() { }
 
-    public event ILocalGamesManager.LocalGameUpdateHandler? OnLocalGameUpdate;
+    public event ILocalGameSaver.LocalGameUpdateHandler? OnLocalGameUpdate;
 
     public void SaveGame(Guid gameId, TaikyokuShogi game)
     {
@@ -50,9 +50,9 @@ public class MyGamesViewTests : BaseTest
     [Fact]
     public void TestConstruction()
     {
-        var localGamesManager = new MockLocalGamesManager();
+        var localGameSaver = new MockLocalGamesManager();
 
-        var x = new MyGamesView(localGamesManager);
+        var x = new MyGamesView(localGameSaver);
 
         var gameListView = x.FindByName<ListView>("GameListView");
         Assert.NotNull(gameListView);
@@ -76,12 +76,12 @@ public class MyGamesViewTests : BaseTest
                 (MockGuid.NewGuid(0), DateTime.FromBinary(20000), new TaikyokuShogi())
             };
 
-        var localGamesManager = new MockLocalGamesManager()
+        var localGameSaver = new MockLocalGamesManager()
         {
             LocalGames = localGames
         };
 
-        var x = new MyGamesView(localGamesManager);
+        var x = new MyGamesView(localGameSaver);
 
         var gameListView = x.FindByName<ListView>("GameListView");
         Assert.NotNull(gameListView);
@@ -124,24 +124,24 @@ public class MyGamesViewTests : BaseTest
                 (MockGuid.NewGuid(5), DateTime.FromBinary(500), new TaikyokuShogi())
             };
 
-        var localGamesManager = new MockLocalGamesManager()
+        var localGameSaver = new MockLocalGamesManager()
         {
             LocalGames = localGames
         };
 
-        var x = new MyGamesView(localGamesManager);
+        var x = new MyGamesView(localGameSaver);
         Assert.Equal(
             x.GamesList.Select(gameInfo => gameInfo.GameId),
             new List<Guid> { MockGuid.NewGuid(5), MockGuid.NewGuid(3), MockGuid.NewGuid(1) }
             );
-        localGamesManager.MockNow = DateTime.FromBinary(600);
-        localGamesManager.SaveGame(MockGuid.NewGuid(6), new TaikyokuShogi());
-        localGamesManager.MockNow = DateTime.FromBinary(400);
-        localGamesManager.SaveGame(MockGuid.NewGuid(4), new TaikyokuShogi());
-        localGamesManager.MockNow = DateTime.FromBinary(200);
-        localGamesManager.SaveGame(MockGuid.NewGuid(2), new TaikyokuShogi());
-        localGamesManager.MockNow = DateTime.FromBinary(0);
-        localGamesManager.SaveGame(MockGuid.NewGuid(0), new TaikyokuShogi());
+        localGameSaver.MockNow = DateTime.FromBinary(600);
+        localGameSaver.SaveGame(MockGuid.NewGuid(6), new TaikyokuShogi());
+        localGameSaver.MockNow = DateTime.FromBinary(400);
+        localGameSaver.SaveGame(MockGuid.NewGuid(4), new TaikyokuShogi());
+        localGameSaver.MockNow = DateTime.FromBinary(200);
+        localGameSaver.SaveGame(MockGuid.NewGuid(2), new TaikyokuShogi());
+        localGameSaver.MockNow = DateTime.FromBinary(0);
+        localGameSaver.SaveGame(MockGuid.NewGuid(0), new TaikyokuShogi());
         Assert.Equal(
             x.GamesList.Select(gameInfo => gameInfo.GameId),
             new List<Guid> { MockGuid.NewGuid(6), MockGuid.NewGuid(5), MockGuid.NewGuid(4), MockGuid.NewGuid(3), MockGuid.NewGuid(2), MockGuid.NewGuid(1), MockGuid.NewGuid(0) }
@@ -159,23 +159,23 @@ public class MyGamesViewTests : BaseTest
                 (MockGuid.NewGuid(5), DateTime.FromBinary(500), new TaikyokuShogi())
             };
 
-        var localGamesManager = new MockLocalGamesManager()
+        var localGameSaver = new MockLocalGamesManager()
         {
             LocalGames = localGames
         };
 
-        var x = new MyGamesView(localGamesManager);
+        var x = new MyGamesView(localGameSaver);
         Assert.Equal(
             x.GamesList.Select(gameInfo => gameInfo.GameId),
             new List<Guid> { MockGuid.NewGuid(5), MockGuid.NewGuid(3), MockGuid.NewGuid(1) }
             );
 
-        localGamesManager.MockNow = DateTime.FromBinary(600);
-        localGamesManager.SaveGame(MockGuid.NewGuid(5), new TaikyokuShogi());
-        localGamesManager.MockNow = DateTime.FromBinary(601);
-        localGamesManager.SaveGame(MockGuid.NewGuid(3), new TaikyokuShogi());
-        localGamesManager.MockNow = DateTime.FromBinary(602);
-        localGamesManager.SaveGame(MockGuid.NewGuid(1), new TaikyokuShogi());
+        localGameSaver.MockNow = DateTime.FromBinary(600);
+        localGameSaver.SaveGame(MockGuid.NewGuid(5), new TaikyokuShogi());
+        localGameSaver.MockNow = DateTime.FromBinary(601);
+        localGameSaver.SaveGame(MockGuid.NewGuid(3), new TaikyokuShogi());
+        localGameSaver.MockNow = DateTime.FromBinary(602);
+        localGameSaver.SaveGame(MockGuid.NewGuid(1), new TaikyokuShogi());
 
         Assert.Equal(
             x.GamesList.Select(gameInfo => gameInfo.GameId),
@@ -194,19 +194,19 @@ public class MyGamesViewTests : BaseTest
                 (MockGuid.NewGuid(5), DateTime.FromBinary(500), new TaikyokuShogi())
             };
 
-        var localGamesManager = new MockLocalGamesManager()
+        var localGameSaver = new MockLocalGamesManager()
         {
             LocalGames = localGames
         };
 
-        var x = new MyGamesView(localGamesManager);
+        var x = new MyGamesView(localGameSaver);
         Assert.Equal(
             x.GamesList.Select(gameInfo => gameInfo.GameId),
             new List<Guid> { MockGuid.NewGuid(5), MockGuid.NewGuid(3), MockGuid.NewGuid(1) }
             );
 
-        localGamesManager.DeleteGame(MockGuid.NewGuid(1));
-        localGamesManager.DeleteGame(MockGuid.NewGuid(5));
+        localGameSaver.DeleteGame(MockGuid.NewGuid(1));
+        localGameSaver.DeleteGame(MockGuid.NewGuid(5));
 
         Assert.Equal(
             x.GamesList.Select(gameInfo => gameInfo.GameId),
