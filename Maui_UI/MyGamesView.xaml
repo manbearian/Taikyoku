@@ -27,10 +27,10 @@
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="50" />
                             </Grid.RowDefinitions>
-                            <Label Grid.Column="0" TextColor="Black" Text="{Binding OpponentName}" HorizontalTextAlignment="Start" VerticalTextAlignment="Center"/>
-                            <Label Grid.Column="1" TextColor="Black" Text="{Binding Status}" HorizontalTextAlignment="Start" VerticalTextAlignment="Center"/>
-                            <Label Grid.Column="2" TextColor="Black" Text="{Binding LastMove}" HorizontalTextAlignment="Start" VerticalTextAlignment="Center"/>
-                            <Label Grid.Column="3" TextColor="Black" Text="{Binding TurnCount}" HorizontalTextAlignment="Center" VerticalTextAlignment="Center"/>
+                            <Label x:Name="NameLbl" Grid.Column="0" TextColor="Black" Text="{Binding OpponentName}" HorizontalTextAlignment="Start" VerticalTextAlignment="Center"/>
+                            <Label x:Name="StatusLbl" Grid.Column="1" TextColor="Black" Text="{Binding Status}" HorizontalTextAlignment="Start" VerticalTextAlignment="Center"/>
+                            <Label x:Name="LastMoveLbl" Grid.Column="2" TextColor="Black" Text="{Binding LastMove}" HorizontalTextAlignment="Start" VerticalTextAlignment="Center"/>
+                            <Label x:Name="TurnCountLbl" Grid.Column="3" TextColor="Black" Text="{Binding TurnCount}" HorizontalTextAlignment="Center" VerticalTextAlignment="Center"/>
                             <ImageButton Grid.Column="4" Source="trash.png" Clicked="DeleteBtn_Clicked" HeightRequest="20" IsVisible="{Binding IsLocal}" />
                         </Grid>
                     </ViewCell>

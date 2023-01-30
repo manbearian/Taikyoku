@@ -87,18 +87,22 @@ public partial class MyGamesView : ContentView
 
         LocalGamesManager = localGamesManager ?? MauiUI.LocalGamesManager.Default;
         AddLocalGamesToMyGamesList();
+        LocalGamesManager.OnLocalGameUpdate += LocalGameManager_OnLocalGameUpdate;
 
         Loaded += (s, e) =>
         {
-            LocalGamesManager.OnLocalGameUpdate += LocalGameManager_OnLocalGameUpdate;
             MainPage.Default.OnNetworkConnected += MainPage_OnNetworkConnected;
         };
 
         Unloaded += (s, e) =>
         {
-            LocalGamesManager.OnLocalGameUpdate -= LocalGameManager_OnLocalGameUpdate;
             MainPage.Default.OnNetworkConnected -= MainPage_OnNetworkConnected;
         };
+    }
+    
+    ~MyGamesView()
+    {
+        LocalGamesManager.OnLocalGameUpdate -= LocalGameManager_OnLocalGameUpdate;
     }
 
     private async void MainPage_OnNetworkConnected(object sender, EventArgs e) =>
@@ -107,7 +111,10 @@ public partial class MyGamesView : ContentView
     private void LocalGameManager_OnLocalGameUpdate(object sender, LocalGameUpdateEventArgs e)
     {
         if (e.Update == LocalGameUpdate.Add)
-            GamesList.Insert(0, MyGamesListItem.FromLocalGame(e.GameId, e.LastMove, e.Game!));
+        {
+            InsertSorted(MyGamesListItem.FromLocalGame(e.GameId, e.LastMove, e.Game!));
+            return;
+        }
 
         for (int i = 0; i < GamesList.Count; i++)
         {
@@ -116,7 +123,12 @@ public partial class MyGamesView : ContentView
                 if (e.Update == LocalGameUpdate.Remove)
                     GamesList.RemoveAt(i);
                 else if (e.Update == LocalGameUpdate.Update)
-                    GamesList[i] = MyGamesListItem.FromLocalGame(e.GameId, e.LastMove, e.Game!);
+                {
+                    GamesList.RemoveAt(i);
+                    InsertSorted(MyGamesListItem.FromLocalGame(e.GameId, e.LastMove, e.Game!));
+                }
+                else
+                    throw new Exception("Unknown update type");
                 return;
             }
         }
@@ -154,23 +166,22 @@ public partial class MyGamesView : ContentView
             // TOOD: retry server communications later???
             // TODO: let the user know that network connection is down
         }
+    }
 
-        void InsertSorted(MyGamesListItem item)
+    void InsertSorted(MyGamesListItem item)
+    {
+        GamesList.Add(item);
+
+        // Inserting at the head of the list seems to have a bug that causes the ItemList
+        // to duplicate the inesrted item and not display other items, so do this insert-at-end
+        // and swap dance.
+        for (int i = 0; i < GamesList.Count; i++)
         {
-            GamesList.Add(item);
-
-            // Inserting at the head of the list seems to have a bug that causes the ItemList
-            // to duplicate the inesrted item and not display other items, so do this insert-at-end
-            // and swap dance.
-            for (int i = 0; i < GamesList.Count; i++)
+            if (GamesList[i].LastMoveOn < item.LastMoveOn)
             {
-                if (GamesList[i].LastMoveOn < item.LastMoveOn)
-                {
-                    GamesList.Move(GamesList.Count - 1, i);
-                    return;
-                }
+                GamesList.Move(GamesList.Count - 1, i);
+                return;
             }
-
         }
     }
 
