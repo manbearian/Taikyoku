@@ -76,7 +76,7 @@ public class MyGamesListItem
 public partial class MyGamesView : ContentView
 {
     //
-    // Bindabe Proprerties
+    // Bindable Proprerties
     //
 
     public static readonly BindableProperty ConnectionProperty = BindableProperty.Create(nameof(Connection), typeof(Connection), typeof(MyGamesView), null, BindingMode.OneWay, propertyChanged: OnConnectionChanged);
@@ -137,15 +137,18 @@ public partial class MyGamesView : ContentView
         {
             if (GamesList[i].GameId == e.GameId)
             {
-                if (e.Update == LocalGameUpdate.Remove)
-                    GamesList.RemoveAt(i);
-                else if (e.Update == LocalGameUpdate.Update)
+                switch(e.Update)
                 {
-                    GamesList.RemoveAt(i);
-                    InsertSorted(MyGamesListItem.FromLocalGame(e.GameId, e.LastMove, e.Game!));
+                    case LocalGameUpdate.Remove:
+                        GamesList.RemoveAt(i);
+                        break;
+                    case LocalGameUpdate.Update:
+                        GamesList.RemoveAt(i);
+                        InsertSorted(MyGamesListItem.FromLocalGame(e.GameId, e.LastMove, e.Game!));
+                        break;
+                    default:
+                        throw new Exception("Unknown update type");
                 }
-                else
-                    throw new Exception("Unknown update type");
                 return;
             }
         }

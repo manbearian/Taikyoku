@@ -34,6 +34,7 @@
 
         <shogi:NewGameView
             Grid.Row="2" Grid.Column="1"
+            Connection="{Binding Source={x:Reference this}, Path=Connection}"
             PlayerName="{Binding Source={x:Reference this}, Path=PlayerName}"
             IsVisible="{Binding Source={x:Reference this}, Path=MainPageMode, Converter={StaticResource pageModeConverter}, ConverterParameter='NewNetworkGame'}"
             />
@@ -47,6 +48,7 @@
 
         <shogi:WaitView
             Grid.Row="2" Grid.Column="1"
+            Connection="{Binding Source={x:Reference this}, Path=Connection}"
             IsVisible="{Binding Source={x:Reference this}, Path=MainPageMode, Converter={StaticResource pageModeConverter}, ConverterParameter='Wait'}"
             />
 

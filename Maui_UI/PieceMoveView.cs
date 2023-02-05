@@ -7,7 +7,7 @@ namespace MauiUI;
 public class PieceMoveView : ContentView
 {
     //
-    // Bindabe Proprerties
+    // Bindable Proprerties
     //
 
     public static readonly BindableProperty PieceIdProperty = BindableProperty.Create(nameof(PieceId), typeof(PieceIdentity), typeof(PieceMoveView));

@@ -11,7 +11,7 @@ public partial class BoardPage : ContentPage
     // Private Wrapper Properties
     //
 
-    private static PlayerColor MyColor { get => MainPage.Default.Connection.Color; }
+    private static PlayerColor? MyColor { get => MainPage.Default.Connection?.Color; }
 
     private static GameManager GameManager { get => MainPage.Default.GameManager; }
     
@@ -158,10 +158,10 @@ public partial class BoardPage : ContentPage
             PlayerColor.Black when IsLocalGame => "Black's Turn",
             PlayerColor.White when IsLocalGame => "White's Turn",
             not null when !IsLocalGame && activePlayer == MyColor => "Your Turn",
-            not null when !IsLocalGame && activePlayer == MyColor.Opponent() => $"Waiting for {OpponentName} to make a move",
+            not null when !IsLocalGame && activePlayer == MyColor?.Opponent() => $"Waiting for {OpponentName} to make a move",
             null when IsLocalGame && Game.Winner is not null => $"{Game.Winner} Wins!",
             null when !IsLocalGame && Game.Winner == MyColor => $"You Won!",
-            null when !IsLocalGame && Game.Winner == MyColor.Opponent() => $"{OpponentName} Won!",
+            null when !IsLocalGame && Game.Winner == MyColor?.Opponent() => $"{OpponentName} Won!",
             _ => ""
         };
 

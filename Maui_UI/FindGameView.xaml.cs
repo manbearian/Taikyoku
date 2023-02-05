@@ -38,7 +38,7 @@ public class FindGameListLoadingItem : FindGameListItem
 public partial class FindGameView : ContentView
 {
     //
-    // Bindabe Proprerties
+    // Bindable Proprerties
     //
 
     public static readonly BindableProperty PlayerNameProperty = BindableProperty.Create(nameof(PlayerName), typeof(string), typeof(FindGameView), string.Empty, BindingMode.OneWay);

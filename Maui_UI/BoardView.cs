@@ -23,7 +23,7 @@ public class BoardView : GraphicsView, IDrawable
 
 
     //
-    // Bindabe Proprerties
+    // Bindable Proprerties
     //
 
     public static readonly BindableProperty IsRotatedProperty = BindableProperty.Create(nameof(IsRotated), typeof(bool), typeof(BoardView));
@@ -42,7 +42,7 @@ public class BoardView : GraphicsView, IDrawable
 
     private static TaikyokuShogi Game { get => MainPage.Default.GameManager.Game; }
 
-    private static Connection Connection { get => MainPage.Default.Connection; }
+    private static PlayerColor? MyColor { get => MainPage.Default.Connection?.Color; }
 
     //
     // Standard Properties
@@ -82,7 +82,7 @@ public class BoardView : GraphicsView, IDrawable
     // Invoke when externally updating the underlying game state
     public void Refresh()
     {
-        IsEnabled = Game.CurrentPlayer is not null && (GameManager.IsLocalGame || Game.CurrentPlayer == Connection.Color);
+        IsEnabled = Game.CurrentPlayer is not null && (GameManager.IsLocalGame || Game.CurrentPlayer == MyColor);
         Invalidate();
     }
 

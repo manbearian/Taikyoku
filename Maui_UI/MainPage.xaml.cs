@@ -14,7 +14,7 @@ public enum MainPageMode
 public partial class MainPage : ContentPage
 {
     //
-    // Bindabe Proprerties
+    // Bindable Proprerties
     //
 
     public static readonly BindableProperty MainPageModeProperty = BindableProperty.Create(nameof(MainPageMode), typeof(MainPageMode), typeof(MainPage), MainPageMode.Home, BindingMode.OneWay);

@@ -6,6 +6,18 @@ using ShogiComms;
 
 public partial class WaitView : ContentView
 {
+    //
+    // Bindable Proprerties
+    //
+
+    public static readonly BindableProperty ConnectionProperty = BindableProperty.Create(nameof(Connection), typeof(Connection), typeof(MyGamesView), null, BindingMode.OneWay);
+
+    public Connection? Connection
+    {
+        get => (Connection?)GetValue(ConnectionProperty);
+        set => SetValue(ConnectionProperty, value);
+    }
+
     public WaitView()
     {
         InitializeComponent();
@@ -15,14 +27,14 @@ public partial class WaitView : ContentView
     {
         try
         {
-            await MainPage.Default.Connection.CancelGame();
+            if (Connection is not null)
+            {
+                await Connection.CancelGame();
+            }
+            MainPage.Default.MainPageMode = MainPageMode.Home;
         }
-        catch (HubException ex) when (MainPage.Default.Connection.IsGameNotFoundException(ex))
+        catch (HubException ex) when (Connection?.IsGameNotFoundException(ex) ?? false)
         {
-            // TODO: This usually happens if the server already started the game... not sure what to do in this case as the oppponent probably thinks you're playing...
-            // i need to ignore this cancel some how :(
         }
-
-        MainPage.Default.MainPageMode = MainPageMode.Home;
     }
 }

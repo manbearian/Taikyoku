@@ -13,7 +13,7 @@ public enum BorderOrientation
 public class BoardBorderView : GraphicsView, IDrawable
 {
     //
-    // Bindabe Proprerties
+    // Bindable Proprerties
     //
 
     public static readonly BindableProperty OrientationProperty = BindableProperty.Create(nameof(Orientation), typeof(BorderOrientation), typeof(BoardBorderView));

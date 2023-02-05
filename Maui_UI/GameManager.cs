@@ -21,7 +21,7 @@ internal class GameManager : BindableObject
     public event GameChangeHandler? OnGameChange;
 
     //
-    // Bindabe Proprerties
+    // Bindable Proprerties
     //
 
     public static readonly BindableProperty ConnectionProperty = BindableProperty.Create(nameof(Connection), typeof(Connection), typeof(GameManager), null, BindingMode.OneWay, propertyChanged: OnConnectionChanged);
