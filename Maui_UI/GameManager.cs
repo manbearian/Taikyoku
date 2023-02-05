@@ -1,5 +1,5 @@
 ﻿using System.Diagnostics.Contracts;
-
+using System.Runtime.CompilerServices;
 using ShogiClient;
 using ShogiEngine;
 
@@ -11,7 +11,7 @@ internal class GameChangeEventArgs : EventArgs
     public GameChangeEventArgs() { }
 }
 
-internal class GameManager
+internal class GameManager : BindableObject
 {
     //
     // Events
@@ -19,6 +19,20 @@ internal class GameManager
 
     public delegate void GameChangeHandler(object sender, GameChangeEventArgs e);
     public event GameChangeHandler? OnGameChange;
+
+    //
+    // Bindabe Proprerties
+    //
+
+    public static readonly BindableProperty ConnectionProperty = BindableProperty.Create(nameof(Connection), typeof(Connection), typeof(GameManager), null, BindingMode.OneWay, propertyChanged: OnConnectionChanged);
+
+    public Connection? Connection
+    {
+        get => (Connection?)GetValue(ConnectionProperty);
+        set => SetValue(ConnectionProperty, value);
+    }
+
+    // Standard Properties
 
     public TaikyokuShogi Game { get; private set; } = new TaikyokuShogi(); // initialize with fake game to make nullable easier
 
@@ -30,24 +44,21 @@ internal class GameManager
 
     public PlayerColor? CurrentPlayer { get => Game.CurrentPlayer; }
 
-    private static Connection Connection { get => MainPage.Default.Connection; }
-
-    public bool IsListening
+    private static void OnConnectionChanged(BindableObject bindable, object oldValue, object newValue)
     {
-        set
-        {
-            void Connection_OnReceiveGameUpdate(object sender, ReceiveGameUpdateEventArgs e)
-            {
-                Contract.Assert(!IsLocalGame);
-                Game = e.Game;
-                OnGameChange?.Invoke(this, new GameChangeEventArgs());
-            }
+        var me = (GameManager)bindable;
 
-            if (value)
-                Connection.OnReceiveGameUpdate += Connection_OnReceiveGameUpdate;
-            else
-                Connection.OnReceiveGameUpdate -= Connection_OnReceiveGameUpdate;
-        }
+        if (oldValue is Connection oldConnection)
+            oldConnection.OnReceiveGameUpdate -= me.Connection_OnReceiveGameUpdate;
+        if (newValue is Connection newConnection)
+            newConnection.OnReceiveGameUpdate += me.Connection_OnReceiveGameUpdate;
+    }
+
+    private void Connection_OnReceiveGameUpdate(object sender, ReceiveGameUpdateEventArgs e)
+    {
+        Contract.Assert(!IsLocalGame);
+        Game = e.Game;
+        OnGameChange?.Invoke(this, new GameChangeEventArgs());
     }
 
     public void SetLocalGame(TaikyokuShogi game, Guid? localGameId)
@@ -68,7 +79,10 @@ internal class GameManager
         OnGameChange?.Invoke(this, new GameChangeEventArgs());
 
         if (!IsLocalGame)
+        {
+            Contract.Assert(Connection is not null);
             await Connection.RequestMove(startLoc, endLoc, midLoc, promote);
+        }
     }
 
     public async Task Resign()
@@ -76,11 +90,17 @@ internal class GameManager
         if (CurrentPlayer is null)
             return;
 
-        var resigningPlayer = IsLocalGame ? CurrentPlayer.Value : Connection.Color;
-        Game.Resign(resigningPlayer);
+        Contract.Assert(IsLocalGame || Connection is not null);
+
+        var resigningPlayer = IsLocalGame ? CurrentPlayer.Value : Connection?.Color;
+        Contract.Assert(resigningPlayer is not null);
+        Game.Resign(resigningPlayer.Value);
         OnGameChange?.Invoke(this, new GameChangeEventArgs());
 
         if (!IsLocalGame)
+        {
+            Contract.Assert(Connection is not null);
             await Connection.ResignGame();
+        }
     }
 }

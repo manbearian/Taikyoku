@@ -1,6 +1,6 @@
 ﻿using System.Diagnostics.Contracts;
 using System.Globalization;
-
+using System.Runtime.CompilerServices;
 using ShogiClient;
 using ShogiEngine;
 
@@ -13,14 +13,11 @@ public enum MainPageMode
 
 public partial class MainPage : ContentPage
 {
-    public delegate void NetworkConnectedHandler(object sender, EventArgs e);
-    public event NetworkConnectedHandler? OnNetworkConnected;
-
     //
     // Bindabe Proprerties
     //
 
-    public static readonly BindableProperty MainPageModeProperty = BindableProperty.Create(nameof(MainPageMode), typeof(MainPageMode), typeof(MyGamesView), MainPageMode.Home, BindingMode.OneWay);
+    public static readonly BindableProperty MainPageModeProperty = BindableProperty.Create(nameof(MainPageMode), typeof(MainPageMode), typeof(MainPage), MainPageMode.Home, BindingMode.OneWay);
 
     public MainPageMode MainPageMode
     {
@@ -28,7 +25,7 @@ public partial class MainPage : ContentPage
         set => SetValue(MainPageModeProperty, value);
     }
 
-    public static readonly BindableProperty PlayerNameProperty = BindableProperty.Create(nameof(PlayerName), typeof(string), typeof(MyGamesView), string.Empty, BindingMode.OneWay);
+    public static readonly BindableProperty PlayerNameProperty = BindableProperty.Create(nameof(PlayerName), typeof(string), typeof(MainPage), string.Empty, BindingMode.OneWay);
 
     public string PlayerName
     {
@@ -36,14 +33,25 @@ public partial class MainPage : ContentPage
         set => SetValue(PlayerNameProperty, value);
     }
 
+    public static readonly BindableProperty ConnectionProperty = BindableProperty.Create(nameof(Connection), typeof(Connection), typeof(MainPage), null, BindingMode.OneWay);
+    
+    public Connection? Connection
+    {
+        get => (Connection?)GetValue(ConnectionProperty);
+        set => SetValue(ConnectionProperty, value);
+    }
+    
     // The one and only MainPage
     public static MainPage Default { get; } = new();
-
-    internal Connection Connection { get; } = new();
 
     internal GameManager GameManager { get; } = new();
 
     private IDispatcherTimer NetworkReconnectTimer { get; }
+
+    // internal field pointing to the programs underlying network connection
+    // it is "published" to other components via the Connection property when
+    // the connection becomes active
+    private Connection _connection = new();
 
     public MainPage()
     {
@@ -52,17 +60,19 @@ public partial class MainPage : ContentPage
         PlayerNameEntry.Text = SettingsManager.Default.PlayerName == string.Empty ?
             Environment.UserName : SettingsManager.Default.PlayerName;
 
+        GameManager.BindingContext = this;
+        GameManager.SetBinding(GameManager.ConnectionProperty, "Connection");
+
         Loaded += async (s, e) =>
         {
-            Connection.OnReceiveGameStart += Connection_OnReceiveGameStart;
-            GameManager.IsListening = true;
+            _connection.OnReceiveGameStart += Connection_OnReceiveGameStart;
             await ConnectNetwork();
         };
 
         Unloaded += (s, e) =>
         {
-            Connection.OnReceiveGameStart -= Connection_OnReceiveGameStart;
-            GameManager.IsListening = false;
+            _connection.OnReceiveGameStart -= Connection_OnReceiveGameStart;
+            Connection = null;
         };
 
         NetworkReconnectTimer = Dispatcher.CreateTimer();
@@ -75,8 +85,8 @@ public partial class MainPage : ContentPage
     {
         try
         {
-            await Connection.ConnectAsync();
-            OnNetworkConnected?.Invoke(this, new EventArgs());
+            await _connection.ConnectAsync();
+            Connection = _connection;
         }
         catch (Exception ex) when (Connection.ExceptionFilter(ex))
         {
@@ -100,8 +110,8 @@ public partial class MainPage : ContentPage
 
     private void Connection_OnReceiveGameStart(object sender, ReceiveGameStartEventArgs e)
     {
-        NetworkGameSaver.Default.SaveGame(Connection.GameId, Connection.PlayerId, Connection.Color);
-        var opponentName = (Connection.Color == PlayerColor.Black ? e.GameInfo.WhiteName : e.GameInfo.BlackName) ?? throw new Exception("Opponent name is null");
+        NetworkGameSaver.Default.SaveGame(_connection.GameId, _connection.PlayerId, _connection.Color);
+        var opponentName = (_connection.Color == PlayerColor.Black ? e.GameInfo.WhiteName : e.GameInfo.BlackName) ?? throw new Exception("Opponent name is null");
         GameManager.SetNetworkGame(e.Game, opponentName);
         Dispatcher.Dispatch(() =>
         {
@@ -125,9 +135,9 @@ public partial class MainPage : ContentPage
 
     public async Task LaunchGame(Guid gameId, Guid playerId, PlayerColor myColor)
     {
-        Connection.SetGameInfo(gameId, playerId, myColor);
+        _connection.SetGameInfo(gameId, playerId, myColor);
         MainPageMode = MainPageMode.Wait;
-        await Connection.RejoinGame();
+        await _connection.RejoinGame();
     }
 }
 

@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using System.ComponentModel;
-
+using System.Diagnostics.Contracts;
+using System.Runtime.CompilerServices;
 using ShogiClient;
 using ShogiComms;
 using ShogiEngine;
@@ -40,7 +41,7 @@ public partial class FindGameView : ContentView
     // Bindabe Proprerties
     //
 
-    public static readonly BindableProperty PlayerNameProperty = BindableProperty.Create(nameof(PlayerName), typeof(string), typeof(MyGamesView), string.Empty, BindingMode.OneWay);
+    public static readonly BindableProperty PlayerNameProperty = BindableProperty.Create(nameof(PlayerName), typeof(string), typeof(FindGameView), string.Empty, BindingMode.OneWay);
 
     public string PlayerName
     {
@@ -48,46 +49,50 @@ public partial class FindGameView : ContentView
         set => SetValue(PlayerNameProperty, value);
     }
 
+    public static readonly BindableProperty ConnectionProperty = BindableProperty.Create(nameof(Connection), typeof(Connection), typeof(MyGamesView), null, BindingMode.OneWay, propertyChanged: OnConnectionChanged);
+
+    public Connection? Connection
+    {
+        get => (Connection?)GetValue(ConnectionProperty);
+        set => SetValue(ConnectionProperty, value);
+    }
+
     public ObservableCollection<FindGameListItem> GamesList { get; set; } = new();
     
     public FindGameView()
     {
         InitializeComponent();
-
-        // Use visible/invisible as load/unload
-        PropertyChanged += FindGameView_PropertyChanged;
     }
 
-    private async void FindGameView_PropertyChanged(object? sender, PropertyChangedEventArgs e)
+    ~FindGameView()
     {
-        if (e.PropertyName != nameof(IsVisible))
-            return;
-        if (sender is not FindGameView me || !me.IsLoaded)
-            return;
+        Connection = null;
+    }
 
-        // Update display only when visible
-        if (IsVisible)
-        {
-            MainPage.Default.Connection.OnReceiveGameList += Connection_OnReceiveGameList;
-            await PopulateGamesList();
-        }
-        else
-        {
-            MainPage.Default.Connection.OnReceiveGameList -= Connection_OnReceiveGameList;
-        }
+    private static async void OnConnectionChanged(BindableObject bindable, object oldValue, object newValue)
+    {
+        var me = (FindGameView)bindable;
+
+        if (oldValue is Connection oldConnection)
+            oldConnection.OnReceiveGameList -= me.Connection_OnReceiveGameList;
+        if (newValue is Connection newConnection)
+            newConnection.OnReceiveGameList += me.Connection_OnReceiveGameList;
+        await me.PopulateGamesList();
     }
 
     private async void Connection_OnReceiveGameList(object sender, ReceiveGameListEventArgs e)
-        => await Dispatcher.DispatchAsync(async () => await PopulateGamesList());
+        => await Dispatcher.DispatchAsync(async () => await PopulateGamesList(e.GameList));
 
-    private async Task PopulateGamesList()
+    private async Task PopulateGamesList(IEnumerable<ClientGameInfo>? gameList = null)
     {
         GamesList.Clear();
         GamesList.Add(new FindGameListLoadingItem());
 
         try
         {
-            var gameList = await MainPage.Default.Connection.RequestAllOpenGameInfo();
+            if (Connection is null)
+                return;
+            gameList ??= await Connection.RequestAllOpenGameInfo();
             var sortedList = gameList.OrderByDescending(g => g.LastPlayed);
 
             GamesList.Clear();
@@ -108,9 +113,11 @@ public partial class FindGameView : ContentView
         var item = (FindGameListItem)e.Item;
         if (item is null || item is FindGameListNullItem || item is FindGameListLoadingItem)
             return;
-        MainPage.Default.Connection.SetGameInfo(item.GameInfo.GameId, Guid.Empty, item.GameInfo.UnassignedColor());
+        if (Connection is null)
+            return;
+        Connection.SetGameInfo(item.GameInfo.GameId, Guid.Empty, item.GameInfo.UnassignedColor());
         // TODO: validate PlayerName
-        await MainPage.Default.Connection.JoinGame(PlayerName);
+        await Connection.JoinGame(PlayerName);
         MainPage.Default.MainPageMode = MainPageMode.Wait;
     }
 

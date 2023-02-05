@@ -1,6 +1,6 @@
 using System.Collections.ObjectModel;
 using System.Diagnostics.Contracts;
-
+using System.Runtime.CompilerServices;
 using ShogiClient;
 using ShogiComms;
 using ShogiEngine;
@@ -18,7 +18,7 @@ public class MyGamesListItem
     public string TurnCount { get => Game?.MoveCount.ToString() ?? string.Empty; }
 
     public Guid GameId { get; set; } = Guid.Empty;
-    
+
     public Guid PlayerId { get; set; } = Guid.Empty;
 
     public PlayerColor MyColor { get; set; } = PlayerColor.Black;
@@ -75,13 +75,25 @@ public class MyGamesListItem
 
 public partial class MyGamesView : ContentView
 {
+    //
+    // Bindabe Proprerties
+    //
+
+    public static readonly BindableProperty ConnectionProperty = BindableProperty.Create(nameof(Connection), typeof(Connection), typeof(MyGamesView), null, BindingMode.OneWay, propertyChanged: OnConnectionChanged);
+
+    public Connection? Connection
+    {
+        get => (Connection?)GetValue(ConnectionProperty);
+        set => SetValue(ConnectionProperty, value);
+    }
+
     public ObservableCollection<MyGamesListItem> GamesList { get; set; } = new();
 
     private readonly ILocalGameSaver LocalGameSaver;
 
     private readonly INetworkGameSaver NetworkGameSaver;
 
-    public MyGamesView() : this (null, null) { }
+    public MyGamesView() : this(null, null) { }
 
     public MyGamesView(ILocalGameSaver? localGameSaver, INetworkGameSaver? networkGameSaver)
     {
@@ -92,25 +104,26 @@ public partial class MyGamesView : ContentView
 
         AddLocalGamesToMyGamesList();
         LocalGameSaver.OnLocalGameUpdate += LocalGameManager_OnLocalGameUpdate;
-
-        Loaded += (s, e) =>
-        {
-            MainPage.Default.OnNetworkConnected += MainPage_OnNetworkConnected;
-        };
-
-        Unloaded += (s, e) =>
-        {
-            MainPage.Default.OnNetworkConnected -= MainPage_OnNetworkConnected;
-        };
     }
-    
+
     ~MyGamesView()
     {
         LocalGameSaver.OnLocalGameUpdate -= LocalGameManager_OnLocalGameUpdate;
+        Connection = null;
     }
 
-    private async void MainPage_OnNetworkConnected(object sender, EventArgs e) =>
-        await AddNetworkGamesToMyGamesList();
+    private static async void OnConnectionChanged(BindableObject bindable, object oldValue, object newValue)
+    {
+        var me = (MyGamesView)bindable;
+
+        // TODO: add listener to catch updates to my games
+        //if (oldValue is Connection oldConnection)
+        //    oldConnection -= some_listener;
+        //if (newValue is Connection newConnection)
+        //    newConnection += some_listener;
+
+        await me.AddNetworkGamesToMyGamesList();
+    }
 
     private void LocalGameManager_OnLocalGameUpdate(object sender, LocalGameUpdateEventArgs e)
     {
@@ -151,11 +164,14 @@ public partial class MyGamesView : ContentView
 
     private async Task AddNetworkGamesToMyGamesList()
     {
+        if (Connection is null)
+            return;
+
         try
         {
             var networkGameList = NetworkGameSaver.NetworkGameList;
             var requestInfos = networkGameList.Select(i => new NetworkGameRequest(i.GameId, i.PlayerId));
-            var clientGameInfos = await MainPage.Default.Connection.RequestGameInfo(requestInfos);
+            var clientGameInfos = await Connection.RequestGameInfo(requestInfos);
             foreach (var (gameId, userId, myColor) in networkGameList)
             {
                 var gameInfo = clientGameInfos.FirstOrDefault(g => g?.GameId == gameId, null);
