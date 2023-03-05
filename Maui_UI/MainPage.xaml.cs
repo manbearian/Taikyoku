@@ -33,11 +33,11 @@ public partial class MainPage : ContentPage
         set => SetValue(PlayerNameProperty, value);
     }
 
-    public static readonly BindableProperty ConnectionProperty = BindableProperty.Create(nameof(Connection), typeof(Connection), typeof(MainPage), null, BindingMode.OneWay);
+    public static readonly BindableProperty ConnectionProperty = BindableProperty.Create(nameof(Connection), typeof(IConnection), typeof(MainPage), null, BindingMode.OneWay);
     
-    public Connection? Connection
+    public IConnection? Connection
     {
-        get => (Connection?)GetValue(ConnectionProperty);
+        get => (IConnection?)GetValue(ConnectionProperty);
         set => SetValue(ConnectionProperty, value);
     }
     
@@ -88,7 +88,7 @@ public partial class MainPage : ContentPage
             await _connection.ConnectAsync();
             Connection = _connection;
         }
-        catch (Exception ex) when (Connection.ExceptionFilter(ex))
+        catch (Exception ex) when (ShogiClient.Connection.ExceptionFilter(ex))
         {
             // failed to connect... that's okay try again in a bit
             var maxWait = TimeSpan.FromSeconds(32);

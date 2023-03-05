@@ -10,11 +10,11 @@ public partial class WaitView : ContentView
     // Bindable Proprerties
     //
 
-    public static readonly BindableProperty ConnectionProperty = BindableProperty.Create(nameof(Connection), typeof(Connection), typeof(MyGamesView), null, BindingMode.OneWay);
+    public static readonly BindableProperty ConnectionProperty = BindableProperty.Create(nameof(Connection), typeof(IConnection), typeof(MyGamesView), null, BindingMode.OneWay);
 
-    public Connection? Connection
+    public IConnection? Connection
     {
-        get => (Connection?)GetValue(ConnectionProperty);
+        get => (IConnection?)GetValue(ConnectionProperty);
         set => SetValue(ConnectionProperty, value);
     }
 

@@ -49,11 +49,11 @@ public partial class FindGameView : ContentView
         set => SetValue(PlayerNameProperty, value);
     }
 
-    public static readonly BindableProperty ConnectionProperty = BindableProperty.Create(nameof(Connection), typeof(Connection), typeof(MyGamesView), null, BindingMode.OneWay, propertyChanged: OnConnectionChanged);
+    public static readonly BindableProperty ConnectionProperty = BindableProperty.Create(nameof(Connection), typeof(IConnection), typeof(MyGamesView), null, BindingMode.OneWay, propertyChanged: OnConnectionChanged);
 
-    public Connection? Connection
+    public IConnection? Connection
     {
-        get => (Connection?)GetValue(ConnectionProperty);
+        get => (IConnection?)GetValue(ConnectionProperty);
         set => SetValue(ConnectionProperty, value);
     }
 
@@ -101,7 +101,7 @@ public partial class FindGameView : ContentView
                 GamesList.Add(new FindGameListItem(game));
             }
         }
-        catch(Exception ex) when (Connection.ExceptionFilter(ex))
+        catch(Exception ex) when (ShogiClient.Connection.ExceptionFilter(ex))
         {
             GamesList.Clear();
             GamesList.Add(new FindGameListNullItem());

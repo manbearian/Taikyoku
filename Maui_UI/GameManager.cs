@@ -24,11 +24,11 @@ internal class GameManager : BindableObject
     // Bindable Proprerties
     //
 
-    public static readonly BindableProperty ConnectionProperty = BindableProperty.Create(nameof(Connection), typeof(Connection), typeof(GameManager), null, BindingMode.OneWay, propertyChanged: OnConnectionChanged);
+    public static readonly BindableProperty ConnectionProperty = BindableProperty.Create(nameof(Connection), typeof(IConnection), typeof(GameManager), null, BindingMode.OneWay, propertyChanged: OnConnectionChanged);
 
-    public Connection? Connection
+    public IConnection? Connection
     {
-        get => (Connection?)GetValue(ConnectionProperty);
+        get => (IConnection?)GetValue(ConnectionProperty);
         set => SetValue(ConnectionProperty, value);
     }
 

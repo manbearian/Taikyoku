@@ -79,11 +79,11 @@ public partial class MyGamesView : ContentView
     // Bindable Proprerties
     //
 
-    public static readonly BindableProperty ConnectionProperty = BindableProperty.Create(nameof(Connection), typeof(Connection), typeof(MyGamesView), null, BindingMode.OneWay, propertyChanged: OnConnectionChanged);
+    public static readonly BindableProperty ConnectionProperty = BindableProperty.Create(nameof(Connection), typeof(IConnection), typeof(MyGamesView), null, BindingMode.OneWay, propertyChanged: OnConnectionChanged);
 
-    public Connection? Connection
+    public IConnection? Connection
     {
-        get => (Connection?)GetValue(ConnectionProperty);
+        get => (IConnection?)GetValue(ConnectionProperty);
         set => SetValue(ConnectionProperty, value);
     }
 
@@ -184,7 +184,7 @@ public partial class MyGamesView : ContentView
                     InsertSorted(MyGamesListItem.FromNetworkGame(gameInfo, userId, myColor));
             }
         }
-        catch (Exception ex) when (Connection.ExceptionFilter(ex))
+        catch (Exception ex) when (ShogiClient.Connection.ExceptionFilter(ex))
         {
             // TOOD: retry server communications later???
             // TODO: let the user know that network connection is down
@@ -193,19 +193,18 @@ public partial class MyGamesView : ContentView
 
     void InsertSorted(MyGamesListItem item)
     {
-        GamesList.Add(item);
-
-        // Inserting at the head of the list seems to have a bug that causes the ItemList
-        // to duplicate the inesrted item and not display other items, so do this insert-at-end
-        // and swap dance.
+        // insert sorted
         for (int i = 0; i < GamesList.Count; i++)
         {
             if (GamesList[i].LastMoveOn < item.LastMoveOn)
             {
-                GamesList.Move(GamesList.Count - 1, i);
+                GamesList.Insert(i, item);
                 return;
             }
         }
+
+        // insert at end
+        GamesList.Add(item);
     }
 
     private async void GameListView_ItemTapped(object sender, ItemTappedEventArgs e)

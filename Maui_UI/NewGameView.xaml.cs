@@ -19,11 +19,11 @@ public partial class NewGameView : ContentView
         set => SetValue(PlayerNameProperty, value);
     }
 
-    public static readonly BindableProperty ConnectionProperty = BindableProperty.Create(nameof(Connection), typeof(Connection), typeof(MyGamesView), null, BindingMode.OneWay);
+    public static readonly BindableProperty ConnectionProperty = BindableProperty.Create(nameof(Connection), typeof(IConnection), typeof(MyGamesView), null, BindingMode.OneWay);
 
-    public Connection? Connection
+    public IConnection? Connection
     {
-        get => (Connection?)GetValue(ConnectionProperty);
+        get => (IConnection?)GetValue(ConnectionProperty);
         set => SetValue(ConnectionProperty, value);
     }
 
@@ -45,7 +45,7 @@ public partial class NewGameView : ContentView
             await Connection.RequestNewGame(PlayerName, blackBtn.IsChecked, new TaikyokuShogi());
             MainPage.Default.MainPageMode = MainPageMode.Wait;
         }
-        catch(Exception ex) when (Connection.ExceptionFilter(ex))
+        catch(Exception ex) when (ShogiClient.Connection.ExceptionFilter(ex))
         {
             await MainPage.Default.DisplayAlert("Game Creation Failed", "Unable to create a new game due to a network or server error.", "Okay");
         }

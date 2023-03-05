@@ -2,57 +2,25 @@ using Xunit;
 
 using MauiUI;
 using ShogiEngine;
+using ShogiComms;
+using Xunit.Abstractions;
+using Microsoft.VisualStudio.TestPlatform.Utilities;
 
 namespace TestMauiUI;
 
-static class MockGuid
-{
-    public static Guid NewGuid(int id) => Guid.Parse($"00000000-0000-0000-0000-{id:000000000000}");
-}
-
-class MockLocalGamesManager : ILocalGameSaver
-{
-    public List<(Guid GameId, DateTime lastPlayed, TaikyokuShogi Game)> LocalGames = new();
-
-    public DateTime MockNow { get; set; } = DateTime.FromBinary(0);
-
-    public MockLocalGamesManager() { }
-
-    public event ILocalGameSaver.LocalGameUpdateHandler? OnLocalGameUpdate;
-
-    public void SaveGame(Guid gameId, TaikyokuShogi game)
-    {
-        if (LocalGames.Exists(elem => elem.GameId == gameId))
-        {
-            var removed = LocalGames.RemoveAll(elem => elem.GameId == gameId);
-            Assert.Equal(1, removed);
-            OnLocalGameUpdate?.Invoke(this, new LocalGameUpdateEventArgs(gameId, game, MockNow, LocalGameUpdate.Update));
-        }
-        else
-        {
-            LocalGames.Add((gameId, MockNow, game));
-            OnLocalGameUpdate?.Invoke(this, new LocalGameUpdateEventArgs(gameId, game, MockNow, LocalGameUpdate.Add));
-        }
-    }
-
-    public void DeleteGame(Guid gameId)
-    {
-        var removed = LocalGames.RemoveAll(entry => entry.GameId == gameId);
-        Assert.Equal(1, removed);
-        OnLocalGameUpdate?.Invoke(this, new LocalGameUpdateEventArgs(gameId, null, MockNow, LocalGameUpdate.Remove));
-    }
-
-    public IEnumerable<(Guid GameId, DateTime lastPlayed, TaikyokuShogi Game)> LocalGameList { get => LocalGames; }
-}
-
 public class MyGamesViewTests : BaseTest
 {
+    private readonly ITestOutputHelper output;
+
+    public MyGamesViewTests(ITestOutputHelper output) => this.output = output;
+
     [Fact]
     public void TestConstruction()
     {
-        var localGameSaver = new MockLocalGamesManager();
+        var localGameSaver = new MockLocalGameSaver();
+        var networkGameSaver = new MockNewtorkGameSaver();
 
-        var x = new MyGamesView(localGameSaver);
+        var x = new MyGamesView(localGameSaver, networkGameSaver);
 
         var gameListView = x.FindByName<ListView>("GameListView");
         Assert.NotNull(gameListView);
@@ -62,7 +30,7 @@ public class MyGamesViewTests : BaseTest
     }
 
     [Fact]
-    public void TestLocalGames()
+    public void TestLocalGamesDisplay()
     {
         // Test local games display
         //  TODO: Test (all) game state is displayed correctly
@@ -76,12 +44,13 @@ public class MyGamesViewTests : BaseTest
                 (MockGuid.NewGuid(0), DateTime.FromBinary(20000), new TaikyokuShogi())
             };
 
-        var localGameSaver = new MockLocalGamesManager()
+        var localGameSaver = new MockLocalGameSaver()
         {
             LocalGames = localGames
         };
+        var networkGameSaver = new MockNewtorkGameSaver();
 
-        var x = new MyGamesView(localGameSaver);
+        var x = new MyGamesView(localGameSaver, networkGameSaver);
 
         var gameListView = x.FindByName<ListView>("GameListView");
         Assert.NotNull(gameListView);
@@ -124,12 +93,13 @@ public class MyGamesViewTests : BaseTest
                 (MockGuid.NewGuid(5), DateTime.FromBinary(500), new TaikyokuShogi())
             };
 
-        var localGameSaver = new MockLocalGamesManager()
+        var localGameSaver = new MockLocalGameSaver()
         {
             LocalGames = localGames
         };
+        var networkGameSaver = new MockNewtorkGameSaver();
 
-        var x = new MyGamesView(localGameSaver);
+        var x = new MyGamesView(localGameSaver, networkGameSaver);
         Assert.Equal(
             x.GamesList.Select(gameInfo => gameInfo.GameId),
             new List<Guid> { MockGuid.NewGuid(5), MockGuid.NewGuid(3), MockGuid.NewGuid(1) }
@@ -159,12 +129,13 @@ public class MyGamesViewTests : BaseTest
                 (MockGuid.NewGuid(5), DateTime.FromBinary(500), new TaikyokuShogi())
             };
 
-        var localGameSaver = new MockLocalGamesManager()
+        var localGameSaver = new MockLocalGameSaver()
         {
             LocalGames = localGames
         };
+        var networkGameSaver = new MockNewtorkGameSaver();
 
-        var x = new MyGamesView(localGameSaver);
+        var x = new MyGamesView(localGameSaver, networkGameSaver);
         Assert.Equal(
             x.GamesList.Select(gameInfo => gameInfo.GameId),
             new List<Guid> { MockGuid.NewGuid(5), MockGuid.NewGuid(3), MockGuid.NewGuid(1) }
@@ -194,16 +165,13 @@ public class MyGamesViewTests : BaseTest
                 (MockGuid.NewGuid(5), DateTime.FromBinary(500), new TaikyokuShogi())
             };
 
-        var localGameSaver = new MockLocalGamesManager()
+        var localGameSaver = new MockLocalGameSaver()
         {
             LocalGames = localGames
         };
+        var networkGameSaver = new MockNewtorkGameSaver();
 
-        var x = new MyGamesView(localGameSaver);
-        Assert.Equal(
-            x.GamesList.Select(gameInfo => gameInfo.GameId),
-            new List<Guid> { MockGuid.NewGuid(5), MockGuid.NewGuid(3), MockGuid.NewGuid(1) }
-            );
+        var x = new MyGamesView(localGameSaver, networkGameSaver);
 
         localGameSaver.DeleteGame(MockGuid.NewGuid(1));
         localGameSaver.DeleteGame(MockGuid.NewGuid(5));
@@ -214,7 +182,142 @@ public class MyGamesViewTests : BaseTest
             );
     }
 
-    // Test network games displayed correctly
+    [Fact]
+    public void TestNetworkGamesDisplay()
+    {
+        // Test netwrok games display
+        //  TODO: Test non-active game state is displayed correctly
+        //  TODO: Test turn count is displayed correctly (when available from server)
+
+        List<(Guid GameId, Guid PlayerId, PlayerColor MyColor)> networkGames = new()
+            {
+                (MockGuid.NewGuid(0), MockGuid.NewGuid(10), PlayerColor.Black),
+                (MockGuid.NewGuid(1), MockGuid.NewGuid(11), PlayerColor.Black),
+                (MockGuid.NewGuid(3), MockGuid.NewGuid(13), PlayerColor.White),
+                (MockGuid.NewGuid(4), MockGuid.NewGuid(14), PlayerColor.White) // this game won't be found
+            };
+
+        Dictionary<Guid, ClientGameInfo> gameDatabase = new()
+            {
+                {
+                    MockGuid.NewGuid(0),
+                        new()
+                        {
+                            GameId = MockGuid.NewGuid(0),
+                            BlackName = "Frank",
+                            WhiteName = "Lucy",
+                            Created =  DateTime.FromBinary(10000),
+                            LastPlayed =  DateTime.FromBinary(30000),
+                            Status = GameStatus.BlackTurn
+                        }
+                },
+                {
+                    MockGuid.NewGuid(1),
+                        new()
+                        {
+                            GameId = MockGuid.NewGuid(1),
+                            BlackName = "Ed",
+                            WhiteName = "Torrent",
+                            Created =  DateTime.FromBinary(1),
+                            LastPlayed =  DateTime.FromBinary(10000),
+                            Status = GameStatus.WhiteTurn
+                        }
+                },
+                {
+                    // this game shouldn't be found
+                    MockGuid.NewGuid(2),
+                        new()
+                        {
+                            GameId = MockGuid.NewGuid(2),
+                            BlackName = "Boogie",
+                            WhiteName = "Woogie",
+                            Created =  DateTime.FromBinary(9999),
+                            LastPlayed =  DateTime.FromBinary(999999),
+                            Status = GameStatus.WhiteTurn
+                        }
+                },
+                {
+                    MockGuid.NewGuid(3),
+                        new()
+                        {
+                            GameId = MockGuid.NewGuid(3),
+                            BlackName = "Tanaka",
+                            WhiteName = "Natasha",
+                            Created =  DateTime.FromBinary(9999),
+                            LastPlayed =  DateTime.FromBinary(20000),
+                            Status = GameStatus.BlackTurn
+                        }
+                }
+            };
+
+        var localGameSaver = new MockLocalGameSaver();
+        var networkGameSaver = new MockNewtorkGameSaver()
+        {
+            NetworkGames = networkGames
+        };
+        var connection = new MockConnection()
+        {
+            _connected = true,
+            GameDatabase = gameDatabase
+        };
+
+        using AutoResetEvent uiUpdated = new(false);
+
+        var x = new MyGamesView(localGameSaver, networkGameSaver)
+        {
+            Connection = connection
+        };
+
+        var gameListView = x.FindByName<ListView>("GameListView");
+        Assert.NotNull(gameListView);
+
+        // wait until the UI is updated
+        var cells = ((IVisualTreeElement)gameListView).GetVisualChildren();
+        while (true)
+        {
+            if (cells.Count == networkGames.Count)
+                break;
+            cells = ((IVisualTreeElement)gameListView).GetVisualChildren();
+        }
+
+        Assert.Equal(networkGames.Count, cells.Count);
+        Assert.Equal(networkGames.Count, x.GamesList.Count);
+        for (int i = 0; i < networkGames.Count; ++i)
+        {
+            // Check that the game is displayed in the correct order based on sorting via last-played
+            var gameId = new int[] { 0, 3, 1 }[i];
+            var dt = DateTime.FromBinary((3 - i) * 10000);
+            var oppName = new string[] { "Lucy", "Torrent", "Boogie", "Tanaka" }[gameId];
+            var turn = new string[] { "Your Turn", "Their Turn", "", "Their Turn" }[gameId];
+            var myColor = new PlayerColor[] { PlayerColor.Black, PlayerColor.Black, PlayerColor.White, PlayerColor.White }[gameId];
+
+            var gameInfo = x.GamesList[i];
+            Assert.Null(gameInfo.Game);
+            Assert.Equal(MockGuid.NewGuid(gameId), gameInfo.GameId);
+            Assert.False(gameInfo.IsLocal);
+            Assert.Equal(dt, gameInfo.LastMoveOn);
+            Assert.Equal(dt.ToString(), gameInfo.LastMove);
+            Assert.Equal(myColor, gameInfo.MyColor);
+            Assert.Equal(oppName, gameInfo.OpponentName);
+            Assert.Equal(MockGuid.NewGuid(10 + gameId), gameInfo.PlayerId);
+            Assert.Equal(turn, gameInfo.Status);
+            Assert.Equal("", gameInfo.TurnCount);
+
+            // this is broken?!? it appears the children aren't sorted here;
+            // are they displayed sorted? how do i test this properly???
+            //var cell = (ViewCell)cells[i];
+            //Assert.Equal(oppName, cell.View.FindByName<Label>("NameLbl").Text);
+            //Assert.Equal(turn, cell.View.FindByName<Label>("StatusLbl").Text);
+            //Assert.Equal(dt.ToString(), cell.View.FindByName<Label>("LastMoveLbl").Text);
+            //Assert.Equal("", cell.View.FindByName<Label>("TurnCountLbl").Text);
+        }
+    }
+
+    private void X_ChildAdded(object? sender, ElementEventArgs e)
+    {
+        throw new NotImplementedException();
+    }
+
 
     // Test mixed local/network games displayed correctly (sorted, etc.)
 }
